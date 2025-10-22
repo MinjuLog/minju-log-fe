@@ -2,6 +2,7 @@
 
 import { ChevronRight, ArrowUpDown } from "lucide-react"
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 
 const categories = [
     "전체",
@@ -45,6 +46,7 @@ const pastDebatesData = [
 
 export function DebateList() {
     const [selectedCategory, setSelectedCategory] = useState("전체")
+    const navigate = useNavigate()
 
     return (
         <section className="mt-16 pt-16 border-t border-border">
@@ -78,7 +80,13 @@ export function DebateList() {
                 {pastDebatesData.map((debate) => (
                     <div
                         key={debate.id}
-                        className="bg-secondary/30 rounded-xl p-6 hover:bg-secondary/50 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/discussions/${debate.id}`)}
+                        className="bg-secondary/30 rounded-xl p-6
+                                     hover:bg-secondary/40
+                                     hover:shadow-lg
+                                     hover:scale-[1.02]
+                                     transition-all duration-300
+                                     cursor-pointer"
                     >
                         {/* Tags and round */}
                         <div className="flex items-start justify-between mb-3">

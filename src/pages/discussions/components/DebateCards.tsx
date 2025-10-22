@@ -2,6 +2,7 @@
 
 import { Clock, BookOpen } from "lucide-react"
 import { useEffect, useState } from "react"
+import {useNavigate} from "react-router-dom";
 
 interface DebateCardProps {
     votesCount: string
@@ -12,19 +13,24 @@ interface DebateCardProps {
     image: string
 }
 
-function DebateCard({ votesCount, title, timeLeft, isCountdown, bgColor, image }: DebateCardProps) {
-    const [countdown, setCountdown] = useState(timeLeft)
+function DebateCard({
+                                 votesCount,
+                                 title,
+                                 timeLeft,
+                                 isCountdown,
+                                 bgColor,
+                                 image,
+                             }: DebateCardProps) {
+    const [countdown, setCountdown] = useState(timeLeft);
+    const navigate = useNavigate();
 
     useEffect(() => {
-        if (!isCountdown) return
-
+        if (!isCountdown) return;
         const interval = setInterval(() => {
-            // Simple countdown logic for demo
-            setCountdown(timeLeft)
-        }, 1000)
-
-        return () => clearInterval(interval)
-    }, [isCountdown, timeLeft])
+            setCountdown(timeLeft);
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [isCountdown, timeLeft]);
 
     return (
         <div
@@ -36,7 +42,11 @@ function DebateCard({ votesCount, title, timeLeft, isCountdown, bgColor, image }
             </div>
 
             <div className="flex-1 flex items-center justify-center py-8">
-                <img src={image || "/placeholder.svg"} alt="" className="max-w-full h-auto object-contain" />
+                <img
+                    src={image || "/placeholder.svg"}
+                    alt=""
+                    className="max-w-full h-auto object-contain"
+                />
             </div>
 
             <div className="flex items-center justify-between text-white/90">
@@ -44,28 +54,23 @@ function DebateCard({ votesCount, title, timeLeft, isCountdown, bgColor, image }
                     <Clock className="w-4 h-4" />
                     <span>{isCountdown ? countdown : timeLeft}</span>
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium backdrop-blur-sm">
+
+                {/* ✅ 참여하기 버튼 클릭 시 상세 페이지 이동 */}
+                <button
+                    onClick={() => navigate("/discussions/1")}
+                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium backdrop-blur-sm"
+                >
                     <BookOpen className="w-4 h-4" />
                     참여하기
                 </button>
             </div>
         </div>
-    )
+    );
 }
 
 export function DebateCards() {
     return (
         <>
-            <div className="flex items-start justify-between mb-8">
-                <div>
-                    <h1 className="text-5xl font-bold mb-3 text-foreground">스파링</h1>
-                    <p className="text-lg text-muted-foreground">뜨거운 논쟁에 대해 투표하고 토론하기</p>
-                </div>
-                <button
-                    className="px-6 py-2.5 rounded-lg border border-border hover:bg-secondary transition-colors text-sm font-medium">
-                    스파링 프로필
-                </button>
-            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <DebateCard
                     votesCount="615명 투표 중"
