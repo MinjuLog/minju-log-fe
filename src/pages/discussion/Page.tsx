@@ -2,6 +2,7 @@
 import MainVotes from "./components/MainVotes.tsx";
 import Sidebar from "./components/Sidebar.tsx";
 import DiscussionHeader from "../../components/DiscussionHeader.tsx";
+import Comments from "./components/Comments.tsx";
 
 export default function DiscussionPage() {
 
@@ -12,6 +13,9 @@ export default function DiscussionPage() {
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     <MainVotes/>
                     <Sidebar />
+                </div>
+                <div className="flex">
+                    <Comments/>
                 </div>
             </div>
         </div>
