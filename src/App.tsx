@@ -3,6 +3,7 @@ import DiscussionsPage from "./pages/discussions/Page.tsx";
 import { Header } from "./components/Header.tsx";
 import "./App.css";
 import DiscussionPage from "./pages/discussion/Page.tsx";
+import ColumnsPage from "./pages/columns/Page.tsx";
 
 function App() {
     return (
@@ -17,6 +18,8 @@ function App() {
                         <Route path="/discussions" element={<DiscussionsPage />} />
                         {/* 상세 페이지: 동적 파라미터 사용 */}
                         <Route path="/discussions/:id" element={<DiscussionPage />} />
+                        {/* 목록 페이지 */}
+                        <Route path="/columns" element={<ColumnsPage />} />
                         {/* 없으면 목록으로 */}
                         <Route path="*" element={<Navigate to="/discussions" replace />} />
                     </Routes>

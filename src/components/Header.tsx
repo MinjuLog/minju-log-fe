@@ -15,7 +15,7 @@ export function Header() {
                             <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                                 토픽
                             </a>
-                            <a href="#" className="text-sm font-semibold text-foreground hover:text-foreground/80 transition-colors">
+                            <a href="/discussions" className="text-sm font-semibold text-foreground hover:text-foreground/80 transition-colors">
                                 스파링
                             </a>
                             <a
@@ -27,8 +27,8 @@ export function Header() {
                 </span>
                                 아핫뉴스
                             </a>
-                            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                                링크
+                            <a href="/columns" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                                잉크
                             </a>
                             <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                                 미션
