@@ -1,10 +1,28 @@
 import type {ColumnPreviewType} from "../types/ArticlePreviewType.ts";
+import {useNavigate} from "react-router-dom";
 
 export default function ColumnPreview({ column }: { column: ColumnPreviewType }) {
+    const navigate = useNavigate();
+
+    const handleClick = () => {
+        navigate(`/columns/${column.id}`);
+    };
+
     return (
         <article
+            onClick={handleClick}
             key={column.id}
-            className="flex gap-6 rounded-2xl border border-gray-200 bg-white p-6 transition-shadow hover:shadow-lg"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === "Enter" && handleClick()}
+            className="
+                    flex gap-6 rounded-2xl border border-gray-200 bg-white p-6
+                    transition-all duration-200 ease-in-out
+                    hover:shadow-lg hover:-translate-y-0.5
+                    active:scale-[0.99]
+                    cursor-pointer
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                  "
         >
             {/* Thumbnail */}
             <div className="relative h-40 w-60 flex-shrink-0 overflow-hidden rounded-xl">

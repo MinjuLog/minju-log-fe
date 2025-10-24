@@ -65,7 +65,7 @@ export default function ColumnsPage() {
     const [selectedCategory, setSelectedCategory] = useState("all")
 
     return (
-        <div className="min-h-screen bg-white">
+        <>
             {/* Header */}
             <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
                 <ColumnHeader />
@@ -84,6 +84,6 @@ export default function ColumnsPage() {
                     ))}
                 </div>
             </div>
-        </div>
+        </>
     )
 }
