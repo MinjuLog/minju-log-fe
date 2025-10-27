@@ -6,7 +6,7 @@ import type {CategoryType} from "./types/CategoryType.ts";
 import type {ColumnPreviewType} from "./types/ArticlePreviewType.ts";
 import ColumnPreview from "./components/ColumnPreview.tsx";
 
-const categories: CategoryType[] = [
+const categoriesMock: CategoryType[] = [
     { id: "all", name: "전체", icon: "" },
     { id: "membership", name: "멤버십 전용", icon: "⭐" },
     { id: "law", name: "법률" },
@@ -21,8 +21,7 @@ const categories: CategoryType[] = [
     { id: "economy", name: "경제" },
     { id: "insurance", name: "보험" },
 ]
-
-const columnPreviews: ColumnPreviewType[] = [
+const columnPreviewsMock: ColumnPreviewType[] = [
     {
         id: "1",
         isNew: true,
@@ -72,14 +71,14 @@ export default function ColumnsPage() {
 
                 {/* Category Filters */}
                 <CategoryFilter
-                    categories={categories}
+                    categories={categoriesMock}
                     selectedCategory={selectedCategory}
                     setSelectedCategory={setSelectedCategory}
                 />
 
                 {/* Articles List */}
                 <div className="mt-8 space-y-6">
-                    {columnPreviews.map((column) => (
+                    {columnPreviewsMock.map((column) => (
                         <ColumnPreview column={column} key={column.id} />
                     ))}
                 </div>

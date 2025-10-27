@@ -1,43 +1,12 @@
 import {Info, Share2} from "lucide-react";
 import {useEffect, useState} from "react";
+import type VotingOptionType from "../types/VotingOptionType.ts";
 
-const votingOptions = [
-    {
-        id: 1,
-        text: "상생 위해 필요해",
-        badge: "선택",
-        color: "bg-blue-100 hover:bg-blue-200",
-        iconColor: "text-blue-600",
-        gemImage: "/gem-blue.jpg",
-    },
-    {
-        id: 2,
-        text: "6개월은 너무 길어",
-        badge: "선택",
-        color: "bg-red-100 hover:bg-red-200",
-        iconColor: "text-red-600",
-        gemImage: "/gem-red.jpg",
-    },
-    {
-        id: 3,
-        text: "한류 확산에 방해돼",
-        badge: "선택",
-        color: "bg-purple-100 hover:bg-purple-200",
-        iconColor: "text-purple-600",
-        gemImage: "/gem-purple.jpg",
-    },
-    {
-        id: 4,
-        text: "소비자만 불편해져",
-        badge: "선택",
-        color: "bg-green-100 hover:bg-green-200",
-        iconColor: "text-green-600",
-        gemImage: "/gem-green.jpg",
-    },
-]
+interface props {
+    votingOptions: VotingOptionType[];
+}
 
-
-export default function MainVotes() {
+export default function MainVotes({ votingOptions }: props) {
     const [timeLeft, setTimeLeft] = useState({
         hours: 6,
         minutes: 18,

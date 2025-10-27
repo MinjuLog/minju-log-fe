@@ -1,7 +1,11 @@
 import {MessageCircle, MoreHorizontal, ThumbsDown, ThumbsUp} from "lucide-react";
-import type CommentProp from "../types/CommentProp.ts";
+import type CommentType from "../types/CommentType.ts";
 
-export default function Comment ({ comment } : { comment: CommentProp }) {
+interface props {
+    comment: CommentType;
+}
+
+export default function Comment ({ comment } : props) {
     return (
         <div
             key={comment.id}

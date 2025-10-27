@@ -1,4 +1,4 @@
-export default interface CommentProp {
+export default interface CommentType {
     id: string
     parentId?: string
     author: string
