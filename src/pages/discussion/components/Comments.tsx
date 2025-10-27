@@ -14,7 +14,7 @@ export default function CommentsPage({ comments }: props) {
     // const [sortOrder, setSortOrder] = useState<"likes" | "recent">("likes")
 
     return (
-            <div className="mx-auto mt-20">
+            <div className="flex-1 mt-20">
                 {/* Header */}
                 <div className="mb-6">
                     <h1 className="mb-4 text-2xl font-bold text-gray-900">전체 댓글 49</h1>

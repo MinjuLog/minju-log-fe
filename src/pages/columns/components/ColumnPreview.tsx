@@ -26,11 +26,11 @@ export default function ColumnPreview({ column }: { column: ColumnPreviewType })
         >
             {/* Thumbnail */}
             <div className="relative h-40 w-60 flex-shrink-0 overflow-hidden rounded-xl">
-                {/*<image*/}
-                {/*    src={article.thumbnail || "/placeholder.svg"}*/}
-                {/*    alt={article.title}*/}
-                {/*    className="object-cover"*/}
-                {/*/>*/}
+                <img
+                    src={column.thumbnail || "/placeholder.svg"}
+                    alt={column.title}
+                    className="object-cover"
+                />
             </div>
 
             {/* Content */}

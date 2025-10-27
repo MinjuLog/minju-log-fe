@@ -1,44 +1,54 @@
 import { Search, Bell, Moon, LogIn } from "lucide-react"
+import {Link, useLocation} from "react-router-dom";
+
+const tabs: {
+    href: string,
+    text: string,
+    isHighlighted?: boolean,
+}[] = [
+    { href: "/", text: "홈", },
+    { href: "/dashboard", text: "대시보드", },
+    { href: "/discussions", text: "스파링", isHighlighted: true },
+    { href: "/columns", text: "잉크", isHighlighted: true }
+]
 
 export function Header() {
+    const location = useLocation();
     return (
         <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
             <div className="container mx-auto px-4 max-w-7xl">
                 <div className="flex items-center justify-between h-16">
                     {/* Logo and Navigation */}
                     <div className="flex items-center gap-8">
-                        <div className="text-2xl font-bold text-foreground">aha</div>
+                        <Link
+                            to="/"
+                            className="text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-red-600 to-pink-500 bg-clip-text text-transparent select-none hover:opacity-90 transition-opacity"
+                        >
+                            민주로그
+                        </Link>
                         <nav className="hidden md:flex items-center gap-6">
-                            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                                홈
-                            </a>
-                            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                                토픽
-                            </a>
-                            <a href="/discussions" className="text-sm font-semibold text-foreground hover:text-foreground/80 transition-colors">
-                                스파링
-                            </a>
-                            <a
-                                href="#"
-                                className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
-                            >
-                <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-xs font-bold">
-                  N
-                </span>
-                                아핫뉴스
-                            </a>
-                            <a href="/columns" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                                잉크
-                            </a>
-                            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                                미션
-                            </a>
-                            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                                전문가 신청
-                            </a>
-                            <a href="#" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                                멤버십
-                            </a>
+                            {tabs.map((tab) => {
+                                const isActive = location.pathname === tab.href;
+                                return (
+                                    <Link
+                                        key={tab.href}
+                                        to={tab.href}
+                                        className={`text-sm transition-colors ${
+                                            isActive
+                                                ? "text-foreground font-semibold"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        }`}
+                                    >
+                                        {tab.isHighlighted && (
+                                            <span
+                                                className="inline-flex items-center justify-center w-5 h-5 mr-1 rounded-full bg-red-500 text-white text-xs font-bold">
+                                            N
+                                          </span>
+                                        )}
+                                        {tab.text}
+                                    </Link>
+                                );
+                            })}
                         </nav>
                     </div>
 

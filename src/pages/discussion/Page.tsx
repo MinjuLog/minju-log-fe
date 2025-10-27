@@ -7,116 +7,136 @@ import type CommentType from "./types/CommentType.ts";
 import type VotingOptionType from "./types/VotingOptionType.ts";
 import type SidebarDiscussionType from "./types/SidebarDiscussionType.ts";
 
-const commentMock: CommentType[] = [
+const sideBarDiscussionsMock: SidebarDiscussionType[] = [
     {
-        id: "1",
-        author: "금거린금지어",
-        timestamp: "25.10.16",
-        badge: {
-            text: "펜션 측 갑질이다",
-            type: "red",
-        },
-        content: `펜션속 생각도 이해 되지만
-쓰레기 청소값 받는거는
-좀 아니라고 생각합니다.
-펜션 숙박비가 반값도 아니고
-손님이 매일 많은것도 아닌데
-없어서 편하게 돈만 받겠다는거네요 :
-사업할때 손님이 나가면 청소를 해야 되는걸 사전조사 했을텐데 :
-
-쓰레기 심하게 버린 손님은 다음에
-예약 거부를 하는게 좋을듯합니다
-
-펜션 청소비가 싸기면 유형 처럼 변해서
-펜션,호텔,모텔,여관등등 청소비가
-생길까 우려됩니다.
-
-그리고 청소비 음식을 선택한 손님
-우선으로 받을 가능성이 큽니다.`,
-        likes: 44,
-        replies: 1,
+        endLeft: 2,
+        mainTitle: "청년 창업 지원금",
+        subTitle: "절반 삭감, 타당한가?",
+        best: "청년 외면하는 정책",
+        content:
+            "예산 절감 명목으로 청년 지원이 줄어드는 건 이해하기 어렵네요. 실효성보다 생존이 먼저 아닐까요?",
+        votes: 731,
+        id: "local-budget-01",
     },
     {
-        id: "2",
-        parentId: "1",
-        author: "이하2pdsx9",
-        timestamp: "25.10.16",
-        badge: {
-            text: "오늘하면 그랬겠나",
-            type: "blue",
-        },
-        content: `@금지된금지어 펜션 아저씨 한번 가고 안 오는 정우가 많아서 페이백 제도가 맞아보이네요....
-
-유튜브에서 이 이슈로 올라온 영상 봤는데 진짜 개판 치고 가는 영상 보니까 펜션 사업 운영하는 것도 대단해보인 해요.. 진짜 진상 만나면.. 생각만 해도 끔찍하네요`,
-        likes: 0,
-        isReply: true,
-        mentionedUser: "금지된금지어",
+        endLeft: 3,
+        mainTitle: "지방의회",
+        subTitle: "특혜 논란 해소될까?",
+        best: "투명한 의사결정 절실",
+        content:
+            "의회 회의록 공개 확대는 환영하지만, 실제 실행력이 있을지가 문제. 공개만으로는 신뢰 못 얻습니다.",
+        votes: 418,
+        id: "local-council-02",
     },
-    {
-        id: "3",
-        author: "이하r7t9o5",
-        timestamp: "25.10.16",
-        badge: {
-            text: "펜션 측 갑질이다",
-            type: "red",
-        },
-        content: `인테리어, 기물 등의 훼손, 파손 등은 손배청구가 맞지만 청소비를 받는건 좀 그렇지않나..? 모텔, 호텔 등등도 다 청소비 받겠네 ㅋㅋㅋ 사용자가 간단하게 청소하고 나가는건 배려차원인거지 의무가 아님. 사용자가 사전이 청소 안해도 월정도로 깨끗이 청소하면 돈 들어가겠지만?`,
-        likes: 9,
-        replies: 0,
-    },
-]
+];
 const votingOptionsMock: VotingOptionType[] = [
     {
         id: 1,
-        text: "상생 위해 필요해",
-        badge: "선택",
-        color: "bg-blue-100 hover:bg-blue-200",
-        iconColor: "text-blue-600",
-        gemImage: "/gem-blue.jpg",
-    },
-    {
-        id: 2,
-        text: "6개월은 너무 길어",
+        text: "예산 삭감은 청년 외면이다",
         badge: "선택",
         color: "bg-red-100 hover:bg-red-200",
         iconColor: "text-red-600",
         gemImage: "/gem-red.jpg",
     },
     {
-        id: 3,
-        text: "한류 확산에 방해돼",
+        id: 2,
+        text: "중복 사업 줄이기 필요",
         badge: "선택",
-        color: "bg-purple-100 hover:bg-purple-200",
-        iconColor: "text-purple-600",
-        gemImage: "/gem-purple.jpg",
+        color: "bg-orange-100 hover:bg-orange-200",
+        iconColor: "text-orange-600",
+        gemImage: "/gem-blue.jpg",
+    },
+    {
+        id: 3,
+        text: "청년 예산보다 재정 안정이 우선",
+        badge: "선택",
+        color: "bg-yellow-100 hover:bg-yellow-200",
+        iconColor: "text-yellow-600",
+        gemImage: "/gem-gray.jpg",
     },
     {
         id: 4,
-        text: "소비자만 불편해져",
+        text: "효과 검증 후 단계적 조정",
         badge: "선택",
         color: "bg-green-100 hover:bg-green-200",
         iconColor: "text-green-600",
         gemImage: "/gem-green.jpg",
     },
-]
-const sideBarDiscussionsMock: SidebarDiscussionType[] = [
+];
+const commentMock: CommentType[] = [
     {
-        endLeft: 4,
-        mainTitle: "하루 100개 인형뽑기",
-        subTitle: "영업 방해일까",
-        best: "정당한 개인 자유",
-        content: "당연히 정당한 자유죠. 과하면 민폐라고 하시는 분들은 어떤 마인드인가? 정당한 돈을 ...",
-        votes: 494,
-        id: "claw-01",
+        id: "1",
+        author: "푸른바람77",
+        timestamp: "25.10.25",
+        badge: {
+            text: "지자체 예산 삭감 반대",
+            type: "red",
+        },
+        content: `올해 청년 창업 지원금이 절반으로 줄었다네요.
+지역 경제를 살리겠다고 하면서 정작 청년들이 떠나는 이유를 모르는 것 같습니다.
+예산이 부족하다고 하지만 행사나 홍보 예산은 그대로더라구요.
+정작 청년들이 자립할 수 있는 기회는 줄어드는 게 문제 아닌가요?`,
+        likes: 61,
+        replies: 2,
     },
     {
-        endLeft: 4,
-        mainTitle: "하루 100개 인형뽑기",
-        subTitle: "영업 방해일까",
-        best: "정당한 개인 자유",
-        content: "당연히 정당한 자유죠. 과하면 민폐라고 하시는 분들은 어떤 마인드인가? 정당한 돈을 ...",
-        votes: 494,
-        id: "claw-02",
+        id: "2",
+        parentId: "1",
+        author: "정책읽는시민",
+        timestamp: "25.10.25",
+        badge: {
+            text: "재정 효율화 필요",
+            type: "blue",
+        },
+        content: `@푸른바람77 전체 재정 상황 보면 불가피한 부분도 있습니다.
+사업 성과가 불분명한 지원금도 많았고요.
+무조건 '삭감 = 나쁜 정책'으로 보기보단, 실효성 검토가 먼저라고 봅니다.`,
+        likes: 11,
+        isReply: true,
+        mentionedUser: "푸른바람77",
+    },
+    {
+        id: "3",
+        author: "비둘기정책연구소",
+        timestamp: "25.10.25",
+        badge: {
+            text: "예산 재분배 찬성",
+            type: "blue",
+        },
+        content: `그동안 유사한 청년정책 사업이 너무 많았어요.
+청년센터, 스타트업 지원센터, 일자리 박람회 등 이름만 다르고 내용은 거의 동일했죠.
+이런 중복된 예산을 줄이고, 주거·교통처럼 실질적인 분야로 돌리는 게 더 낫다고 봅니다.`,
+        likes: 23,
+        replies: 0,
+    },
+    {
+        id: "4",
+        author: "청년창업가99",
+        timestamp: "25.10.26",
+        badge: {
+            text: "현장 목소리 무시",
+            type: "red",
+        },
+        content: `창업 지원 받던 입장에서 말하자면, 절반 삭감은 타격이 커요.
+행정절차도 까다로운데, 지원금까지 줄면 지방에서 사업 유지하기 어렵습니다.
+지자체가 청년 떠난다고 걱정하면서 이렇게 줄이는 건 모순이죠.`,
+        likes: 47,
+        replies: 1,
+    },
+    {
+        id: "5",
+        parentId: "4",
+        author: "공무원a1",
+        timestamp: "25.10.26",
+        badge: {
+            text: "균형 잡힌 판단 필요",
+            type: "blue",
+        },
+        content: `@청년창업가99 현장에서 어려움 많은 건 이해하지만,
+정책은 지속 가능해야 합니다. 단기 지원보다 시스템 개선이 중요하다고 봅니다.`,
+        likes: 8,
+        isReply: true,
+        mentionedUser: "청년창업가99",
     },
 ];
 

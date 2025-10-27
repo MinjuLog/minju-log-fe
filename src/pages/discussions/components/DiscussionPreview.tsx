@@ -13,8 +13,8 @@ export default function DiscussionPreview({ discussionPreview }: props) {
         <div
             key={discussionPreview.id}
             onClick={() => navigate(`/discussions/${id}`)}
-            className="bg-secondary/30 rounded-xl p-6
-                                     hover:bg-secondary/40
+            className="border-1 bg-secondary/20 rounded-xl p-6
+                                     hover:bg-secondary/60
                                      hover:shadow-lg
                                      hover:scale-[1.02]
                                      transition-all duration-300
