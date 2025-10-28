@@ -27,7 +27,7 @@ export default function CommentsPage({ comments }: props) {
                         </button>
 
                         <button className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                            내가 쓴 댓글
+                            내가 쓴 지지 서명
                         </button>
                     </div>
                 </div>
@@ -36,7 +36,7 @@ export default function CommentsPage({ comments }: props) {
                 <div className="mb-6 flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3">
                     <div className="flex items-center gap-2 text-sm text-gray-700">
                         <Upload className="h-4" />
-                        <span>무차별한 댓글 숨기기</span>
+                        <span>무차별한 지지 서명 숨기기</span>
                     </div>
                     <button
                         onClick={() => setHideAbusiveComments(!hideAbusiveComments)}
