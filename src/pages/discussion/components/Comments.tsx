@@ -17,7 +17,7 @@ export default function CommentsPage({ comments }: props) {
             <div className="flex-1 mt-20">
                 {/* Header */}
                 <div className="mb-6">
-                    <h1 className="mb-4 text-2xl font-bold text-gray-900">전체 댓글 49</h1>
+                    <h1 className="mb-4 text-2xl font-bold text-gray-900">지지 서명 49</h1>
 
                     <div className="flex items-center justify-between">
                         <button className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
