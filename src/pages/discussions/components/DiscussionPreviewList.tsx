@@ -15,7 +15,7 @@ export function DiscussionPreviewList({ categories, discussionPreviews }: props)
 
     return (
         <section className="mt-16 pt-16 border-t border-border">
-            <h2 className="text-3xl font-bold mb-8">지난 스파링 103</h2>
+            <h2 className="text-3xl font-bold mb-8">지난 동네한표 103</h2>
 
             {/* Category filters */}
             <div className="flex flex-wrap gap-2 mb-6">

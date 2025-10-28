@@ -2,8 +2,8 @@ export default function ColumnHeader() {
     return (
         <div className="flex items-start justify-between">
             <div>
-                <h1 className="text-5xl font-bold text-gray-900">잉크</h1>
-                <p className="mt-2 text-lg text-gray-600">전문가의 생각, 잉크로 기록되다</p>
+                <h1 className="text-4xl font-bold text-gray-900">다른 지역은?</h1>
+                <p className="mt-2 text-lg text-gray-600">다른 지역 우수 사례 모음집</p>
             </div>
             <button
                 className="flex items-center gap-2 rounded-lg border-2 border-blue-600 px-6 py-3 text-blue-600 transition-colors hover:bg-blue-50">

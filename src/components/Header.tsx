@@ -7,9 +7,9 @@ const tabs: {
     isHighlighted?: boolean,
 }[] = [
     { href: "/", text: "홈", },
-    { href: "/dashboard", text: "대시보드", },
-    { href: "/discussions", text: "스파링", isHighlighted: true },
-    { href: "/columns", text: "잉크", isHighlighted: true }
+    { href: "/dashboard", text: "진행로그", },
+    { href: "/discussions", text: "동네한표", isHighlighted: true },
+    { href: "/columns", text: "다른 지역은?", isHighlighted: true }
 ]
 
 export function Header() {

@@ -13,7 +13,7 @@ export default function Sidebar({ sidebarDiscussions }: props) {
             <div className="sticky top-4 space-y-4">
                 {/* Home Link */}
                 <Link to="/" className="mb-4 flex items-center rounded-lg p-1 hover:bg-gray-100">
-                    <span className="font-medium text-gray-900">스파링 홈</span>
+                    <span className="font-medium text-gray-900">동네한표 홈</span>
                     <svg className="css-111o5ku" fill="none" height="20" viewBox="0 0 20 20" width="20"
                          xmlns="http://www.w3.org/2000/svg">
                         <path clipRule="evenodd"
