@@ -34,7 +34,7 @@ const votingOptionsMock: VotingOptionType[] = [
         id: 1,
         text: "예산 삭감은 청년 외면이다",
         badge: "선택",
-        color: "bg-red-100 hover:bg-red-200",
+        color: "bg-blue-100 hover:bg-blue-200",
         iconColor: "text-red-600",
         gemImage: "/gem-red.jpg",
     },
@@ -42,26 +42,26 @@ const votingOptionsMock: VotingOptionType[] = [
         id: 2,
         text: "중복 사업 줄이기 필요",
         badge: "선택",
-        color: "bg-orange-100 hover:bg-orange-200",
+        color: "bg-red-100 hover:bg-red-200",
         iconColor: "text-orange-600",
         gemImage: "/gem-blue.jpg",
     },
-    {
-        id: 3,
-        text: "청년 예산보다 재정 안정이 우선",
-        badge: "선택",
-        color: "bg-yellow-100 hover:bg-yellow-200",
-        iconColor: "text-yellow-600",
-        gemImage: "/gem-gray.jpg",
-    },
-    {
-        id: 4,
-        text: "효과 검증 후 단계적 조정",
-        badge: "선택",
-        color: "bg-green-100 hover:bg-green-200",
-        iconColor: "text-green-600",
-        gemImage: "/gem-green.jpg",
-    },
+    // {
+    //     id: 3,
+    //     text: "청년 예산보다 재정 안정이 우선",
+    //     badge: "선택",
+    //     color: "bg-yellow-100 hover:bg-yellow-200",
+    //     iconColor: "text-yellow-600",
+    //     gemImage: "/gem-gray.jpg",
+    // },
+    // {
+    //     id: 4,
+    //     text: "효과 검증 후 단계적 조정",
+    //     badge: "선택",
+    //     color: "bg-green-100 hover:bg-green-200",
+    //     iconColor: "text-green-600",
+    //     gemImage: "/gem-green.jpg",
+    // },
 ];
 const commentMock: CommentType[] = [
     {
@@ -78,6 +78,7 @@ const commentMock: CommentType[] = [
 정작 청년들이 자립할 수 있는 기회는 줄어드는 게 문제 아닌가요?`,
         likes: 61,
         replies: 2,
+        opinion: 1,
     },
     {
         id: "2",
@@ -94,6 +95,7 @@ const commentMock: CommentType[] = [
         likes: 11,
         isReply: true,
         mentionedUser: "푸른바람77",
+        opinion: 2,
     },
     {
         id: "3",
@@ -108,6 +110,7 @@ const commentMock: CommentType[] = [
 이런 중복된 예산을 줄이고, 주거·교통처럼 실질적인 분야로 돌리는 게 더 낫다고 봅니다.`,
         likes: 23,
         replies: 0,
+        opinion: 1,
     },
     {
         id: "4",
@@ -122,6 +125,7 @@ const commentMock: CommentType[] = [
 지자체가 청년 떠난다고 걱정하면서 이렇게 줄이는 건 모순이죠.`,
         likes: 47,
         replies: 1,
+        opinion: 2,
     },
     {
         id: "5",
@@ -137,6 +141,7 @@ const commentMock: CommentType[] = [
         likes: 8,
         isReply: true,
         mentionedUser: "청년창업가99",
+        opinion: 1,
     },
 ];
 

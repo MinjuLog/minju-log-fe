@@ -6,10 +6,16 @@ interface props {
 }
 
 export default function Comment ({ comment } : props) {
+
+    const bgMap: Record<number, string> = {
+        1: 'ml-12 bg-blue-100',
+        2: 'mr-12 bg-red-100'
+    }
+
     return (
         <div
             key={comment.id}
-            className={`rounded-lg border border-gray-200 p-4 ${comment.isReply ? "ml-12 bg-gray-100" : "bg-white"}`}
+            className={`rounded-lg border border-gray-200 p-4 ${bgMap[comment.opinion]}`}
         >
             {/* Comment Header */}
             <div className="mb-3 flex items-start justify-between">
@@ -30,11 +36,10 @@ export default function Comment ({ comment } : props) {
                 <div className="mb-3 flex items-center gap-2">
                     <div
                         className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium ${
-                            comment.badge.type === "red" ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
+                            comment.opinion === 2 ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
                         }`}
                     >
-                        {comment.badge.type === "red" ? "✓" : "✓"}
-                        {comment.badge.text}
+                        ✓{comment.badge.text}
                     </div>
                 </div>
             )}

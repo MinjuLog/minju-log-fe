@@ -12,4 +12,5 @@ export default interface CommentType {
     replies?: number
     isReply?: boolean
     mentionedUser?: string
+    opinion: number
 }
