@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import ColumnHeader from "../../components/ColumnHeader.tsx";
+import AroundHeader from "../../components/AroundHeader.tsx";
 import CategoryFilter from "./components/CategoryFilter.tsx";
 import type {CategoryType} from "./types/CategoryType.ts";
 import type {ColumnPreviewType} from "./types/ArticlePreviewType.ts";
@@ -102,7 +102,7 @@ export default function ColumnsPage() {
         <>
             {/* Header */}
             <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-                <ColumnHeader />
+                <AroundHeader />
 
                 {/* Category Filters */}
                 <CategoryFilter

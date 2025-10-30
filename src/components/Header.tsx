@@ -9,7 +9,7 @@ const tabs: {
     { href: "/", text: "홈", },
     { href: "/dashboard", text: "진행로그", },
     { href: "/discussions", text: "동네한표", isHighlighted: true },
-    { href: "/columns", text: "다른 지역은?", isHighlighted: true }
+    { href: "/around", text: "다른 지역은?", isHighlighted: true }
 ]
 
 export function Header() {

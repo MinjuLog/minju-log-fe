@@ -5,6 +5,7 @@ import "./App.css";
 import DiscussionPage from "./pages/discussion/Page.tsx";
 import ColumnsPage from "./pages/columns/Page.tsx";
 import ColumnPage from "./pages/column/Page.tsx";
+import AroundPage from "./pages/around/Page.tsx";
 
 function App() {
     return (
@@ -23,6 +24,9 @@ function App() {
                         <Route path="/columns" element={<ColumnsPage />} />
                         {/* 상세 페이지: 동적 파라미터 사용 */}
                         <Route path="/columns/:id" element={<ColumnPage />} />
+
+                        <Route path="/around" element={<AroundPage/>} />
+
                         {/* 없으면 목록으로 */}
                         <Route path="*" element={<Navigate to="/discussions" replace />} />
                     </Routes>
