@@ -137,7 +137,7 @@ export default function SignSubmitModal({ isOpen, onClose, selectedId, selectedO
                             disabled={!rebuttalText.trim()}
                             className="w-full py-4 bg-blue-400 hover:bg-blue-500 disabled:bg-blue-200 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors"
                         >
-                            반박 댓글 남기기
+                            지지 서명 남기기
                         </button>
                         <button
                             onClick={onClose}
