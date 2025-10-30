@@ -1,6 +1,8 @@
 import { Info, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type VotingOptionType from "../types/VotingOptionType.ts";
+import VoteConfirmationModal from "./VoteConfirmationModal.tsx";
+import SignSubmitModal from "./SignSubmitModal.tsx";
 
 interface Props {
     votingOptions: VotingOptionType[];
@@ -14,6 +16,17 @@ export default function MainVotes({ votingOptions }: Props) {
     });
 
     const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
+    const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false)
+
+    const handleConfirm = () => {
+        setIsConfirmModalOpen(false)
+        setIsSubmitModalOpen(true)
+    }
+
+    const handleSubmit = () => {
+        setIsSubmitModalOpen(false);
+    }
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -66,7 +79,10 @@ export default function MainVotes({ votingOptions }: Props) {
                         return (
                             <button
                                 key={option.id}
-                                onClick={() => setSelectedId(option.id)}
+                                onClick={() => {
+                                    setSelectedId(option.id)
+                                    setIsConfirmModalOpen(true) }
+                                }
                                 className={`group relative flex min-h-[120px] flex-col items-center justify-center gap-3 rounded-2xl p-6 transition-all ${option.color} ${
                                     isSelected ? "ring-4 ring-offset-2 ring-gray-100" : ""
                                 }`}
@@ -151,6 +167,29 @@ export default function MainVotes({ votingOptions }: Props) {
                 </div>
 
             </div>
+
+            <VoteConfirmationModal
+                isOpen={isConfirmModalOpen}
+                onClose={() => {
+                    setIsConfirmModalOpen(false)
+                    setSelectedId(null);
+                }}
+                selectedOption="거짓말은 안 된다"
+                selectedId={selectedId}
+                onConfirm={handleConfirm}
+            />
+
+            <SignSubmitModal
+                isOpen={isSubmitModalOpen}
+                onClose={() => {
+                    setIsSubmitModalOpen(false)
+                }}
+                selectedId={selectedId}
+                selectedOption="거짓말은 안 된다"
+                onSubmit={handleSubmit}
+            />
+
+
         </div>
     );
 }
