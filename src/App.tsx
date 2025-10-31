@@ -6,6 +6,7 @@ import DiscussionPage from "./pages/discussion/Page.tsx";
 import ColumnsPage from "./pages/columns/Page.tsx";
 import ColumnPage from "./pages/column/Page.tsx";
 import AroundPage from "./pages/around/Page.tsx";
+import WritingPage from "./pages/writing/Page.tsx";
 
 function App() {
     return (
@@ -20,6 +21,9 @@ function App() {
                         <Route path="/discussions" element={<DiscussionsPage />} />
                         {/* 상세 페이지: 동적 파라미터 사용 */}
                         <Route path="/discussions/:id" element={<DiscussionPage />} />
+
+                        <Route path="/discussions/write" element={<WritingPage />} />
+
                         {/* 목록 페이지 */}
                         <Route path="/columns" element={<ColumnsPage />} />
                         {/* 상세 페이지: 동적 파라미터 사용 */}
