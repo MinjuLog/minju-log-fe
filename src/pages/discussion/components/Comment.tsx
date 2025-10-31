@@ -39,7 +39,7 @@ export default function Comment ({ comment } : props) {
                             comment.opinion === 2 ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
                         }`}
                     >
-                        ✓{comment.badge.text}
+                        ✓ {comment.opinion === 1 ? "찬성합니다." : "반대합니다."}
                     </div>
                 </div>
             )}

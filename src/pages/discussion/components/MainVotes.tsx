@@ -101,19 +101,32 @@ export default function MainVotes({ votingOptions }: Props) {
                                 </div>
 
                                 {/* Text */}
-                                <div className="flex items-center gap-2">
-                  <span className="text-center font-medium text-gray-900">
-                    {option.text}
-                  </span>
-                                    <div className="text-sm font-bold text-gray-500">{isSelected && option.badge}</div>
+                                <div className="flex justify-center items-center gap-2">
+                                  <span
+                                      className={`text-[22px] font-bold ${
+                                          option.id === 1
+                                              ? "text-blue-600"
+                                              : option.id === 2
+                                                  ? "text-red-600"
+                                                  : "text-gray-900"
+                                      }`}
+                                  >
+                                      {option.id === 1
+                                          ? "찬성합니다."
+                                          : option.id === 2
+                                              ? "반대합니다."
+                                              : option.text}
+                                  </span>
+                                    {/*<div className="text-sm font-bold text-gray-500">{isSelected && option.badge}</div>*/}
                                 </div>
                             </button>
-                        );
+                    );
                     })}
-                </div>
+                    </div>
 
-                {/* Voting Results */}
-                <div className="mb-12">
+                        {/* Voting Results */
+                        }
+                        <div className="mb-12">
                     <div className="flex items-center justify-between mb-3 text-sm text-gray-500">
                         <span>361표</span>
                         <span>1,128표</span>

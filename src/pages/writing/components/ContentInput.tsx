@@ -77,7 +77,7 @@ export default function ContentInput({ content,
             <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value.slice(0, contentMaxLength))}
-                placeholder="질문의 내용을 구체적으로 적어주세요. 전문가 및 다른회원에게 더 좋은 답변을 받을 수 있어요."
+                placeholder="토론의 내용을 구체적으로 적어주세요."
                 className="h-64 w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
         </div>
