@@ -4,8 +4,8 @@ import Sidebar from "./components/Sidebar.tsx";
 import DiscussionHeader from "../../components/DiscussionHeader.tsx";
 import Comments from "./components/Comments.tsx";
 import type CommentType from "./types/CommentType.ts";
-import type VotingOptionType from "./types/VotingOptionType.ts";
 import type SidebarDiscussionType from "./types/SidebarDiscussionType.ts";
+import type DiscussionType from "./types/DiscussionType.ts";
 
 const sideBarDiscussionsMock: SidebarDiscussionType[] = [
     {
@@ -29,40 +29,19 @@ const sideBarDiscussionsMock: SidebarDiscussionType[] = [
         id: "local-council-02",
     },
 ];
-const votingOptionsMock: VotingOptionType[] = [
-    {
+const discussionMock: DiscussionType = {
         id: 1,
-        text: "예산 삭감은 청년 외면이다",
-        badge: "선택",
-        color: "bg-blue-100 hover:bg-blue-200",
-        iconColor: "text-red-600",
-        gemImage: "/gem-red.jpg",
-    },
-    {
-        id: 2,
-        text: "중복 사업 줄이기 필요",
-        badge: "선택",
-        color: "bg-red-100 hover:bg-red-200",
-        iconColor: "text-orange-600",
-        gemImage: "/gem-blue.jpg",
-    },
-    // {
-    //     id: 3,
-    //     text: "청년 예산보다 재정 안정이 우선",
-    //     badge: "선택",
-    //     color: "bg-yellow-100 hover:bg-yellow-200",
-    //     iconColor: "text-yellow-600",
-    //     gemImage: "/gem-gray.jpg",
-    // },
-    // {
-    //     id: 4,
-    //     text: "효과 검증 후 단계적 조정",
-    //     badge: "선택",
-    //     color: "bg-green-100 hover:bg-green-200",
-    //     iconColor: "text-green-600",
-    //     gemImage: "/gem-green.jpg",
-    // },
-];
+        title: "이것을 저희 지역에도 도입하는게 어떨까요?",
+        topic: {
+            id: 1,
+            title: "(전남 곡성군) 청년 농부들이 만든 스마트팜 협동조합",
+        },
+        content: "청년들한테 기회도 줄 수 있고 좋아보이는데 어떤가요?",
+        duration: "2025-12-31T00:00:00.000Z",
+        pros: 361,
+        cons: 1127
+    }
+
 const commentMock: CommentType[] = [
     {
         id: "1",
@@ -152,7 +131,7 @@ export default function DiscussionPage() {
             <div className="px-16 py-8">
                 <DiscussionHeader/>
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    <MainVotes votingOptions={votingOptionsMock} />
+                    <MainVotes discussion={discussionMock} />
                     <Sidebar sidebarDiscussions={sideBarDiscussionsMock} />
                 </div>
                 <div className="flex">

@@ -8,8 +8,8 @@ interface props {
 export default function Comment ({ comment } : props) {
 
     const bgMap: Record<number, string> = {
-        1: 'ml-12 bg-blue-100',
-        2: 'mr-12 bg-red-100'
+        1: 'mr-12 bg-blue-100',
+        2: 'ml-12 bg-red-100'
     }
 
     return (

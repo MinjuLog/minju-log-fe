@@ -1,55 +1,63 @@
-import { Info, Share2 } from "lucide-react";
+import { FileText, Info, Share2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import type VotingOptionType from "../types/VotingOptionType.ts";
 import VoteConfirmationModal from "./VoteConfirmationModal.tsx";
 import SignSubmitModal from "./SignSubmitModal.tsx";
+import type DiscussionType from "../types/DiscussionType.ts";
+import { Link } from "react-router-dom";
 
-interface Props {
-    votingOptions: VotingOptionType[];
+interface props {
+    discussion: DiscussionType;
 }
 
-export default function MainVotes({ votingOptions }: Props) {
+const votingOptions = [
+    { id: 1, color: "bg-blue-100 hover:bg-blue-200" },
+    { id: 2, color: "bg-red-100 hover:bg-red-200" },
+];
+
+export default function MainVotes({ discussion }: props) {
     const [timeLeft, setTimeLeft] = useState({
-        hours: 6,
-        minutes: 18,
-        seconds: 49,
+        days: 0,
+        hours: 0,
+        minutes: 0,
+        seconds: 0,
+        expired: false,
     });
 
     const [selectedId, setSelectedId] = useState<number | null>(null);
-    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false)
-    const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false)
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
     const handleConfirm = () => {
-        setIsConfirmModalOpen(false)
-        setIsSubmitModalOpen(true)
-    }
+        setIsConfirmModalOpen(false);
+        setIsSubmitModalOpen(true);
+    };
 
-    const handleSubmit = () => {
-        setIsSubmitModalOpen(false);
-    }
+    const handleSubmit = () => setIsSubmitModalOpen(false);
 
+    // ✅ 남은 시간 계산 useEffect
     useEffect(() => {
+        const deadline = new Date(discussion.duration).getTime();
+
         const timer = setInterval(() => {
-            setTimeLeft((prev) => {
-                let { hours, minutes, seconds } = prev;
+            const now = new Date().getTime();
+            const diff = deadline - now;
 
-                if (seconds > 0) {
-                    seconds--;
-                } else if (minutes > 0) {
-                    minutes--;
-                    seconds = 59;
-                } else if (hours > 0) {
-                    hours--;
-                    minutes = 59;
-                    seconds = 59;
-                }
+            if (diff <= 0) {
+                setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: true });
+                clearInterval(timer);
+                return;
+            }
 
-                return { hours, minutes, seconds };
-            });
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            const minutes = Math.floor((diff / (1000 * 60)) % 60);
+            const seconds = Math.floor((diff / 1000) % 60);
+
+            setTimeLeft({ days, hours, minutes, seconds, expired: false });
         }, 1000);
 
         return () => clearInterval(timer);
-    }, []);
+    }, [discussion.duration]);
 
     return (
         <div className="lg:col-span-2">
@@ -57,7 +65,7 @@ export default function MainVotes({ votingOptions }: Props) {
                 {/* Header */}
                 <div className="mb-8 flex items-start justify-between">
                     <div className="flex items-center gap-2 text-gray-600">
-                        <span className="text-lg font-medium">112 라운드</span>
+                        <span className="text-lg font-medium">{discussion.id}번 동네한표</span>
                         <Info className="h-5 w-5" />
                     </div>
                     <button className="rounded-lg p-2 hover:bg-gray-100">
@@ -67,12 +75,39 @@ export default function MainVotes({ votingOptions }: Props) {
 
                 {/* Title */}
                 <h1 className="mb-12 text-center text-3xl font-bold leading-tight text-gray-900">
-                    청년 예산 삭감
-                    <br />
-                    향후 진행 방향은?
+                    {discussion.title}
                 </h1>
 
-                {/* Voting Options Grid */}
+                {/* 주요 내용 */}
+                <div className="mb-4 rounded-2xl bg-gray-100 p-6">
+                    <div className="mx-auto max-w-3xl text-center">
+                        <div className="mx-auto mb-3 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-sm font-medium text-gray-700 shadow-sm">
+                            <Info className="h-4 w-4" />
+                            내용
+                        </div>
+
+                        <p className="mx-auto max-w-2xl text-lg leading-6 text-gray-700">
+                            {discussion.content}
+                        </p>
+
+                        {/* 하단 라벨 */}
+                        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                            <Link
+                                to={`/columns/${discussion.topic.id}`}
+                                className={`group inline-flex max-w-full items-center gap-2 rounded-full
+                            bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700
+                            ring-1 ring-emerald-200 hover:bg-emerald-100 hover:ring-emerald-300
+                            focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500
+                            transition-all shadow-sm hover:shadow`}
+                            >
+                                <FileText className="h-4 w-4 shrink-0" />
+                                <span className="truncate">{discussion.topic.title}</span>
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ✅ Voting Options Grid (복원됨) */}
                 <div className="mb-8 grid grid-cols-2 gap-4">
                     {votingOptions.map((option) => {
                         const isSelected = selectedId === option.id;
@@ -80,79 +115,76 @@ export default function MainVotes({ votingOptions }: Props) {
                             <button
                                 key={option.id}
                                 onClick={() => {
-                                    setSelectedId(option.id)
-                                    setIsConfirmModalOpen(true) }
-                                }
+                                    setSelectedId(option.id);
+                                    setIsConfirmModalOpen(true);
+                                }}
+                                disabled={timeLeft.expired} // 투표 종료 시 클릭 불가
                                 className={`group relative flex min-h-[120px] flex-col items-center justify-center gap-3 rounded-2xl p-6 transition-all ${option.color} ${
                                     isSelected ? "ring-4 ring-offset-2 ring-gray-100" : ""
-                                }`}
+                                } ${timeLeft.expired ? "opacity-50 cursor-not-allowed" : ""}`}
                             >
                                 {/* Icon */}
-                                <div className={`text-6xl ${option.iconColor}`}>
-                                    {!isSelected &&
-                                        (option.id === 1
-                                            ? "🔵"
-                                            : option.id === 2
-                                                ? "🔴"
-                                                : option.id === 3
-                                                    ? "🟡"
-                                                    : "🟢")}
+                                <div className="text-6xl">
+                                    {!isSelected && (option.id === 1 ? "🔵" : "🔴")}
                                     {isSelected && "✔️"}
                                 </div>
 
                                 {/* Text */}
                                 <div className="flex justify-center items-center gap-2">
-                                  <span
-                                      className={`text-[22px] font-bold ${
-                                          option.id === 1
-                                              ? "text-blue-600"
-                                              : option.id === 2
-                                                  ? "text-red-600"
-                                                  : "text-gray-900"
-                                      }`}
-                                  >
-                                      {option.id === 1
-                                          ? "찬성합니다."
-                                          : option.id === 2
-                                              ? "반대합니다."
-                                              : option.text}
-                                  </span>
-                                    {/*<div className="text-sm font-bold text-gray-500">{isSelected && option.badge}</div>*/}
+                  <span
+                      className={`text-[22px] font-bold ${
+                          option.id === 1
+                              ? "text-blue-600"
+                              : option.id === 2
+                                  ? "text-red-600"
+                                  : "text-gray-900"
+                      }`}
+                  >
+                    {option.id === 1 ? "찬성합니다." : "반대합니다."}
+                  </span>
                                 </div>
                             </button>
-                    );
+                        );
                     })}
-                    </div>
-
-                        {/* Voting Results */
-                        }
-                        <div className="mb-12">
-                    <div className="flex items-center justify-between mb-3 text-sm text-gray-500">
-                        <span>361표</span>
-                        <span>1,128표</span>
-                    </div>
-
-                    {/* Progress bar */}
-                    <div className="relative h-6 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                            className="absolute left-0 top-0 h-full bg-blue-500 transition-all"
-                            style={{ width: "24.2%" }}
-                        />
-                        <div
-                            className="absolute right-0 top-0 h-full bg-red-500 transition-all"
-                            style={{ width: "75.8%" }}
-                        />
-                    </div>
-
-                    <div className="flex justify-between mt-3 font-bold text-gray-900">
-                        <span className="text-blue-700">24.2%</span>
-                        <span className="text-red-600">75.8%</span>
-                    </div>
                 </div>
 
-                <hr/>
+                {/* 투표 결과 */}
+                <div className="mb-12">
+                    {(() => {
+                        const total = discussion.pros + discussion.cons;
+                        const prosRate = total > 0 ? (discussion.pros / total) * 100 : 0;
+                        const consRate = total > 0 ? (discussion.cons / total) * 100 : 0;
 
-                {/* Vote Count */}
+                        return (
+                            <>
+                                <div className="flex items-center justify-between mb-3 text-sm text-gray-500">
+                                    <span>{discussion.pros.toLocaleString()}표</span>
+                                    <span>{discussion.cons.toLocaleString()}표</span>
+                                </div>
+
+                                <div className="relative h-6 bg-gray-100 rounded-full overflow-hidden">
+                                    <div
+                                        className="absolute left-0 top-0 h-full bg-blue-500 transition-all"
+                                        style={{ width: `${prosRate}%` }}
+                                    />
+                                    <div
+                                        className="absolute right-0 top-0 h-full bg-red-500 transition-all"
+                                        style={{ width: `${consRate}%` }}
+                                    />
+                                </div>
+
+                                <div className="flex justify-between mt-3 font-bold text-gray-900">
+                                    <span className="text-blue-700">{prosRate.toFixed(1)}%</span>
+                                    <span className="text-red-600">{consRate.toFixed(1)}%</span>
+                                </div>
+                            </>
+                        );
+                    })()}
+                </div>
+
+                <hr />
+
+                {/* 투표 수 */}
                 <div className="my-6 flex items-center justify-center gap-2 text-xl font-bold text-gray-900">
                     <svg
                         fill="red"
@@ -166,25 +198,29 @@ export default function MainVotes({ votingOptions }: Props) {
                             fill="red"
                         ></path>
                     </svg>
-                    <span>1,204명 투표 중!</span>
+                    <span>{discussion.pros + discussion.cons}명 투표 중!</span>
                 </div>
 
-                {/* Timer */}
+                {/* 남은 시간 표시 */}
                 <div className="text-center">
                     <p className="mb-2 text-sm text-gray-600">남은 투표 시간</p>
-                    <p className="text-3xl font-bold text-gray-900">
-                        {String(timeLeft.hours).padStart(2, "0")} :
-                        {String(timeLeft.minutes).padStart(2, "0")} :
-                        {String(timeLeft.seconds).padStart(2, "0")}
-                    </p>
+                    {timeLeft.expired ? (
+                        <p className="text-2xl font-bold text-red-600">투표 종료</p>
+                    ) : (
+                        <p className="text-3xl font-bold text-gray-900">
+                            {timeLeft.days > 0 && `${timeLeft.days}일 `}
+                            {String(timeLeft.hours).padStart(2, "0")}:
+                            {String(timeLeft.minutes).padStart(2, "0")}:
+                            {String(timeLeft.seconds).padStart(2, "0")}
+                        </p>
+                    )}
                 </div>
-
             </div>
 
             <VoteConfirmationModal
                 isOpen={isConfirmModalOpen}
                 onClose={() => {
-                    setIsConfirmModalOpen(false)
+                    setIsConfirmModalOpen(false);
                     setSelectedId(null);
                 }}
                 selectedOption="거짓말은 안 된다"
@@ -194,15 +230,11 @@ export default function MainVotes({ votingOptions }: Props) {
 
             <SignSubmitModal
                 isOpen={isSubmitModalOpen}
-                onClose={() => {
-                    setIsSubmitModalOpen(false)
-                }}
+                onClose={() => setIsSubmitModalOpen(false)}
                 selectedId={selectedId}
                 selectedOption="거짓말은 안 된다"
                 onSubmit={handleSubmit}
             />
-
-
         </div>
     );
 }
