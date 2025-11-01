@@ -46,7 +46,6 @@ export default function Comment ({ comment } : props) {
 
             {/* Comment Content */}
             <div className="mb-4 whitespace-pre-line text-[12px] leading-relaxed text-gray-800">
-                {comment.mentionedUser && <span className="font-medium text-blue-600">@{comment.mentionedUser} </span>}
                 {comment.content}
             </div>
 
