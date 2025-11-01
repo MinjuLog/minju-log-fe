@@ -1,4 +1,4 @@
-import { FileText, Info, Share2 } from "lucide-react";
+import {Check, FileText, Info, Share2} from "lucide-react";
 import { useEffect, useState } from "react";
 import VoteConfirmationModal from "./VoteConfirmationModal.tsx";
 import SignSubmitModal from "./SignSubmitModal.tsx";
@@ -66,41 +66,40 @@ export default function MainVotes({ discussion }: props) {
                 <div className="mb-8 flex items-start justify-between">
                     <div className="flex items-center gap-2 text-gray-600">
                         <span className="text-lg font-medium">{discussion.id}번 동네한표</span>
-                        <Info className="h-5 w-5" />
+                        <Info className="h-5 w-5"/>
                     </div>
                     <button className="rounded-lg p-2 hover:bg-gray-100">
-                        <Share2 className="h-5 w-5 text-gray-600" />
+                        <Share2 className="h-5 w-5 text-gray-600"/>
                     </button>
                 </div>
 
                 {/* Title */}
-                <h1 className="mb-12 text-center text-3xl font-bold leading-tight text-gray-900">
+                <h1 className="mb-6 text-center text-2xl font-bold leading-tight text-gray-900">
                     {discussion.title}
                 </h1>
 
                 {/* 주요 내용 */}
-                <div className="mb-4 rounded-2xl bg-gray-100 p-6">
+                <div className="mb-6 rounded-2xl bg-gray-50 p-8 shadow-inner">
                     <div className="mx-auto max-w-3xl text-center">
-                        <div className="mx-auto mb-3 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-sm font-medium text-gray-700 shadow-sm">
-                            <Info className="h-4 w-4" />
-                            내용
+                        {/* 상단 섹션 타이틀 */}
+                        <div
+                            className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-200">
+                            <Info className="h-4 w-4 text-gray-600"/>
+                            <span>주요 내용</span>
                         </div>
 
-                        <p className="mx-auto max-w-2xl text-lg leading-6 text-gray-700">
+                        {/* 본문 내용 */}
+                        <p className="mx-auto max-w-2xl text-base leading-relaxed text-gray-800">
                             {discussion.content}
                         </p>
 
                         {/* 하단 라벨 */}
-                        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+                        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
                             <Link
                                 to={`/columns/${discussion.topic.id}`}
-                                className={`group inline-flex max-w-full items-center gap-2 rounded-full
-                            bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700
-                            ring-1 ring-emerald-200 hover:bg-emerald-100 hover:ring-emerald-300
-                            focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500
-                            transition-all shadow-sm hover:shadow`}
+                                className={`group inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100 hover:ring-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all shadow-sm hover:shadow`}
                             >
-                                <FileText className="h-4 w-4 shrink-0" />
+                                <FileText className="h-4 w-4 shrink-0 text-emerald-700"/>
                                 <span className="truncate">{discussion.topic.title}</span>
                             </Link>
                         </div>
@@ -126,7 +125,12 @@ export default function MainVotes({ discussion }: props) {
                                 {/* Icon */}
                                 <div className="text-6xl">
                                     {!isSelected && (option.id === 1 ? "🔵" : "🔴")}
-                                    {isSelected && "✔️"}
+                                    {isSelected && <Check
+                                        className={`w-16 h-16 ${
+                                            option.id === 1 ? "text-blue-600" : "text-red-600"
+                                        }`}
+                                        strokeWidth={3}
+                                    />}
                                 </div>
 
                                 {/* Text */}
@@ -165,11 +169,11 @@ export default function MainVotes({ discussion }: props) {
                                 <div className="relative h-6 bg-gray-100 rounded-full overflow-hidden">
                                     <div
                                         className="absolute left-0 top-0 h-full bg-blue-500 transition-all"
-                                        style={{ width: `${prosRate}%` }}
+                                        style={{width: `${prosRate}%`}}
                                     />
                                     <div
                                         className="absolute right-0 top-0 h-full bg-red-500 transition-all"
-                                        style={{ width: `${consRate}%` }}
+                                        style={{width: `${consRate}%`}}
                                     />
                                 </div>
 
@@ -182,7 +186,7 @@ export default function MainVotes({ discussion }: props) {
                     })()}
                 </div>
 
-                <hr />
+                <hr/>
 
                 {/* 투표 수 */}
                 <div className="my-6 flex items-center justify-center gap-2 text-xl font-bold text-gray-900">
@@ -223,7 +227,7 @@ export default function MainVotes({ discussion }: props) {
                     setIsConfirmModalOpen(false);
                     setSelectedId(null);
                 }}
-                selectedOption="거짓말은 안 된다"
+                selectedOption={selectedId === 1 ? "찬성합니다." : "반대합니다."}
                 selectedId={selectedId}
                 onConfirm={handleConfirm}
             />
@@ -232,7 +236,7 @@ export default function MainVotes({ discussion }: props) {
                 isOpen={isSubmitModalOpen}
                 onClose={() => setIsSubmitModalOpen(false)}
                 selectedId={selectedId}
-                selectedOption="거짓말은 안 된다"
+                selectedOption={selectedId === 1 ? "찬성합니다." : "반대합니다."}
                 onSubmit={handleSubmit}
             />
         </div>

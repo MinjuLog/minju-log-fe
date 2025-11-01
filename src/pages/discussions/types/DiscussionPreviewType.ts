@@ -2,9 +2,11 @@ export default interface DiscussionPreviewType {
     id: number;
     tags: string[];
     title: string;
-    round: number;
-    result: string;
-    percentage: number;
+    sequence: number;
+    result: {
+        pros: number,
+        cons: number;
+    };
     votes: number;
     discussions: number;
 }

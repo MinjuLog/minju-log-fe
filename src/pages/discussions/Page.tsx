@@ -6,33 +6,71 @@ import type DiscussionCardType from "./types/DiscussionCardType.ts";
 
 const discussionCardsMock: DiscussionCardType[] = [
     {
-        votesCount: 842,
-        title: "청년 예산 삭감, 재정 건전성 위한 선택일까?",
+        votesCount: 1052,
+        title: "우리 시 대중교통, 환승 요금제 도입이 필요할까?",
         timeLeft: "2일 남았어요",
         bgColor: "bg-gradient-to-br from-blue-700 to-blue-900",
-        image: "/city-hall-budget-illustration.jpg",
+        image: "/local-bus-illustration.jpg",
     },
     {
-        votesCount: 1267,
-        title: "지방선거 공약, 현실성 있는가?",
-        timeLeft: "1일 4:32:15 남음",
+        votesCount: 1289,
+        title: "도심 주차난 해결, 공영주차장 확충이 해답일까?",
+        timeLeft: "1일 8:14:22 남음",
         isCountdown: true,
-        bgColor: "bg-gradient-to-br from-gray-900 to-black",
-        image: "/election-poster-illustration.jpg",
+        bgColor: "bg-gradient-to-br from-gray-800 to-gray-900",
+        image: "/city-parking-illustration.jpg",
     },
     {
-        votesCount: 679,
-        title: "광역시 이전 논의, 지역 발전 이끌까?",
-        timeLeft: "3일 8:50:10 남음",
+        votesCount: 764,
+        title: "하천 정비 사업, 환경 파괴 논란 넘을 수 있을까?",
+        timeLeft: "3일 10:32:50 남음",
         bgColor: "bg-gradient-to-br from-green-700 to-green-900",
-        image: "/regional-development-illustration.jpg",
+        image: "/river-restoration-illustration.jpg",
     },
     {
-        votesCount: 1045,
-        title: "의회 회의록 전면 공개, 투명성 높일까?",
+        votesCount: 1143,
+        title: "청년 임대주택 확대, 지역 정착에 효과 있을까?",
         timeLeft: "5일 남았어요",
         bgColor: "bg-gradient-to-br from-purple-700 to-purple-900",
-        image: "/public-meeting-illustration.jpg",
+        image: "/youth-housing-illustration.jpg",
+    },
+];
+const discussionPreviewsMock: DiscussionPreviewType[] = [
+    {
+        id: 1,
+        tags: ["#교통", "#시민생활"],
+        title: "대중교통 무료 환승제, 우리 시도 도입해야 할까?",
+        sequence: 129,
+        result: {
+            pros: 69.2,
+            cons: 30.8
+        },
+        votes: 2184,
+        discussions: 401,
+    },
+    {
+        id: 2,
+        tags: ["#환경", "#개발"],
+        title: "하천 정비 사업, 생태계 영향은?",
+        sequence: 130,
+        result: {
+            pros: 74.5,
+            cons: 25.5
+        },
+        votes: 1856,
+        discussions: 277,
+    },
+    {
+        id: 3,
+        tags: ["#청년", "#주거"],
+        title: "청년 임대주택, 지방 소멸 해결책 될까?",
+        sequence: 131,
+        result: {
+            pros: 33.7,
+            cons: 66.3
+        },
+        votes: 2039,
+        discussions: 333,
     },
 ];
 const categoriesMock: string[] = [
@@ -51,38 +89,6 @@ const categoriesMock: string[] = [
     "교육",
     "환경",
     "과학",
-];
-const discussionPreviewsMock: DiscussionPreviewType[] = [
-    {
-        id: 1,
-        tags: ["#정책", "#청년"],
-        title: "지자체 청년 지원금 삭감, 타당한가?",
-        round: 121,
-        result: "청년 외면하는 정책이야",
-        percentage: 68.4,
-        votes: 1897,
-        discussions: 312,
-    },
-    {
-        id: 2,
-        tags: ["#정치", "#행정"],
-        title: "지방의회 회의록 전면 공개, 실효성 있을까?",
-        round: 120,
-        result: "투명성 확보엔 도움돼",
-        percentage: 74.1,
-        votes: 1762,
-        discussions: 254,
-    },
-    {
-        id: 3,
-        tags: ["#정치", "#경제"],
-        title: "공공기관 이전, 지역 균형발전 해법일까?",
-        round: 119,
-        result: "일자리 창출엔 도움돼",
-        percentage: 59.8,
-        votes: 2023,
-        discussions: 341,
-    },
 ];
 
 export default function DiscussionsPage() {

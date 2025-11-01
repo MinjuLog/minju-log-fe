@@ -12,7 +12,7 @@ const sideBarDiscussionsMock: SidebarDiscussionType[] = [
         endLeft: 2,
         mainTitle: "청년 창업 지원금",
         subTitle: "절반 삭감, 타당한가?",
-        best: "청년 외면하는 정책",
+        best: "찬성 66%",
         content:
             "예산 절감 명목으로 청년 지원이 줄어드는 건 이해하기 어렵네요. 실효성보다 생존이 먼저 아닐까요?",
         votes: 731,
@@ -22,7 +22,7 @@ const sideBarDiscussionsMock: SidebarDiscussionType[] = [
         endLeft: 3,
         mainTitle: "지방의회",
         subTitle: "특혜 논란 해소될까?",
-        best: "투명한 의사결정 절실",
+        best: "반대 71%",
         content:
             "의회 회의록 공개 확대는 환영하지만, 실제 실행력이 있을지가 문제. 공개만으로는 신뢰 못 얻습니다.",
         votes: 418,
@@ -30,96 +30,113 @@ const sideBarDiscussionsMock: SidebarDiscussionType[] = [
     },
 ];
 const discussionMock: DiscussionType = {
+    id: 1,
+    title: "우리 지역에도 청년 스마트팜을 도입해보는 건 어떨까요?",
+    topic: {
         id: 1,
-        title: "이것을 저희 지역에도 도입하는게 어떨까요?",
-        topic: {
-            id: 1,
-            title: "(전남 곡성군) 청년 농부들이 만든 스마트팜 협동조합",
-        },
-        content: "청년들한테 기회도 줄 수 있고 좋아보이는데 어떤가요?",
-        duration: "2025-12-31T00:00:00.000Z",
-        pros: 361,
-        cons: 1127
-    }
-
+        title: "(전남 곡성군) 청년 농부들이 이끄는 지역 스마트팜 협동조합",
+    },
+    content:
+        "저희 지역은 고령화가 빠르게 진행되고 있어 농업 인력 부족이 심각합니다. 지역 청년들이 주도하는 스마트팜을 도입하면, 기술 기반의 효율적인 농업 운영이 가능하고 청년 일자리 창출에도 도움이 될 것 같습니다. 여러분의 생각은 어떠신가요?",
+    duration: "2025-12-31T00:00:00.000Z",
+    pros: 742,
+    cons: 389,
+};
 const commentMock: CommentType[] = [
     {
         id: "1",
-        author: "푸른바람77",
-        timestamp: "25.10.25",
+        author: "곡성청년농부",
+        timestamp: "25.11.01",
         badge: {
-            text: "지자체 예산 삭감 반대",
-            type: "red",
+            text: "스마트팜 도입 찬성",
+            type: "blue",
         },
-        content: `올해 청년 창업 지원금이 절반으로 줄었다네요.
-지역 경제를 살리겠다고 하면서 정작 청년들이 떠나는 이유를 모르는 것 같습니다.
-예산이 부족하다고 하지만 행사나 홍보 예산은 그대로더라구요.
-정작 청년들이 자립할 수 있는 기회는 줄어드는 게 문제 아닌가요?`,
-        likes: 61,
-        replies: 2,
-        opinion: 1,
+        content: `인력난이 심한 상황에서 스마트팜은 생산성과 품질을 동시에 끌어올릴 수 있습니다.
+물·양분·온습도 자동 제어 덕분에 초보 청년도 짧은 기간에 운영을 배울 수 있고,
+야간 근무나 과도한 노동을 줄이는 효과도 있어요. 지역에 교육·인큐베이션 센터까지
+붙이면 창업 진입장벽도 낮출 수 있습니다.`,
+        likes: 78,
+        replies: 3,
+        opinion: 1, // 찬성
     },
     {
         id: "2",
         parentId: "1",
-        author: "정책읽는시민",
-        timestamp: "25.10.25",
+        author: "재정지킴이",
+        timestamp: "25.11.01",
         badge: {
-            text: "재정 효율화 필요",
-            type: "blue",
+            text: "신중 검토 필요",
+            type: "red",
         },
-        content: `@푸른바람77 전체 재정 상황 보면 불가피한 부분도 있습니다.
-사업 성과가 불분명한 지원금도 많았고요.
-무조건 '삭감 = 나쁜 정책'으로 보기보단, 실효성 검토가 먼저라고 봅니다.`,
-        likes: 11,
+        content: `초기 투자비와 운영비(전기료, 유지보수)가 만만치 않습니다.
+시설 지원만 하고 판로·수요 예측이 안 되면 실패 사례가 반복될 수 있어요.
+도입 전에 수익성 시뮬레이션과 단계별 지원 로드맵이 먼저라고 봅니다.`,
+        likes: 19,
         isReply: true,
-        mentionedUser: "푸른바람77",
-        opinion: 2,
+        opinion: 2, // 반대/신중
     },
     {
         id: "3",
-        author: "비둘기정책연구소",
-        timestamp: "25.10.25",
+        parentId: "1",
+        author: "농업데이터연구자",
+        timestamp: "25.11.01",
         badge: {
-            text: "예산 재분배 찬성",
+            text: "데이터 기반 운영",
             type: "blue",
         },
-        content: `그동안 유사한 청년정책 사업이 너무 많았어요.
-청년센터, 스타트업 지원센터, 일자리 박람회 등 이름만 다르고 내용은 거의 동일했죠.
-이런 중복된 예산을 줄이고, 주거·교통처럼 실질적인 분야로 돌리는 게 더 낫다고 봅니다.`,
-        likes: 23,
+        content: `스마트팜 핵심은 '데이터'입니다. 센서 데이터 수집→표준화→분석을 통해
+품종별 생육 레시피를 만들고, 병해충 조기 경보 모델을 돌리면 손실을 크게 줄일 수 있어요.
+군 단위로 공용 데이터 플랫폼을 두고, 농가별 맞춤 대시보드를 제공하면 효과적입니다.`,
+        likes: 41,
         replies: 0,
         opinion: 1,
     },
     {
         id: "4",
-        author: "청년창업가99",
-        timestamp: "25.10.26",
+        author: "마을이장_김",
+        timestamp: "25.11.01",
         badge: {
-            text: "현장 목소리 무시",
+            text: "현장 인력 양성 우선",
             type: "red",
         },
-        content: `창업 지원 받던 입장에서 말하자면, 절반 삭감은 타격이 커요.
-행정절차도 까다로운데, 지원금까지 줄면 지방에서 사업 유지하기 어렵습니다.
-지자체가 청년 떠난다고 걱정하면서 이렇게 줄이는 건 모순이죠.`,
-        likes: 47,
+        content: `시설보다 사람이 먼저라고 봅니다. 장비 깔아도 운영할 인력이 없으면 유지가 안 돼요.
+고장 나면 외부 업체 부르면 시간·비용이 크게 듭니다. 지역 내 기술자 양성과
+A/S 체계가 갖춰지지 않으면, 도입 규모를 확대하는 건 위험합니다.`,
+        likes: 33,
         replies: 1,
         opinion: 2,
     },
     {
         id: "5",
         parentId: "4",
-        author: "공무원a1",
-        timestamp: "25.10.26",
+        author: "스마트팜운영자",
+        timestamp: "25.11.01",
         badge: {
-            text: "균형 잡힌 판단 필요",
+            text: "운영·A/S 체계 제안",
             type: "blue",
         },
-        content: `@청년창업가99 현장에서 어려움 많은 건 이해하지만,
-정책은 지속 가능해야 합니다. 단기 지원보다 시스템 개선이 중요하다고 봅니다.`,
-        likes: 8,
+        content: `동의합니다. 그래서 제안드립니다.
+1) 군청-대학-업체 컨소시엄으로 '현장 기술학교' 운영
+2) 군 단위 유지보수 공동센터 설립(예비 부품 상시 비치)
+3) 농가 간 장비 표준화로 A/S 시간 단축
+이렇게 묶으면 장애 대응이 빨라지고 비용도 낮출 수 있습니다.`,
+        likes: 27,
         isReply: true,
-        mentionedUser: "청년창업가99",
+        opinion: 1,
+    },
+    {
+        id: "6",
+        author: "환경모니터링동아리",
+        timestamp: "25.11.01",
+        badge: {
+            text: "환경·수자원 관리",
+            type: "blue",
+        },
+        content: `수질 센서와 재활용 수배관을 붙이면 물 사용량을 20~30% 절감할 수 있습니다.
+태양광+배터리 연계로 전력 피크 비용도 낮출 수 있고요.
+도입 시 '물·에너지 절감 KPI'를 명확히 두고, 월별 리포트를 공개하면 주민 수용성도 올라갑니다.`,
+        likes: 22,
+        replies: 0,
         opinion: 1,
     },
 ];
@@ -127,7 +144,7 @@ const commentMock: CommentType[] = [
 export default function DiscussionPage() {
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="">
             <div className="px-16 py-8">
                 <DiscussionHeader/>
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">

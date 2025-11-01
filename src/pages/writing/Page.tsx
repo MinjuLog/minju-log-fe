@@ -106,7 +106,7 @@ export default function WritingPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="">
             <div className="mx-auto max-w-7xl px-4 py-8">
                 <div className="flex gap-6">
                     {/* Main Form */}

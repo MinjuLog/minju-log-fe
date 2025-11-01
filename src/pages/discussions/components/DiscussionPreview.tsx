@@ -8,7 +8,7 @@ interface props {
 
 export default function DiscussionPreview({ discussionPreview }: props) {
     const navigate = useNavigate();
-    const { id, tags, title, round, result, percentage, votes, discussions } = discussionPreview;
+    const { id, tags, title, result, votes, sequence, discussions } = discussionPreview;
     return (
         <div
             key={discussionPreview.id}
@@ -29,7 +29,7 @@ export default function DiscussionPreview({ discussionPreview }: props) {
                   </span>
                     ))}
                 </div>
-                <span className="text-sm text-muted-foreground">{round} 라운드</span>
+                <span className="text-sm text-muted-foreground">{sequence}번 동네한표</span>
             </div>
 
             {/* Title */}
@@ -37,11 +37,19 @@ export default function DiscussionPreview({ discussionPreview }: props) {
 
             {/* Result and stats */}
             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <div className="px-4 py-2 rounded-lg border-2 border-red-400 text-red-500 font-medium">
-                        {result} {percentage}
+                <div className="flex gap-2">
+                    <div className="flex items-center gap-4">
+                        <div className="px-4 py-2 rounded-lg border-2 border-blue-400 text-blue-500 font-medium">
+                            찬성합니다. {result.pros}%
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                        <div className="px-4 py-2 rounded-lg border-2 border-red-400 text-red-500 font-medium">
+                            반대합니다. {result.cons}%
+                        </div>
                     </div>
                 </div>
+
 
                 <div className="flex items-center gap-6">
                     <div className="text-center">
@@ -49,7 +57,7 @@ export default function DiscussionPreview({ discussionPreview }: props) {
                         <div className="font-bold">{votes}</div>
                     </div>
                     <div className="text-center">
-                        <div className="text-xs text-muted-foreground mb-1">토론 수</div>
+                        <div className="text-xs text-muted-foreground mb-1">서명 수</div>
                         <div className="font-bold">{discussions}</div>
                     </div>
                     <ChevronRight className="w-5 h-5 text-muted-foreground"/>
