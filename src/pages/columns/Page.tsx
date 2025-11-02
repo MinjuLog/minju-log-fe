@@ -1,25 +1,22 @@
 "use client"
-import { useState } from "react"
 import AroundHeader from "../../components/AroundHeader.tsx";
-import DiscussionsCategoryFilter from "../discussions/components/DiscussionsCategoryFilter.tsx";
-import type {CategoryType} from "./types/CategoryType.ts";
 import type {ColumnPreviewType} from "./types/ArticlePreviewType.ts";
 import ColumnPreview from "./components/ColumnPreview.tsx";
 
-const categoriesMock: CategoryType[] = [
-    { id: "all", name: "전체", icon: "" },
-    { id: "membership", name: "멤버십 전용", icon: "⭐" },
-    { id: "politics", name: "정치·행정" },
-    { id: "policy", name: "정책·예산" },
-    { id: "local", name: "지역사회" },
-    { id: "economy", name: "경제·산업" },
-    { id: "labor", name: "노동·복지" },
-    { id: "education", name: "교육·청년" },
-    { id: "environment", name: "환경·도시" },
-    { id: "ethics", name: "윤리·공정" },
-    { id: "law", name: "법률" },
-    { id: "health", name: "보건·복지" },
-];
+// const categoriesMock: CategoryType[] = [
+//     { id: "all", name: "전체", icon: "" },
+//     { id: "membership", name: "멤버십 전용", icon: "⭐" },
+//     { id: "politics", name: "정치·행정" },
+//     { id: "policy", name: "정책·예산" },
+//     { id: "local", name: "지역사회" },
+//     { id: "economy", name: "경제·산업" },
+//     { id: "labor", name: "노동·복지" },
+//     { id: "education", name: "교육·청년" },
+//     { id: "environment", name: "환경·도시" },
+//     { id: "ethics", name: "윤리·공정" },
+//     { id: "law", name: "법률" },
+//     { id: "health", name: "보건·복지" },
+// ];
 const columnPreviewsMock: ColumnPreviewType[] = [
     {
         id: "1",
@@ -96,7 +93,6 @@ const columnPreviewsMock: ColumnPreviewType[] = [
 ];
 
 export default function ColumnsPage() {
-    const [selectedCategory, setSelectedCategory] = useState("all")
 
     return (
         <>
