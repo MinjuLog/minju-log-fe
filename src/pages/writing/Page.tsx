@@ -8,6 +8,8 @@ import TopicSelection from "./components/TopicSelection.tsx";
 import DurationSelection from "./components/DurationSelection.tsx";
 import type TopicType from "./types/TopicType.ts";
 import {useNavigate} from "react-router-dom";
+import type CategoryType from "./types/CategoryType.ts";
+import CategorySelection from "./components/CategorySelection.tsx";
 
 const topicsMock: TopicType[] = [
     {
@@ -46,7 +48,22 @@ const topicsMock: TopicType[] = [
         title: "주민이 직접 기획하는 마을 의사결정 플랫폼",
     },
 ];
-
+const categoriesMock: CategoryType[] = [
+    { id: 2, text: "정치" },
+    { id: 3, text: "정책" },
+    { id: 4, text: "사회" },
+    { id: 5, text: "경제" },
+    { id: 6, text: "지역" },
+    { id: 7, text: "청년" },
+    { id: 8, text: "복지" },
+    { id: 9, text: "행정" },
+    { id: 10, text: "윤리" },
+    { id: 11, text: "법" },
+    { id: 12, text: "문화" },
+    { id: 13, text: "교육" },
+    { id: 14, text: "환경" },
+    { id: 15, text: "과학" },
+];
 
 export default function WritingPage() {
     const [title, setTitle] = useState("")
@@ -55,6 +72,9 @@ export default function WritingPage() {
     const [isTopicDropdownOpen, setIsTopicDropdownOpen] = useState(false)
     const [postingPeriod, setPostingPeriod] = useState("")
     const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState(false)
+
+    const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+    const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false)
 
     const titleMaxLength = 80
     const titleMinLength = 5
@@ -101,6 +121,10 @@ export default function WritingPage() {
             alert(`내용은 최소 ${contentMinLength}자 이상이어야 합니다.`)
             return
         }
+        if (selectedCategoryIds.length <= 0) {
+            alert(`카테고리를 선택해야 합니다.`)
+            return
+        }
         navigate("/discussions/1")
         console.log("[v0] Submitting:", { title, content, selectedTopic, postingPeriod })
     }
@@ -129,6 +153,15 @@ export default function WritingPage() {
                                 isTopicDropdownOpen={isTopicDropdownOpen}
                                 setIsTopicDropdownOpen={setIsTopicDropdownOpen}
                                 //setSelectedTopicId={setSelectedTopicId}
+                            />
+
+                            {/* Category Field */}
+                            <CategorySelection
+                                categories={categoriesMock}
+                                selectedCategoryIds={selectedCategoryIds}
+                                setSelectedCategoryIds={setSelectedCategoryIds}
+                                isCategoryDropdownOpen={isCategoryDropdownOpen}
+                                setIsCategoryDropdownOpen={setIsCategoryDropdownOpen}
                             />
 
                             {/* Duration Field */}

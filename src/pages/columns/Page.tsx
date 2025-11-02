@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react"
 import AroundHeader from "../../components/AroundHeader.tsx";
-import CategoryFilter from "./components/CategoryFilter.tsx";
+import DiscussionsCategoryFilter from "../discussions/components/DiscussionsCategoryFilter.tsx";
 import type {CategoryType} from "./types/CategoryType.ts";
 import type {ColumnPreviewType} from "./types/ArticlePreviewType.ts";
 import ColumnPreview from "./components/ColumnPreview.tsx";
@@ -105,11 +105,11 @@ export default function ColumnsPage() {
                 <AroundHeader />
 
                 {/* Category Filters */}
-                <CategoryFilter
-                    categories={categoriesMock}
-                    selectedCategory={selectedCategory}
-                    setSelectedCategory={setSelectedCategory}
-                />
+                {/*<DiscussionsCategoryFilter*/}
+                {/*    categories={categoriesMock}*/}
+                {/*    selectedCategory={selectedCategory}*/}
+                {/*    setSelectedCategory={setSelectedCategory}*/}
+                {/*/>*/}
 
                 {/* Articles List */}
                 <div className="mt-8 space-y-6">

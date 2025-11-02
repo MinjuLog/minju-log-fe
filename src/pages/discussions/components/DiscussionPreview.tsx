@@ -3,12 +3,13 @@ import {ChevronRight} from "lucide-react";
 import {useNavigate} from "react-router-dom";
 
 interface props {
+    selectedCategory: number,
     discussionPreview: DiscussionPreviewType;
 }
 
 export default function DiscussionPreview({ discussionPreview }: props) {
     const navigate = useNavigate();
-    const { id, tags, title, result, votes, sequence, discussions } = discussionPreview;
+    const { id, categories, title, result, votes, sequence, discussions } = discussionPreview;
     return (
         <div
             key={discussionPreview.id}
@@ -23,9 +24,9 @@ export default function DiscussionPreview({ discussionPreview }: props) {
             {/* Tags and round */}
             <div className="flex items-start justify-between mb-3">
                 <div className="flex gap-2">
-                    {tags.map((tag) => (
-                        <span key={tag} className="text-sm text-muted-foreground font-medium">
-                    {tag}
+                    {categories.map((category) => (
+                        <span key={category.id} className="text-sm text-muted-foreground font-medium">
+                    #{category.text}
                   </span>
                     ))}
                 </div>

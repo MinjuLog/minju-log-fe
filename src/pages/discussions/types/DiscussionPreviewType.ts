@@ -1,6 +1,8 @@
+import type DiscussionCategoryType from "./DiscussionCategoryType.ts";
+
 export default interface DiscussionPreviewType {
     id: number;
-    tags: string[];
+    categories: DiscussionCategoryType[];
     title: string;
     sequence: number;
     result: {

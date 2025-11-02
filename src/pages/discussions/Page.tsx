@@ -3,6 +3,7 @@ import {DiscussionPreviewList} from "./components/DiscussionPreviewList.tsx";
 import DiscussionHeader from "../../components/DiscussionHeader.tsx";
 import type DiscussionPreviewType from "./types/DiscussionPreviewType.ts";
 import type DiscussionCardType from "./types/DiscussionCardType.ts";
+import type DiscussionCategoryType from "./types/DiscussionCategoryType.ts";
 
 const discussionCardsMock: DiscussionCardType[] = [
     {
@@ -38,60 +39,72 @@ const discussionCardsMock: DiscussionCardType[] = [
 const discussionPreviewsMock: DiscussionPreviewType[] = [
     {
         id: 1,
-        tags: ["#교통", "#시민생활"],
+        categories: [
+            { id: 4, text: "사회" },
+            { id: 6, text: "지역" },
+        ],
         title: "대중교통 무료 환승제, 우리 시도 도입해야 할까?",
         sequence: 129,
         result: {
             pros: 69.2,
-            cons: 30.8
+            cons: 30.8,
         },
         votes: 2184,
         discussions: 401,
     },
     {
         id: 2,
-        tags: ["#환경", "#개발"],
+        categories: [
+            { id: 14, text: "환경" },
+            { id: 5, text: "경제" },
+        ],
         title: "하천 정비 사업, 생태계 영향은?",
         sequence: 130,
         result: {
             pros: 74.5,
-            cons: 25.5
+            cons: 25.5,
         },
         votes: 1856,
         discussions: 277,
     },
     {
         id: 3,
-        tags: ["#청년", "#주거"],
+        categories: [
+            { id: 7, text: "청년" },
+            { id: 13, text: "교육" },
+            { id: 6, text: "지역" },
+        ],
         title: "청년 임대주택, 지방 소멸 해결책 될까?",
         sequence: 131,
         result: {
             pros: 33.7,
-            cons: 66.3
+            cons: 66.3,
         },
         votes: 2039,
         discussions: 333,
     },
 ];
-const categoriesMock: string[] = [
-    "전체",
-    "정치",
-    "정책",
-    "사회",
-    "경제",
-    "지역",
-    "청년",
-    "복지",
-    "행정",
-    "윤리",
-    "법",
-    "문화",
-    "교육",
-    "환경",
-    "과학",
+const categoriesMock: DiscussionCategoryType[] = [
+    { id: 0, text: "전체"},
+    { id: 2, text: "정치" },
+    { id: 3, text: "정책" },
+    { id: 4, text: "사회" },
+    { id: 5, text: "경제" },
+    { id: 6, text: "지역" },
+    { id: 7, text: "청년" },
+    { id: 8, text: "복지" },
+    { id: 9, text: "행정" },
+    { id: 10, text: "윤리" },
+    { id: 11, text: "법" },
+    { id: 12, text: "문화" },
+    { id: 13, text: "교육" },
+    { id: 14, text: "환경" },
+    { id: 15, text: "과학" },
 ];
 
+
 export default function DiscussionsPage() {
+
     return (
         <>
             <DiscussionHeader/>
