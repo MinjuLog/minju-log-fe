@@ -7,6 +7,7 @@ import ColumnsPage from "./pages/columns/Page.tsx";
 import ColumnPage from "./pages/column/Page.tsx";
 import AroundPage from "./pages/around/Page.tsx";
 import WritingPage from "./pages/writing/Page.tsx";
+import DashboardPage from "./pages/dashboard/Page.tsx";
 
 function App() {
     return (
@@ -30,6 +31,8 @@ function App() {
                         <Route path="/columns/:id" element={<ColumnPage />} />
 
                         <Route path="/around" element={<AroundPage/>} />
+
+                        <Route path="/dashboard" element={<DashboardPage/>} />
 
                         {/* 없으면 목록으로 */}
                         <Route path="*" element={<Navigate to="/discussions" replace />} />
