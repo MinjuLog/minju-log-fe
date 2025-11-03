@@ -17,7 +17,7 @@ function App() {
                 <main className="container mx-auto px-4 py-12 max-w-8xl">
                     <Routes>
                         {/* 기본 루트는 /discussions로 리다이렉트 */}
-                        <Route path="/" element={<Navigate to="/discussions" replace />} />
+                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
                         {/* 목록 페이지 */}
                         <Route path="/discussions" element={<DiscussionsPage />} />
                         {/* 상세 페이지: 동적 파라미터 사용 */}
@@ -35,7 +35,7 @@ function App() {
                         <Route path="/dashboard" element={<DashboardPage/>} />
 
                         {/* 없으면 목록으로 */}
-                        <Route path="*" element={<Navigate to="/discussions" replace />} />
+                        <Route path="*" element={<Navigate to="/dashboard" replace />} />
                     </Routes>
                 </main>
             </div>
