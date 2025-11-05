@@ -5,6 +5,7 @@ import DashboardHeader from "../../components/DashboardHeader.tsx";
 import KanbanBoard from "./components/KanbanBoard.tsx";
 import type KanbanType from "./types/KanbanType.ts";
 import KanbanBoardSkeleton from "./components/KanbanBoardSkeleton.tsx";
+import LocationControl from "./components/LocationControl.tsx";
 
 const kanbans: KanbanType[] = [
     {
@@ -165,17 +166,17 @@ export default function DashboardPage() {
 
     return (
         <div className="">
-            <DashboardHeader
-                location={locError ? "위치 불러오기 실패" : location}
-                handleRefreshLocation={handleRefreshLocation}
-                isLocLoading={isLocLoading}
-            />
-
+            <DashboardHeader/>
+            <LocationControl location={location} isLocLoading={isLocLoading} handleRefreshLocation={handleRefreshLocation} />
             {/* Kanban Board */}
             {isLocLoading ? (
                 <KanbanBoardSkeleton/>
             ) : (
-                <KanbanBoard kanbans={kanbans} />
+                <KanbanBoard
+                    location={locError ? "위치 불러오기 실패" : location}
+                    handleRefreshLocation={handleRefreshLocation}
+                    isLocLoading={isLocLoading}
+                    kanbans={kanbans} />
             )}
         </div>
     );

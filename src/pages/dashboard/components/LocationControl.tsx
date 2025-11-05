@@ -13,12 +13,12 @@ export default function LocationControl({ location, isLocLoading, handleRefreshL
     };
 
     return (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-6">
             {/* 위치 새로고침 버튼 */}
             <button
                 onClick={onRefreshClick}
                 disabled={isLocLoading}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition
+                className={`flex items-center gap-2 p-2 rounded-lg transition
                             ${isLocLoading ? "text-gray-400 cursor-not-allowed" : "text-gray-700 hover:bg-gray-100"}`}
             >
                 <RefreshCw
