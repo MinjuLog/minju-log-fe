@@ -25,22 +25,7 @@ export function DiscussionPreviewList({ categories, discussionPreviews }: props)
                 selectedCategory={selectedCategory}
                 setSelectedCategory={setSelectedCategory}
             />
-            {/*<div className="flex flex-wrap gap-2 mb-6">*/}
-            {/*    {categories.map((category) => (*/}
-            {/*        <button*/}
-            {/*            key={category.id}*/}
-            {/*            onClick={() => setSelectedCategory(category.id)}*/}
-            {/*            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${*/}
-            {/*                selectedCategory === category.id*/}
-            {/*                    ? "bg-secondary text-foreground"*/}
-            {/*                    : "bg-background text-muted-foreground hover:bg-secondary/50"*/}
-            {/*            }`}*/}
-            {/*        >*/}
-            {/*            {category.text}*/}
-            {/*        </button>*/}
-            {/*    ))}*/}
-            {/*</div>*/}
-
+            
             {/* Sort option */}
             <div className="flex items-center gap-2 mb-6 text-sm text-muted-foreground">
                 <span>기본순</span>
