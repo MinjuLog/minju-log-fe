@@ -3,7 +3,7 @@ import { RefreshCw, Sliders } from "lucide-react";
 interface Props {
     location: string;
     isLocLoading: boolean;
-    handleRefreshLocation: () => Promise<void> | void;
+    handleRefreshLocation: () => Promise<(() => void) | undefined>
 }
 
 export default function LocationControl({ location, isLocLoading, handleRefreshLocation }: Props) {

@@ -105,15 +105,13 @@ const kanbans: KanbanType[] = [
 export default function DashboardPage() {
     const [location, setLocation] = useState("");
     const [isLocLoading, setIsLocLoading] = useState(false);
-    const [locError, setLocError] = useState<string | null>(null);
 
-    const handleRefreshLocation = async () => {
+    const handleRefreshLocation: () => Promise<(() => void) | undefined> = async () => {
         if (!navigator.geolocation) {
             alert("이 브라우저에서는 위치 정보 사용이 불가능합니다.");
             return;
         }
         setIsLocLoading(true);
-        setLocError(null);
 
         const abort = new AbortController();
         try {
@@ -151,7 +149,7 @@ export default function DashboardPage() {
             setLocation(regionName);
         } catch (e: unknown) {
             console.error(e);
-            setLocError("위치 정보를 불러오지 못했습니다.");
+            setLocation("위치 정보를 불러오지 못했습니다.");
         } finally {
             setIsLocLoading(false);
         }
@@ -173,9 +171,6 @@ export default function DashboardPage() {
                 <KanbanBoardSkeleton/>
             ) : (
                 <KanbanBoard
-                    location={locError ? "위치 불러오기 실패" : location}
-                    handleRefreshLocation={handleRefreshLocation}
-                    isLocLoading={isLocLoading}
                     kanbans={kanbans} />
             )}
         </div>
