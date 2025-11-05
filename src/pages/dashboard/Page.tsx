@@ -164,7 +164,7 @@ export default function DashboardPage() {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gray-50 p-8">
+        <div className="">
             <DashboardHeader
                 location={locError ? "위치 불러오기 실패" : location}
                 handleRefreshLocation={handleRefreshLocation}

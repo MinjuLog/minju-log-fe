@@ -8,16 +8,16 @@ interface props {
 
 const PAGE_SIZE = 2;
 
+const colorMap: Record<string, string> = {
+    purple: "bg-purple-500",
+    orange: "bg-amber-500",
+    green: "bg-green-500",
+};
+
 export default function KanbanColumn({ kanban }: props) {
     const [visible, setVisible] = useState(PAGE_SIZE);
     const total = kanban.projects.length;
     const canLoadMore = visible < total;
-    const color =
-        kanban.color === "purple"
-            ? "purple"
-            : kanban.color === "orange"
-                ? "amber"
-                : "green";
 
     const handleLoadMore = () => {
         setVisible((v) => Math.min(v + PAGE_SIZE, total));
@@ -27,14 +27,14 @@ export default function KanbanColumn({ kanban }: props) {
         <div className="space-y-4" key={kanban.title}>
             {/* Header */}
             <div className="flex items-center gap-2 mb-4">
-                <div className={`w-3 h-3 rounded-full bg-${color}-500`} />
+                <div className={`w-3 h-3 rounded-full ${colorMap[kanban.color]}`} />
                 <h2 className="font-semibold text-gray-900">
                     {kanban.title} <span className="text-gray-500 ml-2">{total}</span>
                 </h2>
             </div>
 
             {/* Border */}
-            <div className={`h-1 rounded-full bg-${color}-500`} />
+            <div className={`h-1 rounded-full ${colorMap[kanban.color]}`} />
 
             {/* Cards */}
             <div className="space-y-4">
