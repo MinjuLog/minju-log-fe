@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import DashboardHeader from "../../components/DashboardHeader.tsx";
 import KanbanBoard from "./components/KanbanBoard.tsx";
-import type KanbanType from "./types/KanbanType.tsx";
+import type KanbanType from "./types/KanbanType.ts";
 import KanbanBoardSkeleton from "./components/KanbanBoardSkeleton.tsx";
 
 const kanbans: KanbanType[] = [
