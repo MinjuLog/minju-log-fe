@@ -1,4 +1,3 @@
-import { Search, Bell, Moon, LogIn } from "lucide-react"
 import {Link, useLocation} from "react-router-dom";
 
 const tabs: {
@@ -54,18 +53,18 @@ export function Header() {
 
                     {/* Right side actions */}
                     <div className="flex items-center gap-3">
-                        <button className="p-2 hover:bg-secondary rounded-lg transition-colors">
-                            <Search className="w-5 h-5 text-muted-foreground" />
-                        </button>
-                        <button className="p-2 hover:bg-secondary rounded-lg transition-colors">
-                            <Bell className="w-5 h-5 text-muted-foreground" />
-                        </button>
-                        <button className="p-2 hover:bg-secondary rounded-lg transition-colors">
-                            <Moon className="w-5 h-5 text-muted-foreground" />
-                        </button>
-                        <button className="p-2 hover:bg-secondary rounded-lg transition-colors">
-                            <LogIn className="w-5 h-5 text-muted-foreground" />
-                        </button>
+                        {/*<button className="p-2 hover:bg-secondary rounded-lg transition-colors">*/}
+                        {/*    <Search className="w-5 h-5 text-muted-foreground" />*/}
+                        {/*</button>*/}
+                        {/*<button className="p-2 hover:bg-secondary rounded-lg transition-colors">*/}
+                        {/*    <Bell className="w-5 h-5 text-muted-foreground" />*/}
+                        {/*</button>*/}
+                        {/*<button className="p-2 hover:bg-secondary rounded-lg transition-colors">*/}
+                        {/*    <Moon className="w-5 h-5 text-muted-foreground" />*/}
+                        {/*</button>*/}
+                        {/*<button className="p-2 hover:bg-secondary rounded-lg transition-colors">*/}
+                        {/*    <LogIn className="w-5 h-5 text-muted-foreground" />*/}
+                        {/*</button>*/}
                         {/*<Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-6">*/}
                         {/*    나도 질문하기*/}
                         {/*</Button>*/}
