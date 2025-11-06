@@ -172,7 +172,7 @@ export function DiscussionPreviewList({ status, discussionPreviews }: Props) {
             </div>
 
             {/* 리스트 (스크롤 고정 대상) */}
-            <div ref={listWrapRef} className="space-y-4 overflow-auto">
+            <div ref={listWrapRef} className="space-y-4">
                 {current.map((preview) => (
                     <DiscussionPreview key={preview.id} discussionPreview={preview} />
                 ))}

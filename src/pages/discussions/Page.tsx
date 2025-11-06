@@ -16,7 +16,7 @@ const discussionCardsMock: DiscussionCardType[] = [
     {
         votesCount: 1289,
         title: "도심 주차난 해결, 공영주차장 확충이 해답일까?",
-        timeLeft: "1일 8:14:22 남음",
+        timeLeft: "1일 남았어요",
         isCountdown: true,
         bgColor: "bg-gradient-to-br from-gray-800 to-gray-900",
         image: "/city-parking-illustration.jpg",
@@ -24,7 +24,7 @@ const discussionCardsMock: DiscussionCardType[] = [
     {
         votesCount: 764,
         title: "하천 정비 사업, 환경 파괴 논란 넘을 수 있을까?",
-        timeLeft: "3일 10:32:50 남음",
+        timeLeft: "10:32:50 남았어요",
         bgColor: "bg-gradient-to-br from-green-700 to-green-900",
         image: "/river-restoration-illustration.jpg",
     },

@@ -8,8 +8,8 @@ import TopicSelection from "./components/TopicSelection.tsx";
 import DurationSelection from "./components/DurationSelection.tsx";
 import type TopicType from "./types/TopicType.ts";
 import {useNavigate} from "react-router-dom";
-import type CategoryType from "./types/CategoryType.ts";
-import CategorySelection from "./components/CategorySelection.tsx";
+import HashTagInput from "./components/HashTagInput.tsx";
+import AuthorInput from "./components/AuthorInput.tsx";
 
 const topicsMock: TopicType[] = [
     {
@@ -48,24 +48,9 @@ const topicsMock: TopicType[] = [
         title: "주민이 직접 기획하는 마을 의사결정 플랫폼",
     },
 ];
-const categoriesMock: CategoryType[] = [
-    { id: 2, text: "정치" },
-    { id: 3, text: "정책" },
-    { id: 4, text: "사회" },
-    { id: 5, text: "경제" },
-    { id: 6, text: "지역" },
-    { id: 7, text: "청년" },
-    { id: 8, text: "복지" },
-    { id: 9, text: "행정" },
-    { id: 10, text: "윤리" },
-    { id: 11, text: "법" },
-    { id: 12, text: "문화" },
-    { id: 13, text: "교육" },
-    { id: 14, text: "환경" },
-    { id: 15, text: "과학" },
-];
 
 export default function WritingPage() {
+    const [author, setAuthor] = useState("");
     const [title, setTitle] = useState("")
     const [content, setContent] = useState("")
     const [selectedTopic, setSelectedTopic] = useState("")
@@ -73,23 +58,24 @@ export default function WritingPage() {
     const [postingPeriod, setPostingPeriod] = useState("")
     const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState(false)
 
-    const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
-    const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false)
+    const [selectedHashTags, setSelectedHashTags] = useState<string[]>([]);
 
-    const titleMaxLength = 80
+    const authorMaxLength = 10
+    const authorMinLength = 1
+    const titleMaxLength = 30
     const titleMinLength = 5
-    const contentMaxLength = 10000
+    const contentMaxLength = 150
     const contentMinLength = 5
 
     const navigate = useNavigate();
 
     const postingPeriods = [
-        { label: "1일", value: "1day" },
-        { label: "3일", value: "3days" },
+        // { label: "1일", value: "1day" },
+        // { label: "3일", value: "3days" },
         { label: "7일", value: "7days" },
         { label: "14일", value: "14days" },
         { label: "30일", value: "30days" },
-        { label: "무제한", value: "unlimited" },
+        // { label: "무제한", value: "unlimited" },
     ]
 
     const handleImageUpload = () => {
@@ -121,10 +107,7 @@ export default function WritingPage() {
             alert(`내용은 최소 ${contentMinLength}자 이상이어야 합니다.`)
             return
         }
-        if (selectedCategoryIds.length <= 0) {
-            alert(`카테고리를 선택해야 합니다.`)
-            return
-        }
+
         navigate("/discussions/1")
         console.log("[v0] Submitting:", { title, content, selectedTopic, postingPeriod })
     }
@@ -136,6 +119,14 @@ export default function WritingPage() {
                     {/* Main Form */}
                     <div className="flex-1">
                         <div className="rounded-lg bg-white p-8 shadow-sm">
+                            {/* Title Field */}
+                            <AuthorInput
+                                author={author}
+                                setAuthor={setAuthor}
+                                authorMaxLength={authorMaxLength}
+                                authorMinLength={authorMinLength}
+                            />
+
                             {/* Title Field */}
                             <TitleInput
                                 title={title}
@@ -153,15 +144,6 @@ export default function WritingPage() {
                                 isTopicDropdownOpen={isTopicDropdownOpen}
                                 setIsTopicDropdownOpen={setIsTopicDropdownOpen}
                                 //setSelectedTopicId={setSelectedTopicId}
-                            />
-
-                            {/* Category Field */}
-                            <CategorySelection
-                                categories={categoriesMock}
-                                selectedCategoryIds={selectedCategoryIds}
-                                setSelectedCategoryIds={setSelectedCategoryIds}
-                                isCategoryDropdownOpen={isCategoryDropdownOpen}
-                                setIsCategoryDropdownOpen={setIsCategoryDropdownOpen}
                             />
 
                             {/* Duration Field */}
@@ -183,6 +165,12 @@ export default function WritingPage() {
                                 handleBulletList={handleBulletList}
                                 handleBold={handleBold}
                                 handleLink={handleLink}
+                            />
+
+                            {/* Hashtag Field */}
+                            <HashTagInput
+                                selectedHashTags={selectedHashTags}
+                                setSelectedHashTags={setSelectedHashTags}
                             />
                         </div>
                     </div>
