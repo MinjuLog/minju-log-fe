@@ -1,8 +1,6 @@
-import type DiscussionCategoryType from "./DiscussionCategoryType.ts";
-
 export default interface DiscussionPreviewType {
     id: number;
-    categories: DiscussionCategoryType[];
+    status: number;
     title: string;
     sequence: number;
     result: {
@@ -11,4 +9,5 @@ export default interface DiscussionPreviewType {
     };
     votes: number;
     discussions: number;
+    hashtags?: string[];
 }

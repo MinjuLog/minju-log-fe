@@ -101,7 +101,7 @@ export default function ColumnsPage() {
                 <AroundHeader />
 
                 {/* Category Filters */}
-                {/*<DiscussionsCategoryFilter*/}
+                {/*<DiscussionsStatusFilter*/}
                 {/*    categories={categoriesMock}*/}
                 {/*    selectedCategory={selectedCategory}*/}
                 {/*    setSelectedCategory={setSelectedCategory}*/}
