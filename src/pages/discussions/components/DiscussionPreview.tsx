@@ -8,7 +8,7 @@ interface props {
 
 export default function DiscussionPreview({ discussionPreview }: props) {
     const navigate = useNavigate();
-    const { id, status, title, result, votes, sequence, discussions, hashtags } = discussionPreview;
+    const { id, title, result, votes, sequence, discussions, hashtags } = discussionPreview;
     return (
         <div
             key={discussionPreview.id}
