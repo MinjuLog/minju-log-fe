@@ -6,6 +6,5 @@ export default interface AroundPreviewType {
     textColor: string;
     titleColor: string;
     illustration: string;
-    progress?: string;
-    badge?: string;
+    hashTags?: string[];
 }

@@ -1,14 +1,16 @@
 import ContentHeader from "./components/ContentHeader.tsx";
 import ContentBody from "./components/ContentBody.tsx";
 import ContentFooter from "./components/ContentFooter.tsx";
+import {useNavigate} from "react-router-dom";
 
 const mock = {
+    id: 1,
     header: {
         tag: "HOT",
         category: "지역 혁신·농업",
         title: "전남 곡성, 청년이 일으킨 스마트팜 혁신 모델",
         timeAgo: "22분 전",
-        author: "박지후 지역정책연구원",
+        author: "민주로그팀",
     },
     body: {
         content: `
@@ -50,21 +52,27 @@ const mock = {
 };
 
 export default function ColumnPage() {
+    const navigate = useNavigate();
+
+    const onQuotationClick = () => {
+        navigate(`/discussions/write?quotation=${mock.id}`);
+    };
+
     return (
         <div className="mx-auto max-w-3xl px-4 py-8">
-            <ContentHeader tag={mock.header.tag}
-                           category={mock.header.category}
-                           title={mock.header.title}
-                           timeAgo={mock.header.timeAgo}
-                           author={mock.header.author}
+            <ContentHeader
+                tag={mock.header.tag}
+                category={mock.header.category}
+                title={mock.header.title}
+                timeAgo={mock.header.timeAgo}
+                author={mock.header.author}
             />
-            <ContentBody body={mock.body.content}/>
+
+            <ContentBody body={mock.body.content} />
+
             <ContentFooter
-                author={mock.footer.author}
-                company={mock.footer.company}
-                writeCount={mock.footer.writeCount}
-                replyCount={mock.footer.replyCount}
+                onQuotationClick={onQuotationClick}
             />
         </div>
-    )
+    );
 }
