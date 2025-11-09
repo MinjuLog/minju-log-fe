@@ -7,7 +7,7 @@ interface props {
 
 export default function KanbanBoard({ kanbans }: props) {
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {kanbans.map((kanban) => (
                 <KanbanColumn key={kanban.title} kanban={kanban} />
             ))}

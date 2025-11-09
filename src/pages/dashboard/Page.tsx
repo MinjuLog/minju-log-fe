@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {useEffect, useMemo, useState} from "react";
 import DashboardHeader from "../../components/DashboardHeader.tsx";
 import KanbanBoard from "./components/KanbanBoard.tsx";
 import type KanbanType from "./types/KanbanType.ts";
@@ -13,20 +13,22 @@ const kanbans: KanbanType[] = [
         color: "purple",
         projects: [
             {
-                id: "1",
-                categories: ["교통", "시민생활"],
-                date: "2025.11.03",
+                sequence: 1,
+                hashTags: ["교통", "시민생활"],
+                createdAt: "2025-11-03",
+                expiredAt: "2025-12-03",
                 title: "시내버스 야간노선 확대 필요할까?",
                 description:
                     "야근 끝나고 집 갈 때 버스가 끊겨서 늘 택시를 타야 합니다. 심야에도 안전하게 귀가할 수 있는 노선이 있으면 좋겠어요. 택시비 부담도 크고, 교통 약자분들도 불편하실 것 같아요.",
                 comments: 128,
                 votes: 540,
-                topic: { id: 12, title: "지역 교통 개선 및 시민 이동권 보장" },
+                topic: { sequence: 12, title: "지역 교통 개선 및 시민 이동권 보장" },
             },
             {
-                id: "2",
-                categories: ["환경", "보건"],
-                date: "2025.11.02",
+                sequence: 2,
+                hashTags: ["환경", "보건"],
+                createdAt: "2025-11-02",
+                expiredAt: "2025-12-02",
                 title: "공원 내 흡연구역 설치, 찬성하시나요?",
                 description:
                     "아이랑 산책할 때마다 담배 냄새가 너무 심해요. 금연구역은 많은데 흡연구역은 거의 없어서 흡연자들이 아무 데서나 피우는 게 더 문제인 것 같습니다. 구분만 잘 되어도 서로 편할 것 같아요.",
@@ -34,15 +36,45 @@ const kanbans: KanbanType[] = [
                 votes: 430,
             },
             {
-                id: "3",
-                categories: ["주거", "청년"],
-                date: "2025.11.01",
+                sequence: 3,
+                hashTags: ["주거", "청년"],
+                createdAt: "2025-11-01",
+                expiredAt: "2025-12-01",
                 title: "공공임대주택, 지역 청년 우선 공급 필요성",
                 description:
                     "지방에서 일자리를 찾아도 주거비 때문에 결국 수도권으로 떠나는 경우가 많아요. 지역 청년이 정착할 수 있도록 임대주택을 조금 더 쉽게 신청할 수 있으면 좋겠어요.",
                 comments: 188,
                 votes: 920,
-                topic: { id: 7, title: "청년 주거 안정 및 지방 정착 지원 정책" },
+                topic: { sequence: 7, title: "청년 주거 안정 및 지방 정착 지원 정책" },
+            },
+        ],
+    },
+    {
+        title: "의견 전달 완료",
+        color: "indigo",
+        projects: [
+            {
+                sequence: 4,
+                hashTags: ["청년", "경제"],
+                createdAt: "2025-11-03",
+                expiredAt: "2025-12-03",
+                title: "청년 창업지원센터 신설 논의",
+                description:
+                    "창업 아이디어는 있어도 사무공간이나 멘토링 받을 곳이 없어서 늘 막막했어요. 이번에 제대로 된 창업 지원센터가 생기면 정말 많은 도움이 될 것 같습니다.",
+                comments: 214,
+                votes: 870,
+                topic: { sequence: 18, title: "지역 청년 창업 생태계 활성화 방안" },
+            },
+            {
+                sequence: 5,
+                hashTags: ["문화", "지역활성화"],
+                createdAt: "2025-11-02",
+                expiredAt: "2025-12-02",
+                title: "지역 예술축제, 시민 참여 확대 방안",
+                description:
+                    "매번 비슷한 공연만 반복돼서 흥미가 떨어졌어요. 시민이 직접 참여하거나, 동네 예술가들이 무대에 설 수 있는 기회가 많아졌으면 좋겠어요.",
+                comments: 73,
+                votes: 315,
             },
         ],
     },
@@ -51,20 +83,22 @@ const kanbans: KanbanType[] = [
         color: "orange",
         projects: [
             {
-                id: "4",
-                categories: ["청년", "경제"],
-                date: "2025.11.03",
+                sequence: 4, // 동일 프로젝트가 다른 단계에 존재
+                hashTags: ["청년", "경제"],
+                createdAt: "2025-11-03",
+                expiredAt: "2025-12-03",
                 title: "청년 창업지원센터 신설 논의",
                 description:
                     "창업 아이디어는 있어도 사무공간이나 멘토링 받을 곳이 없어서 늘 막막했어요. 이번에 제대로 된 창업 지원센터가 생기면 정말 많은 도움이 될 것 같습니다.",
                 comments: 214,
                 votes: 870,
-                topic: { id: 18, title: "지역 청년 창업 생태계 활성화 방안" },
+                topic: { sequence: 18, title: "지역 청년 창업 생태계 활성화 방안" },
             },
             {
-                id: "5",
-                categories: ["문화", "지역활성화"],
-                date: "2025.11.02",
+                sequence: 5, // 동일 프로젝트가 다른 단계에 존재
+                hashTags: ["문화", "지역활성화"],
+                createdAt: "2025-11-02",
+                expiredAt: "2025-12-02",
                 title: "지역 예술축제, 시민 참여 확대 방안",
                 description:
                     "매번 비슷한 공연만 반복돼서 흥미가 떨어졌어요. 시민이 직접 참여하거나, 동네 예술가들이 무대에 설 수 있는 기회가 많아졌으면 좋겠어요.",
@@ -78,9 +112,10 @@ const kanbans: KanbanType[] = [
         color: "green",
         projects: [
             {
-                id: "6",
-                categories: ["복지", "노년층"],
-                date: "2025.10.30",
+                sequence: 6,
+                hashTags: ["복지", "노년층"],
+                createdAt: "2025-10-30",
+                expiredAt: "2025-11-29",
                 title: "노인복지관 무료 급식사업 확대",
                 description:
                     "할머니가 복지관에서 식사하신다고 좋아하셨어요. 예산이 늘어난 덕분에 더 많은 어르신이 혜택을 받을 수 있다고 들었습니다. 이런 정책은 꾸준히 이어졌으면 합니다.",
@@ -88,15 +123,16 @@ const kanbans: KanbanType[] = [
                 votes: 1420,
             },
             {
-                id: "7",
-                categories: ["안전", "교통"],
-                date: "2025.10.28",
+                sequence: 7,
+                hashTags: ["안전", "교통"],
+                createdAt: "2025-10-28",
+                expiredAt: "2025-11-27",
                 title: "횡단보도 앞 보행신호 대기시간 단축",
                 description:
                     "아이들 등하굣길 신호 대기시간이 너무 길었는데, 조정되고 나서 훨씬 편해졌어요. 다만 차들도 급하게 움직이는 구간이 있어 추가 점검이 필요할 것 같아요.",
                 comments: 210,
                 votes: 1190,
-                topic: { id: 23, title: "보행자 중심의 안전 교통 환경 구축" },
+                topic: { sequence: 23, title: "보행자 중심의 안전 교통 환경 구축" },
             },
         ],
     },
@@ -105,6 +141,7 @@ const kanbans: KanbanType[] = [
 export default function DashboardPage() {
     const [location, setLocation] = useState("");
     const [isLocLoading, setIsLocLoading] = useState(false);
+    const [sortOrder, setSortOrder] = useState<"최신순" | "인기순">("최신순");
 
     const handleRefreshLocation: () => Promise<(() => void) | undefined> = async () => {
         if (!navigator.geolocation) {
@@ -156,6 +193,24 @@ export default function DashboardPage() {
 
         return () => abort.abort();
     };
+    const sortedKanbans = useMemo<KanbanType[]>(() => {
+        const clone = structuredClone
+            ? structuredClone(kanbans)
+            : JSON.parse(JSON.stringify(kanbans)) as KanbanType[];
+
+        for (const column of clone) {
+            column.projects.sort((a, b) => {
+                if (sortOrder === "최신순") {
+                    // createdAt 내림차순
+                    return b.createdAt.localeCompare(a.createdAt);
+                }
+                // 인기순: votes 내림차순, 동률이면 댓글 많은 순
+                if (b.votes !== a.votes) return b.votes - a.votes;
+                return b.comments - a.comments;
+            });
+        }
+        return clone;
+    }, [sortOrder]);
 
     // 마운트 시 1회 위치 갱신
     useEffect(() => {
@@ -165,13 +220,19 @@ export default function DashboardPage() {
     return (
         <div className="">
             <DashboardHeader/>
-            <LocationControl location={location} isLocLoading={isLocLoading} handleRefreshLocation={handleRefreshLocation} />
+            <LocationControl
+                location={location}
+                isLocLoading={isLocLoading}
+                handleRefreshLocation={handleRefreshLocation}
+                sortOrder={sortOrder}
+                setSortOrder={setSortOrder}
+            />
             {/* Kanban Board */}
             {isLocLoading ? (
                 <KanbanBoardSkeleton/>
             ) : (
                 <KanbanBoard
-                    kanbans={kanbans} />
+                    kanbans={sortedKanbans} />
             )}
         </div>
     );

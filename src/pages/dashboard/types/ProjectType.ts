@@ -1,13 +1,14 @@
 export default interface ProjectType {
-    id: string;
-    categories: string[];
-    date: string;
+    sequence: number;
+    hashTags: string[];
+    createdAt: string;
+    expiredAt: string;
     title: string;
     description: string;
     votes: number;
     comments: number;
     topic?: {
-        id: number;
+        sequence: number;
         title: string;
     }
 }

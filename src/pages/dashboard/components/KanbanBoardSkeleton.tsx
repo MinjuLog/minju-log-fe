@@ -1,8 +1,8 @@
 export default function KanbanBoardSkeleton() {
     return (
         // 🔹 스켈레톤 UI
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-pulse">
-            {[...Array(3)].map((_, colIdx) => (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 animate-pulse">
+            {[...Array(4)].map((_, colIdx) => (
                 <div key={colIdx} className="space-y-4">
                     {/* Column Header */}
                     <div className="flex items-center gap-2 mb-4">
@@ -15,7 +15,7 @@ export default function KanbanBoardSkeleton() {
                     <div className="h-1 rounded-full bg-gray-200" />
 
                     {/* Project Card Skeletons */}
-                    {[...Array(3)].map((_, idx) => (
+                    {[...Array(4)].map((_, idx) => (
                         <div key={idx} className="bg-white rounded-lg p-4 border border-gray-200">
                             <div className="flex items-start justify-between mb-3">
                                 <div className="h-4 w-16 bg-gray-200 rounded" />

@@ -10,6 +10,7 @@ const PAGE_SIZE = 2;
 
 const colorMap: Record<string, string> = {
     purple: "bg-purple-500",
+    indigo: "bg-indigo-300",
     orange: "bg-amber-500",
     green: "bg-green-500",
 };
@@ -44,7 +45,7 @@ export default function KanbanColumn({ kanban }: props) {
                     </div>
                 ) : (
                     kanban.projects.slice(0, visible).map((project) => (
-                        <KanbanCard key={project.id ?? project.title} project={project} />
+                        <KanbanCard key={project.sequence ?? project.title} project={project} />
                     ))
                 )}
 

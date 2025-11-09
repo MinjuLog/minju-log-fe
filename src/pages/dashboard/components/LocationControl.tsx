@@ -4,13 +4,19 @@ interface Props {
     location: string;
     isLocLoading: boolean;
     handleRefreshLocation: () => Promise<(() => void) | undefined>
+    sortOrder: string
+    setSortOrder: (sortOrder: "최신순" | "인기순") => void
 }
 
-export default function LocationControl({ location, isLocLoading, handleRefreshLocation }: Props) {
+export default function LocationControl({ location, isLocLoading, handleRefreshLocation, sortOrder, setSortOrder }: Props) {
 
     const onRefreshClick = async () => {
         await handleRefreshLocation();
     };
+
+    const onSortClick = () => {
+        setSortOrder(sortOrder === '최신순' ? '인기순' : '최신순');
+    }
 
     return (
         <div className="flex items-center justify-between mb-6">
@@ -30,9 +36,9 @@ export default function LocationControl({ location, isLocLoading, handleRefreshL
 
             {/* 정렬 버튼 */}
             <div className="flex gap-3">
-                <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition">
+                <button onClick={onSortClick} className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition">
                     <Sliders className="w-4 h-4" />
-                    <span>정렬</span>
+                    <span>{sortOrder}</span>
                 </button>
             </div>
         </div>
