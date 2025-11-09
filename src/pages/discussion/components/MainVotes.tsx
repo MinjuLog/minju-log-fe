@@ -1,4 +1,4 @@
-import {Check, FileText, Info, Share2} from "lucide-react";
+import {Check, FileText, Share2} from "lucide-react";
 import { useEffect, useState } from "react";
 import VoteConfirmationModal from "./VoteConfirmationModal.tsx";
 import SignSubmitModal from "./SignSubmitModal.tsx";
@@ -36,7 +36,7 @@ export default function MainVotes({ discussion }: props) {
 
     // ✅ 남은 시간 계산 useEffect
     useEffect(() => {
-        const deadline = new Date(discussion.duration).getTime();
+        const deadline = new Date(discussion.expiredAt).getTime();
 
         const timer = setInterval(() => {
             const now = new Date().getTime();
@@ -57,7 +57,7 @@ export default function MainVotes({ discussion }: props) {
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [discussion.duration]);
+    }, [discussion.expiredAt]);
 
     return (
         <div className="lg:col-span-2">
@@ -65,8 +65,7 @@ export default function MainVotes({ discussion }: props) {
                 {/* Header */}
                 <div className="mb-8 flex items-start justify-between">
                     <div className="flex items-center gap-2 text-gray-600">
-                        <span className="text-lg font-medium">{discussion.id}번 동네한표</span>
-                        <Info className="h-5 w-5"/>
+                        <span className="text-lg font-medium">{discussion.hashTags.map(tag => `#${tag}`).join(" ")}</span>
                     </div>
                     <button className="rounded-lg p-2 hover:bg-gray-100">
                         <Share2 className="h-5 w-5 text-gray-600"/>
@@ -82,11 +81,11 @@ export default function MainVotes({ discussion }: props) {
                 <div className="mb-6 rounded-2xl bg-gray-50 p-8 shadow-inner">
                     <div className="mx-auto max-w-3xl text-center">
                         {/* 상단 섹션 타이틀 */}
-                        <div
-                            className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-200">
-                            <Info className="h-4 w-4 text-gray-600"/>
-                            <span>주요 내용</span>
-                        </div>
+                        {/*<div*/}
+                        {/*    className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-sm font-medium text-gray-700 shadow-sm ring-1 ring-gray-200">*/}
+                        {/*    <Info className="h-4 w-4 text-gray-600"/>*/}
+                        {/*    <span>주요 내용</span>*/}
+                        {/*</div>*/}
 
                         {/* 본문 내용 */}
                         <p className="mx-auto max-w-2xl text-base leading-relaxed text-gray-800">
@@ -96,7 +95,7 @@ export default function MainVotes({ discussion }: props) {
                         {/* 하단 라벨 */}
                         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
                             <Link
-                                to={`/columns/${discussion.topic.id}`}
+                                to={`/columns/${discussion.topic.sequence}`}
                                 className={`group inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100 hover:ring-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all shadow-sm hover:shadow`}
                             >
                                 <FileText className="h-4 w-4 shrink-0 text-emerald-700"/>

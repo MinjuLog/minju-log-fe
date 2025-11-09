@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Upload, ChevronUp, ChevronDown } from "lucide-react"
+import { ChevronUp, ChevronDown } from "lucide-react"
 import type CommentType from "../types/CommentType.ts";
 import Comment from "./Comment";
 
@@ -12,7 +12,7 @@ interface Props {
 const PAGE_SIZE = 5;
 
 export default function CommentsPage({ comments }: Props) {
-    const [hideAbusiveComments, setHideAbusiveComments] = useState(true);
+    /*const [hideAbusiveComments, setHideAbusiveComments] = useState(true);*/
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
     // const filteredComments = hideAbusiveComments
@@ -33,7 +33,7 @@ export default function CommentsPage({ comments }: Props) {
             {/* Header */}
             <div className="mb-6">
                 <h1 className="mb-4 text-2xl font-bold text-gray-900">
-                    지지 서명 {filteredComments.length}
+                    찬반 서명 {filteredComments.length}
                 </h1>
 
                 <div className="flex items-center justify-between">
@@ -44,30 +44,30 @@ export default function CommentsPage({ comments }: Props) {
                     </button>
 
                     <button className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        내가 쓴 지지 서명
+                        내가 쓴 찬반 서명
                     </button>
                 </div>
             </div>
 
             {/* Hide abusive comments toggle */}
-            <div className="mb-6 flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3">
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                    <Upload className="h-4" />
-                    <span>무차별한 지지 서명 숨기기</span>
-                </div>
-                <button
-                    onClick={() => setHideAbusiveComments(!hideAbusiveComments)}
-                    className={`relative h-6 w-11 rounded-full transition-colors ${
-                        hideAbusiveComments ? "bg-blue-600" : "bg-gray-300"
-                    }`}
-                >
-          <span
-              className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-                  hideAbusiveComments ? "translate-x-0.5" : "-translate-x-5"
-              }`}
-          />
-                </button>
-            </div>
+            {/*<div className="mb-6 flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3">*/}
+            {/*    <div className="flex items-center gap-2 text-sm text-gray-700">*/}
+            {/*        <Upload className="h-4" />*/}
+            {/*        <span>무차별한 찬반 서명 숨기기</span>*/}
+            {/*    </div>*/}
+            {/*    <button*/}
+            {/*        onClick={() => setHideAbusiveComments(!hideAbusiveComments)}*/}
+            {/*        className={`relative h-6 w-11 rounded-full transition-colors ${*/}
+            {/*            hideAbusiveComments ? "bg-blue-600" : "bg-gray-300"*/}
+            {/*        }`}*/}
+            {/*    >*/}
+            {/*  <span*/}
+            {/*      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${*/}
+            {/*          hideAbusiveComments ? "translate-x-0.5" : "-translate-x-5"*/}
+            {/*      }`}*/}
+            {/*  />*/}
+            {/*    </button>*/}
+            {/*</div>*/}
 
             {/* Comments List */}
             <div className="space-y-4">
@@ -78,7 +78,7 @@ export default function CommentsPage({ comments }: Props) {
                 {/* Empty state */}
                 {filteredComments.length === 0 && (
                     <div className="text-center text-gray-500 text-sm py-8 border border-dashed border-gray-200 rounded-lg">
-                        아직 등록된 지지 서명이 없습니다.
+                        아직 등록된 찬반 서명이 없습니다.
                     </div>
                 )}
 

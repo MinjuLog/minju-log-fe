@@ -67,7 +67,7 @@ export default function SignSubmitModal({ isOpen, onClose, selectedId, selectedO
                 <div className="p-8">
                     {/* Header */}
                     <h2 className="text-xl font-bold text-gray-900 mb-6">
-                        지지 서명을 남겨보세요.
+                        찬반 서명을 남겨보세요.
                     </h2>
 
                     {/* Selected option display */}
@@ -137,7 +137,7 @@ export default function SignSubmitModal({ isOpen, onClose, selectedId, selectedO
                             disabled={!rebuttalText.trim()}
                             className="w-full py-4 bg-blue-400 hover:bg-blue-500 disabled:bg-blue-200 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors"
                         >
-                            지지 서명 남기기
+                            찬반 서명 남기기
                         </button>
                         <button
                             onClick={onClose}

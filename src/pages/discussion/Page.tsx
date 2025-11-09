@@ -30,15 +30,17 @@ const sideBarDiscussionsMock: SidebarDiscussionType[] = [
     },
 ];
 const discussionMock: DiscussionType = {
-    id: 1,
+    sequence: 1,
     title: "우리 지역에도 청년 스마트팜을 도입해보는 건 어떨까요?",
     topic: {
-        id: 1,
+        sequence: 1,
         title: "(전남 곡성군) 청년 농부들이 이끄는 지역 스마트팜 협동조합",
     },
     content:
         "저희 지역은 고령화가 빠르게 진행되고 있어 농업 인력 부족이 심각합니다. 지역 청년들이 주도하는 스마트팜을 도입하면, 기술 기반의 효율적인 농업 운영이 가능하고 청년 일자리 창출에도 도움이 될 것 같습니다. 여러분의 생각은 어떠신가요?",
-    duration: "2025-12-31T00:00:00.000Z",
+    createdAt: "2025-11-09T10:00:00.000Z",
+    expiredAt: "2025-12-31T00:00:00.000Z",
+    hashTags: ["청년", "스마트팜", "농업혁신"],
     pros: 742,
     cons: 389,
 };

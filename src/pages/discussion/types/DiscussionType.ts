@@ -1,12 +1,14 @@
 export default interface DiscussionType {
-    id: number;
+    sequence: number;
     title: string;
     topic: {
-        id: number;
+        sequence: number;
         title: string;
     },
     content: string;
-    duration: string;
+    createdAt: string;
+    expiredAt: string;
+    hashTags: string[];
     pros: number;
     cons: number;
 }

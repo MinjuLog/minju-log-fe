@@ -1,4 +1,4 @@
-import {MessageCircle, MoreHorizontal, ThumbsDown, ThumbsUp} from "lucide-react";
+import {ThumbsUp} from "lucide-react";
 import type CommentType from "../types/CommentType.ts";
 
 interface props {
@@ -20,15 +20,15 @@ export default function Comment ({ comment } : props) {
             {/* Comment Header */}
             <div className="mb-3 flex items-start justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-gray-300"/>
+                    {/*<div className="h-10 w-10 rounded-full bg-gray-300"/>*/}
                     <div>
                         <div className="font-medium text-gray-900">{comment.author}</div>
                         <div className="text-xs text-gray-500">{comment.timestamp}</div>
                     </div>
                 </div>
-                <button className="text-gray-400 hover:text-gray-600">
-                    <MoreHorizontal className="h-5 w-5"/>
-                </button>
+                {/*<button className="text-gray-400 hover:text-gray-600">*/}
+                {/*    <MoreHorizontal className="h-5 w-5"/>*/}
+                {/*</button>*/}
             </div>
 
             {/* Badge */}
@@ -55,20 +55,20 @@ export default function Comment ({ comment } : props) {
                     <ThumbsUp className="h-4 w-4"/>
                     {comment.likes > 0 && <span className="text-sm">{comment.likes}</span>}
                 </button>
-                <button className="text-gray-500 hover:text-gray-700">
-                    <ThumbsDown className="h-4 w-4"/>
-                </button>
-                {comment.replies !== undefined && comment.replies > 0 && (
-                    <button className="ml-auto flex items-center gap-1 text-gray-500 hover:text-gray-700">
-                        <MessageCircle className="h-4 w-4"/>
-                        <span className="text-sm">{comment.replies}</span>
-                    </button>
-                )}
-                {!comment.isReply && comment.replies === 0 && (
-                    <button className="ml-auto text-gray-500 hover:text-gray-700">
-                        <MessageCircle className="h-4 w-4"/>
-                    </button>
-                )}
+                {/*<button className="text-gray-500 hover:text-gray-700">*/}
+                {/*    <ThumbsDown className="h-4 w-4"/>*/}
+                {/*</button>*/}
+                {/*{comment.replies !== undefined && comment.replies > 0 && (*/}
+                {/*    <button className="ml-auto flex items-center gap-1 text-gray-500 hover:text-gray-700">*/}
+                {/*        <MessageCircle className="h-4 w-4"/>*/}
+                {/*        <span className="text-sm">{comment.replies}</span>*/}
+                {/*    </button>*/}
+                {/*)}*/}
+                {/*{!comment.isReply && comment.replies === 0 && (*/}
+                {/*    <button className="ml-auto text-gray-500 hover:text-gray-700">*/}
+                {/*        <MessageCircle className="h-4 w-4"/>*/}
+                {/*    </button>*/}
+                {/*)}*/}
             </div>
         </div>
     )
