@@ -6,10 +6,16 @@ interface props {
 export default function ContentFooter({ onQuotationClick }: props) {
     return (
         <>
-            <div className="mt-12 flex items-center justify-between border-t border-gray-200 pt-6">
-                <button onClick={onQuotationClick} className="rounded-lg bg-blue-50 px-4 py-2 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-100">
+            <div className="mt-12 flex items-center gap-3 border-t border-gray-200 pt-6">
+                <button
+                    onClick={onQuotationClick}
+                    className="rounded-lg bg-blue-50 px-4 py-2 text-sm font-medium text-blue-600 transition-colors hover:bg-blue-100"
+                >
                     인용하기
                 </button>
+                <p className="text-sm text-gray-500">
+                    해당 토픽을 인용하여 <span className="font-medium text-gray-700">동네한표</span>를 생성할 수 있어요.
+                </p>
                 {/*<div className="flex items-center gap-6">*/}
                 {/*    <button className="flex items-center gap-2 text-gray-600 transition-colors hover:text-gray-900">*/}
                 {/*        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">*/}
