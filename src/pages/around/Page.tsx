@@ -82,7 +82,7 @@ export default function AroundPage() {
         const norm = (s: string) => s.replace(/\s+/g, "").toLowerCase();
         const nq = norm(q);
         return aroundPreviewMock.filter((item) => {
-            const text = `${item.label} ${item.title}`.replace(/\n/g, " ");
+            const text = `${item.label} ${item.title} ${item.hashTags?.join(" ")}`.replace(/\n/g, " ");
             return norm(text).includes(nq);
         });
     }, [query]);
@@ -126,12 +126,12 @@ export default function AroundPage() {
                     id="around-search"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="지역/제목으로 검색"
+                    placeholder="지역/제목/해시태그로 검색"
                     className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                 />
                 <span className="text-xs text-gray-500 whitespace-nowrap">
-          총 {filtered.length}건
-        </span>
+                  총 {filtered.length}건
+                </span>
             </div>
 
             {/* Grid */}
