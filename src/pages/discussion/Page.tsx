@@ -47,98 +47,71 @@ const discussionMock: DiscussionType = {
 const commentMock: CommentType[] = [
     {
         id: "1",
-        author: "곡성청년농부",
+        authorId: "user-1",
+        authorName: "곡성청년농부",
         timestamp: "25.11.01",
-        badge: {
-            text: "스마트팜 도입 찬성",
-            type: "blue",
-        },
         content: `인력난이 심한 상황에서 스마트팜은 생산성과 품질을 동시에 끌어올릴 수 있습니다.
 물·양분·온습도 자동 제어 덕분에 초보 청년도 짧은 기간에 운영을 배울 수 있고,
 야간 근무나 과도한 노동을 줄이는 효과도 있어요. 지역에 교육·인큐베이션 센터까지
 붙이면 창업 진입장벽도 낮출 수 있습니다.`,
         likes: 78,
-        replies: 3,
-        opinion: 1, // 찬성
+        opinion: 1,
     },
     {
         id: "2",
-        parentId: "1",
-        author: "재정지킴이",
+        authorId: "user-2",
+        authorName: "재정지킴이",
         timestamp: "25.11.01",
-        badge: {
-            text: "신중 검토 필요",
-            type: "red",
-        },
         content: `초기 투자비와 운영비(전기료, 유지보수)가 만만치 않습니다.
 시설 지원만 하고 판로·수요 예측이 안 되면 실패 사례가 반복될 수 있어요.
 도입 전에 수익성 시뮬레이션과 단계별 지원 로드맵이 먼저라고 봅니다.`,
         likes: 19,
-        isReply: true,
-        opinion: 2, // 반대/신중
+        opinion: 2,
     },
     {
         id: "3",
-        parentId: "1",
-        author: "농업데이터연구자",
+        authorId: localStorage.getItem("userId") ?? "user-3",
+        authorName: "농업데이터연구자",
         timestamp: "25.11.01",
-        badge: {
-            text: "데이터 기반 운영",
-            type: "blue",
-        },
         content: `스마트팜 핵심은 '데이터'입니다. 센서 데이터 수집→표준화→분석을 통해
 품종별 생육 레시피를 만들고, 병해충 조기 경보 모델을 돌리면 손실을 크게 줄일 수 있어요.
 군 단위로 공용 데이터 플랫폼을 두고, 농가별 맞춤 대시보드를 제공하면 효과적입니다.`,
         likes: 41,
-        replies: 0,
         opinion: 1,
     },
     {
         id: "4",
-        author: "마을이장_김",
+        authorId: "user-4",
+        authorName: "마을이장_김",
         timestamp: "25.11.01",
-        badge: {
-            text: "현장 인력 양성 우선",
-            type: "red",
-        },
         content: `시설보다 사람이 먼저라고 봅니다. 장비 깔아도 운영할 인력이 없으면 유지가 안 돼요.
 고장 나면 외부 업체 부르면 시간·비용이 크게 듭니다. 지역 내 기술자 양성과
 A/S 체계가 갖춰지지 않으면, 도입 규모를 확대하는 건 위험합니다.`,
         likes: 33,
-        replies: 1,
         opinion: 2,
     },
     {
         id: "5",
-        parentId: "4",
-        author: "스마트팜운영자",
+        authorId: "user-5",
+        authorName: "스마트팜운영자",
         timestamp: "25.11.01",
-        badge: {
-            text: "운영·A/S 체계 제안",
-            type: "blue",
-        },
         content: `동의합니다. 그래서 제안드립니다.
 1) 군청-대학-업체 컨소시엄으로 '현장 기술학교' 운영
 2) 군 단위 유지보수 공동센터 설립(예비 부품 상시 비치)
 3) 농가 간 장비 표준화로 A/S 시간 단축
 이렇게 묶으면 장애 대응이 빨라지고 비용도 낮출 수 있습니다.`,
         likes: 27,
-        isReply: true,
         opinion: 1,
     },
     {
         id: "6",
-        author: "환경모니터링동아리",
+        authorId: "user-6",
+        authorName: "환경모니터링동아리",
         timestamp: "25.11.01",
-        badge: {
-            text: "환경·수자원 관리",
-            type: "blue",
-        },
         content: `수질 센서와 재활용 수배관을 붙이면 물 사용량을 20~30% 절감할 수 있습니다.
 태양광+배터리 연계로 전력 피크 비용도 낮출 수 있고요.
 도입 시 '물·에너지 절감 KPI'를 명확히 두고, 월별 리포트를 공개하면 주민 수용성도 올라갑니다.`,
         likes: 22,
-        replies: 0,
         opinion: 1,
     },
 ];

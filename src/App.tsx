@@ -8,20 +8,31 @@ import ColumnPage from "./pages/column/Page.tsx";
 import AroundPage from "./pages/around/Page.tsx";
 import WritingPage from "./pages/writing/Page.tsx";
 import DashboardPage from "./pages/dashboard/Page.tsx";
+import {useEffect} from "react";
 
 function App() {
+    useEffect(() => {
+        // uuid가 로컬 스토리지에 없으면 생성
+        const existingUuid: string | null = localStorage.getItem("userId");
+        if (!existingUuid) {
+            const newUuid = crypto.randomUUID();
+            localStorage.setItem("userId", newUuid);
+        }
+    }, []);
+
+
     return (
         <BrowserRouter>
             <div className="min-h-screen bg-background">
                 <Header />
                 <main className="container mx-auto px-4 py-12 max-w-8xl">
                     <Routes>
-                        {/* 기본 루트는 /discussions로 리다이렉트 */}
+                        {/* 기본 루트는 /discussions 로 리다이렉트 */}
                         <Route path="/" element={<Navigate to="/dashboard" replace />} />
                         {/* 목록 페이지 */}
                         <Route path="/discussions" element={<DiscussionsPage />} />
                         {/* 상세 페이지: 동적 파라미터 사용 */}
-                        <Route path="/discussions/:id" element={<DiscussionPage />} />
+                        <Route path="/discussions/:discussionSequence" element={<DiscussionPage />} />
 
                         <Route path="/discussions/write" element={<WritingPage />} />
 

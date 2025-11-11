@@ -1,15 +1,9 @@
 export default interface CommentType {
     id: string
-    parentId?: string
-    author: string
+    authorId: string
+    authorName: string
     timestamp: string
-    badge?: {
-        text: string
-        type: "red" | "blue"
-    }
     content: string
     likes: number
-    replies?: number
-    isReply?: boolean
     opinion: number
 }

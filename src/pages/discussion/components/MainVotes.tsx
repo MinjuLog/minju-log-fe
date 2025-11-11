@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import VoteConfirmationModal from "./VoteConfirmationModal.tsx";
 import SignSubmitModal from "./SignSubmitModal.tsx";
 import type DiscussionType from "../types/DiscussionType.ts";
-import { Link } from "react-router-dom";
+import {Link, useParams} from "react-router-dom";
+import {createDiscussionVote, getDiscussionVote} from "../../../api/discussion.ts";
 
 interface props {
     discussion: DiscussionType;
@@ -23,11 +24,15 @@ export default function MainVotes({ discussion }: props) {
         expired: false,
     });
 
+    const { discussionSequence } = useParams<{ discussionSequence: string }>();
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
-    const handleConfirm = () => {
+    const handleConfirm = (id: number | null) => {
+        const seq = Number(discussionSequence);
+        const type = id === 1 ? "pros" : "cons";
+        createDiscussionVote(seq, type);
         setIsConfirmModalOpen(false);
         setIsSubmitModalOpen(true);
     };
@@ -58,6 +63,18 @@ export default function MainVotes({ discussion }: props) {
 
         return () => clearInterval(timer);
     }, [discussion.expiredAt]);
+
+    useEffect(() => {
+        if (!discussionSequence) return;
+
+        // 문자열 → 숫자 변환
+        const seq = Number(discussionSequence);
+        if (isNaN(seq)) return;
+        const vote: "pros" | "cons" | "none" = getDiscussionVote(seq);
+        if (vote === "pros") setSelectedId(1);
+        if (vote === "cons") setSelectedId(2);
+
+    }, [discussionSequence]);
 
     return (
         <div className="lg:col-span-2">
@@ -116,10 +133,10 @@ export default function MainVotes({ discussion }: props) {
                                     setSelectedId(option.id);
                                     setIsConfirmModalOpen(true);
                                 }}
-                                disabled={timeLeft.expired} // 투표 종료 시 클릭 불가
+                                disabled={timeLeft.expired || selectedId !== null} // 투표 종료 시 클릭 불가
                                 className={`group relative flex min-h-[120px] flex-col items-center justify-center gap-3 rounded-2xl p-6 transition-all ${option.color} ${
                                     isSelected ? "ring-4 ring-offset-2 ring-gray-100" : ""
-                                } ${timeLeft.expired ? "opacity-50 cursor-not-allowed" : ""}`}
+                                } ${(timeLeft.expired || selectedId !== null) ? "cursor-not-allowed" : ""}`}
                             >
                                 {/* Icon */}
                                 <div className="text-6xl">
@@ -134,17 +151,17 @@ export default function MainVotes({ discussion }: props) {
 
                                 {/* Text */}
                                 <div className="flex justify-center items-center gap-2">
-                  <span
-                      className={`text-[22px] font-bold ${
-                          option.id === 1
-                              ? "text-blue-600"
-                              : option.id === 2
-                                  ? "text-red-600"
-                                  : "text-gray-900"
-                      }`}
-                  >
-                    {option.id === 1 ? "찬성합니다." : "반대합니다."}
-                  </span>
+                                  <span
+                                      className={`text-[22px] font-bold ${
+                                          option.id === 1
+                                              ? "text-blue-600"
+                                              : option.id === 2
+                                                  ? "text-red-600"
+                                                  : "text-gray-900"
+                                      }`}
+                                  >
+                                    {option.id === 1 ? "찬성합니다." : "반대합니다."}
+                                  </span>
                                 </div>
                             </button>
                         );
@@ -228,7 +245,7 @@ export default function MainVotes({ discussion }: props) {
                 }}
                 selectedOption={selectedId === 1 ? "찬성합니다." : "반대합니다."}
                 selectedId={selectedId}
-                onConfirm={handleConfirm}
+                onConfirm={() => handleConfirm(selectedId)}
             />
 
             <SignSubmitModal
