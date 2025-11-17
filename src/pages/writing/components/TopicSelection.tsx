@@ -4,10 +4,10 @@ import type TopicType from "../types/TopicType.ts";
 
 interface props {
     topics: TopicType[];
-    selectedTopicId?: number | null;
+    selectedTopicId?: number;
     selectedTopic: string;
     setSelectedTopic: (topic: string) => void;
-    setSelectedTopicId?: (id: number | null) => void;
+    setSelectedTopicId?: (id: number) => void;
     isTopicDropdownOpen: boolean;
     setIsTopicDropdownOpen: (isOpen: boolean) => void;
 }
@@ -85,7 +85,7 @@ export default function TopicSelection({
                                     type="button"
                                     onClick={() => {
                                         setSelectedTopic("");
-                                        setSelectedTopicId?.(null);
+                                        setSelectedTopicId?.(-1);
                                         setIsTopicDropdownOpen(false);
                                     }}
                                     className={`w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 ${

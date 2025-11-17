@@ -1,20 +1,12 @@
 interface props {
     content: string;
     setContent: (content: string) => void;
-    handleImageUpload: () => void;
     contentMaxLength: number;
     contentMinLength: number;
-    handleBulletList: () => void;
-    handleBold: () => void;
-    handleLink: () => void;
 }
 
 export default function ContentInput({ content,
                                          setContent,
-                                         // handleImageUpload,
-                                         // handleBulletList,
-                                         // handleBold,
-                                         // handleLink,
                                          contentMaxLength,
                                          contentMinLength }: props) {
     return (

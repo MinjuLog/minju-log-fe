@@ -1,3 +1,5 @@
+import addDaysToToday from "../util/addDaysToDay.ts";
+
 interface props {
     isPeriodDropdownOpen: boolean;
     setIsPeriodDropdownOpen: (isPeriodDropdownOpen: boolean) => void;
@@ -7,9 +9,10 @@ interface props {
         value: string;
         label: string;
     }[]
+    setDueDate: (setDueDate: string) => void;
 }
 
-export default function DurationSelection({ isPeriodDropdownOpen, setIsPeriodDropdownOpen, postingPeriod, setPostingPeriod, postingPeriods }: props) {
+export default function DurationSelection({ isPeriodDropdownOpen, setIsPeriodDropdownOpen, postingPeriod, setPostingPeriod, postingPeriods, setDueDate }: props) {
     return (
         <div className="mb-8">
             <label className="mb-2 block text-sm font-medium text-gray-900">게시 기간</label>
@@ -39,6 +42,7 @@ export default function DurationSelection({ isPeriodDropdownOpen, setIsPeriodDro
                                 key={period.value}
                                 onClick={() => {
                                     setPostingPeriod(period.value)
+                                    setDueDate(addDaysToToday(period.value))
                                     setIsPeriodDropdownOpen(false)
                                 }}
                                 className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50"

@@ -10,6 +10,9 @@ import type TopicType from "./types/TopicType.ts";
 import {useNavigate} from "react-router-dom";
 import HashTagInput from "./components/HashTagInput.tsx";
 import AuthorInput from "./components/AuthorInput.tsx";
+import {createProposal} from "../../api/proposal/proposal.ts";
+import type CreateProposalResponse from "../../api/proposal/type/CreateProposalResponse.ts";
+import type ErrorResponse from "../../api/type/ErrorResponse.ts";
 
 const topicsMock: TopicType[] = [
     {
@@ -53,10 +56,12 @@ export default function WritingPage() {
     const [author, setAuthor] = useState("");
     const [title, setTitle] = useState("")
     const [content, setContent] = useState("")
+    const [selectedTopicId, setSelectedTopicId] = useState<number>(-1)
     const [selectedTopic, setSelectedTopic] = useState("")
     const [isTopicDropdownOpen, setIsTopicDropdownOpen] = useState(false)
     const [postingPeriod, setPostingPeriod] = useState("")
     const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState(false)
+    const [dueDate, setDueDate] = useState("")
 
     const [selectedHashTags, setSelectedHashTags] = useState<string[]>([]);
 
@@ -78,27 +83,7 @@ export default function WritingPage() {
         // { label: "무제한", value: "unlimited" },
     ]
 
-    const handleImageUpload = () => {
-        // Image upload logic
-        console.log("[v0] Image upload clicked")
-    }
-
-    const handleBulletList = () => {
-        // Insert bullet list
-        console.log("[v0] Bullet list clicked")
-    }
-
-    const handleBold = () => {
-        // Apply bold formatting
-        console.log("[v0] Bold clicked")
-    }
-
-    const handleLink = () => {
-        // Insert link
-        console.log("[v0] Link clicked")
-    }
-
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (title.length < titleMinLength) {
             alert(`제목은 최소 ${titleMinLength}자 이상이어야 합니다.`)
             return
@@ -108,8 +93,20 @@ export default function WritingPage() {
             return
         }
 
-        navigate("/discussions/1")
-        console.log("[v0] Submitting:", { title, content, selectedTopic, postingPeriod })
+        const res: CreateProposalResponse | ErrorResponse = await createProposal({
+            userId: localStorage.getItem("userId") ?? "",
+            title: title,
+            body: content,
+            hashTags: selectedHashTags,
+            dueDate: dueDate,
+            ...(selectedTopicId != null && { selectedTopicId }),
+        })
+
+        if (!res.ok) {
+            alert(res.message)
+        } else {
+            navigate(`/discussions/${res.proposalId}`)
+        }
     }
 
     return (
@@ -140,6 +137,7 @@ export default function WritingPage() {
                                 //selectedTopicId={selectedTopicId}
                                 topics={topicsMock}
                                 selectedTopic={selectedTopic}
+                                setSelectedTopicId={setSelectedTopicId}
                                 setSelectedTopic={setSelectedTopic}
                                 isTopicDropdownOpen={isTopicDropdownOpen}
                                 setIsTopicDropdownOpen={setIsTopicDropdownOpen}
@@ -153,18 +151,15 @@ export default function WritingPage() {
                                 postingPeriod={postingPeriod}
                                 setPostingPeriod={setPostingPeriod}
                                 postingPeriods={postingPeriods}
+                                setDueDate={setDueDate}
                             />
 
                             {/* Content Field */}
                             <ContentInput
                                 content={content}
                                 setContent={setContent}
-                                handleImageUpload={handleImageUpload}
                                 contentMaxLength={contentMaxLength}
                                 contentMinLength={contentMinLength}
-                                handleBulletList={handleBulletList}
-                                handleBold={handleBold}
-                                handleLink={handleLink}
                             />
 
                             {/* Hashtag Field */}
