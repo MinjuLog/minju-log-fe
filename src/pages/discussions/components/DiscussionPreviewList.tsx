@@ -74,25 +74,25 @@ export function DiscussionPreviewList({ status }: Props) {
                 setError(null);
 
                 const statusParam = statusParamMap[selectedStatus];
-                const sortParam = sortOrder === "latest" ? "LATEST" : "POPULAR";
 
-                const res = await findProposalList({
-                    keyword: query,
-                    status: statusParam ?? "",
-                    sort: sortParam,
-                    pageable: {
-                        page: page - 1, // 서버가 0-based라고 가정
-                        size: PAGE_SIZE,
-                        sort: ["proposalId,desc"],
-                    },
-                });
+
+                const params: any = {};
+
+                if (query) params.keyword = query;
+                if (statusParam) params.status = statusParam;
+                if (sortOrder) params.sort = sortOrder;
+                if (page) params.page = page - 1;
+                params.size = PAGE_SIZE;
+
+                const res = await findProposalList(params);
 
                 if (!res.ok) {
                     setError(res.message);
-                    alert(res.message); // 임시 처리
+                    alert(res.message);
                     return;
                 }
 
+                // convert → set state
                 const previews = discussionPreviewConverter(res);
                 setDiscussionPreviews(previews);
                 setTotalPages(res.totalPages);

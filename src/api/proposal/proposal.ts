@@ -10,7 +10,7 @@ export const createProposal = async (
     data: CreateProposalRequest
 ): Promise<CreateProposalResponse | ErrorResponse> => {
     try {
-        const res = await api.post("/api/proposal", data);
+        const res = await api.post("/api/proposals", data);
         return {
             ok: true,
             proposalId: res.data.result.proposalId,
@@ -34,7 +34,7 @@ export const findProposalList = async (
     option: FindProposalListRequest
 ): Promise<FindProposalListResponse | ErrorResponse> => {
     try {
-        const res = await api.get("/api/proposal", {
+        const res = await api.get("/api/proposals", {
             params: option,
         });
         const data = res.data;
