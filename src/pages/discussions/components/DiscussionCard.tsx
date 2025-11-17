@@ -1,4 +1,3 @@
-import {useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
 import {BookOpen, Clock} from "lucide-react";
 import type DiscussionCardType from "../types/DiscussionCardType.ts";
@@ -9,18 +8,9 @@ interface props {
 
 export default function DiscussionCard({ discussionCard }: props) {
 
-    const { votesCount, title, timeLeft, isCountdown, bgColor, image } = discussionCard;
+    const { votesCount, title, timeLeft, bgColor, image } = discussionCard;
 
-    const [countdown, setCountdown] = useState(timeLeft);
     const navigate = useNavigate();
-
-    useEffect(() => {
-        if (!isCountdown) return;
-        const interval = setInterval(() => {
-            setCountdown(timeLeft);
-        }, 1000);
-        return () => clearInterval(interval);
-    }, [isCountdown, timeLeft]);
 
     return (
         <div
@@ -42,7 +32,7 @@ export default function DiscussionCard({ discussionCard }: props) {
             <div className="flex items-center justify-between text-white/90">
                 <div className="flex items-center gap-2 text-sm">
                     <Clock className="w-4 h-4" />
-                    <span>{isCountdown ? countdown : timeLeft}</span>
+                    <span>{timeLeft}</span>
                 </div>
 
                 {/* ✅ 참여하기 버튼 클릭 시 상세 페이지 이동 */}

@@ -1,8 +1,8 @@
 export default interface DiscussionCardType {
+    id: number;
     votesCount: number;
     title: string;
     timeLeft: string;
-    isCountdown?: boolean;
     bgColor: string;
-    image: string;
+    image?: string;
 }

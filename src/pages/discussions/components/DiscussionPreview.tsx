@@ -8,7 +8,7 @@ interface props {
 
 export default function DiscussionPreview({ discussionPreview }: props) {
     const navigate = useNavigate();
-    const { id, title, result, votes, sequence, discussions, hashtags } = discussionPreview;
+    const { id, title, result, votes, discussions, hashTags } = discussionPreview;
     return (
         <div
             key={discussionPreview.id}
@@ -26,7 +26,7 @@ export default function DiscussionPreview({ discussionPreview }: props) {
                     {/*<span>*/}
                     {/*    {status}*/}
                     {/*</span>*/}
-                    {hashtags?.map((hashtag: string, index) => (
+                    {hashTags?.map((hashtag: string, index) => (
                         <span
                             key={index}
                             className="text-sm text-muted-foreground font-medium"
@@ -36,7 +36,7 @@ export default function DiscussionPreview({ discussionPreview }: props) {
                     ))}
                 </div>
 
-                <span className="text-sm text-muted-foreground">{sequence}번 동네한표</span>
+                <span className="text-sm text-muted-foreground">{id}번 동네한표</span>
             </div>
 
             {/* Title */}
