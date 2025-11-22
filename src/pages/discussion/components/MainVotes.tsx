@@ -4,10 +4,11 @@ import VoteConfirmationModal from "./VoteConfirmationModal.tsx";
 import SignSubmitModal from "./SignSubmitModal.tsx";
 import type DiscussionType from "../types/DiscussionType.ts";
 import {Link, useParams} from "react-router-dom";
-import {createDiscussionVote, getDiscussionVote} from "../../../api/discussion.ts";
+import {createVote} from "../../../api/vote/vote.ts";
 
 interface props {
     discussion: DiscussionType;
+    myVote: "AGREE" | "DISAGREE" | null;
 }
 
 const votingOptions = [
@@ -15,7 +16,7 @@ const votingOptions = [
     { id: 2, color: "bg-red-100 hover:bg-red-200" },
 ];
 
-export default function MainVotes({ discussion }: props) {
+export default function MainVotes({ discussion, myVote }: props) {
     const [timeLeft, setTimeLeft] = useState({
         days: 0,
         hours: 0,
@@ -25,14 +26,21 @@ export default function MainVotes({ discussion }: props) {
     });
 
     const { discussionSequence } = useParams<{ discussionSequence: string }>();
-    const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [selectedId, setSelectedId] = useState<number | null>(
+        myVote === "AGREE"
+            ? 1
+            : myVote === "DISAGREE"
+                ? 2
+                : null
+    );
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
 
-    const handleConfirm = (id: number | null) => {
+    const handleConfirm = async (id: number | null) => {
         const seq = Number(discussionSequence);
-        const type = id === 1 ? "pros" : "cons";
-        createDiscussionVote(seq, type);
+        const type = id === 1 ? "AGREE" : "DISAGREE";
+        const userId = localStorage.getItem("userId") ?? '';
+        await createVote(seq, userId, type)
         setIsConfirmModalOpen(false);
         setIsSubmitModalOpen(true);
     };
@@ -65,14 +73,14 @@ export default function MainVotes({ discussion }: props) {
     }, [discussion.expiredAt]);
 
     useEffect(() => {
-        if (!discussionSequence) return;
-
-        // 문자열 → 숫자 변환
-        const seq = Number(discussionSequence);
-        if (isNaN(seq)) return;
-        const vote: "pros" | "cons" | "none" = getDiscussionVote(seq);
-        if (vote === "pros") setSelectedId(1);
-        if (vote === "cons") setSelectedId(2);
+        // if (!discussionSequence) return;
+        //
+        // // 문자열 → 숫자 변환
+        // const seq = Number(discussionSequence);
+        // if (isNaN(seq)) return;
+        // const vote: "pros" | "cons" | "none" = getDiscussionVote(seq);
+        // if (vote === "pros") setSelectedId(1);
+        // if (vote === "cons") setSelectedId(2);
 
     }, [discussionSequence]);
 
@@ -82,7 +90,7 @@ export default function MainVotes({ discussion }: props) {
                 {/* Header */}
                 <div className="mb-8 flex items-start justify-between">
                     <div className="flex items-center gap-2 text-gray-600">
-                        <span className="text-lg font-medium">{discussion.hashTags.map(tag => `#${tag}`).join(" ")}</span>
+                        <span className="text-lg font-medium">{discussion.hashTags.map(tag => `${tag}`).join(" ")}</span>
                     </div>
                     <button className="rounded-lg p-2 hover:bg-gray-100">
                         <Share2 className="h-5 w-5 text-gray-600"/>
@@ -110,15 +118,17 @@ export default function MainVotes({ discussion }: props) {
                         </p>
 
                         {/* 하단 라벨 */}
-                        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-                            <Link
-                                to={`/columns/${discussion.topic.sequence}`}
-                                className={`group inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100 hover:ring-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all shadow-sm hover:shadow`}
-                            >
-                                <FileText className="h-4 w-4 shrink-0 text-emerald-700"/>
-                                <span className="truncate">{discussion.topic.title}</span>
-                            </Link>
-                        </div>
+                        {discussion.topic && (
+                            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+                                <Link
+                                    to={`/columns/${discussion.topic.sequence}`}
+                                    className={`group inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 hover:bg-emerald-100 hover:ring-emerald-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-all shadow-sm hover:shadow`}
+                                >
+                                    <FileText className="h-4 w-4 shrink-0 text-emerald-700" />
+                                    <span className="truncate">{discussion.topic.title}</span>
+                                </Link>
+                            </div>
+                        )}
                     </div>
                 </div>
 

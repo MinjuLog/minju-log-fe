@@ -1,20 +1,19 @@
 import type { DiscussionStatusType } from "../types/DiscussionStatusType";
+import {statusMap} from "../mapper/statusMap.ts";
 
 interface Props {
-    status: Record<DiscussionStatusType, string>;
     selectedStatus: DiscussionStatusType;
     setSelectedStatus: (selectedStatus: DiscussionStatusType) => void;
 }
 
 export default function DiscussionsStatusFilter({
-                                                    status,
                                                     selectedStatus,
                                                     setSelectedStatus,
                                                 }: Props) {
     return (
         <div className="my-6">
             <div className="flex flex-wrap gap-2">
-                {Object.entries(status).map(([key, label]) => {
+                {Object.entries(statusMap).map(([key, label]) => {
                     const statusKey = key as DiscussionStatusType;
 
                     return (

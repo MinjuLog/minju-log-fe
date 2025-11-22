@@ -15,10 +15,6 @@ import type DiscussionPreviewType from "../types/DiscussionPreviewType";
 import { findProposalList } from "../../../api/proposal/proposal";
 import discussionPreviewConverter from "../converter/discussionPreviewConverter.ts";
 
-interface Props {
-    status: Record<DiscussionStatusType, string>;
-}
-
 const PAGE_SIZE = 3;
 const WINDOW_SIZE = 5;
 
@@ -31,7 +27,7 @@ const statusParamMap: Record<DiscussionStatusType, string | null> = {
     "반영 완료": "APPLIED",
 };
 
-export function DiscussionPreviewList({ status }: Props) {
+export function DiscussionPreviewList() {
     const [discussionPreviews, setDiscussionPreviews] = useState<DiscussionPreviewType[]>([]);
     const [totalPages, setTotalPages] = useState(1);
     const [totalElements, setTotalElements] = useState(0);
@@ -151,7 +147,6 @@ export function DiscussionPreviewList({ status }: Props) {
 
             {/* 상태 필터 */}
             <DiscussionsStatusFilter
-                status={status}
                 selectedStatus={selectedStatus}
                 setSelectedStatus={(v) => {
                     saveScroll();

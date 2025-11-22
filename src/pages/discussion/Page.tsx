@@ -3,9 +3,12 @@ import MainVotes from "./components/MainVotes.tsx";
 import Sidebar from "./components/Sidebar.tsx";
 import DiscussionHeader from "../../components/DiscussionHeader.tsx";
 import Comments from "./components/Comments.tsx";
-import type CommentType from "./types/CommentType.ts";
 import type SidebarDiscussionType from "./types/SidebarDiscussionType.ts";
 import type DiscussionType from "./types/DiscussionType.ts";
+import {useEffect, useState} from "react";
+import {findProposalDetail} from "../../api/proposal/proposal.ts";
+import discussionDetailConverter from "./converter/discussionDetailConverter.ts";
+import {useParams} from "react-router-dom";
 
 const sideBarDiscussionsMock: SidebarDiscussionType[] = [
     {
@@ -29,107 +32,153 @@ const sideBarDiscussionsMock: SidebarDiscussionType[] = [
         id: "local-council-02",
     },
 ];
-const discussionMock: DiscussionType = {
-    sequence: 1,
-    title: "우리 지역에도 청년 스마트팜을 도입해보는 건 어떨까요?",
-    topic: {
-        sequence: 1,
-        title: "(전남 곡성군) 청년 농부들이 이끄는 지역 스마트팜 협동조합",
-    },
-    content:
-        "저희 지역은 고령화가 빠르게 진행되고 있어 농업 인력 부족이 심각합니다. 지역 청년들이 주도하는 스마트팜을 도입하면, 기술 기반의 효율적인 농업 운영이 가능하고 청년 일자리 창출에도 도움이 될 것 같습니다. 여러분의 생각은 어떠신가요?",
-    createdAt: "2025-11-09T10:00:00.000Z",
-    expiredAt: "2025-12-31T00:00:00.000Z",
-    hashTags: ["청년", "스마트팜", "농업혁신"],
-    pros: 742,
-    cons: 389,
-};
-const commentMock: CommentType[] = [
-    {
-        id: "1",
-        authorId: "user-1",
-        authorName: "곡성청년농부",
-        timestamp: "25.11.01",
-        content: `인력난이 심한 상황에서 스마트팜은 생산성과 품질을 동시에 끌어올릴 수 있습니다.
-물·양분·온습도 자동 제어 덕분에 초보 청년도 짧은 기간에 운영을 배울 수 있고,
-야간 근무나 과도한 노동을 줄이는 효과도 있어요. 지역에 교육·인큐베이션 센터까지
-붙이면 창업 진입장벽도 낮출 수 있습니다.`,
-        likes: 78,
-        opinion: 1,
-    },
-    {
-        id: "2",
-        authorId: "user-2",
-        authorName: "재정지킴이",
-        timestamp: "25.11.01",
-        content: `초기 투자비와 운영비(전기료, 유지보수)가 만만치 않습니다.
-시설 지원만 하고 판로·수요 예측이 안 되면 실패 사례가 반복될 수 있어요.
-도입 전에 수익성 시뮬레이션과 단계별 지원 로드맵이 먼저라고 봅니다.`,
-        likes: 19,
-        opinion: 2,
-    },
-    {
-        id: "3",
-        authorId: localStorage.getItem("userId") ?? "user-3",
-        authorName: "농업데이터연구자",
-        timestamp: "25.11.01",
-        content: `스마트팜 핵심은 '데이터'입니다. 센서 데이터 수집→표준화→분석을 통해
-품종별 생육 레시피를 만들고, 병해충 조기 경보 모델을 돌리면 손실을 크게 줄일 수 있어요.
-군 단위로 공용 데이터 플랫폼을 두고, 농가별 맞춤 대시보드를 제공하면 효과적입니다.`,
-        likes: 41,
-        opinion: 1,
-    },
-    {
-        id: "4",
-        authorId: "user-4",
-        authorName: "마을이장_김",
-        timestamp: "25.11.01",
-        content: `시설보다 사람이 먼저라고 봅니다. 장비 깔아도 운영할 인력이 없으면 유지가 안 돼요.
-고장 나면 외부 업체 부르면 시간·비용이 크게 듭니다. 지역 내 기술자 양성과
-A/S 체계가 갖춰지지 않으면, 도입 규모를 확대하는 건 위험합니다.`,
-        likes: 33,
-        opinion: 2,
-    },
-    {
-        id: "5",
-        authorId: "user-5",
-        authorName: "스마트팜운영자",
-        timestamp: "25.11.01",
-        content: `동의합니다. 그래서 제안드립니다.
-1) 군청-대학-업체 컨소시엄으로 '현장 기술학교' 운영
-2) 군 단위 유지보수 공동센터 설립(예비 부품 상시 비치)
-3) 농가 간 장비 표준화로 A/S 시간 단축
-이렇게 묶으면 장애 대응이 빨라지고 비용도 낮출 수 있습니다.`,
-        likes: 27,
-        opinion: 1,
-    },
-    {
-        id: "6",
-        authorId: "user-6",
-        authorName: "환경모니터링동아리",
-        timestamp: "25.11.01",
-        content: `수질 센서와 재활용 수배관을 붙이면 물 사용량을 20~30% 절감할 수 있습니다.
-태양광+배터리 연계로 전력 피크 비용도 낮출 수 있고요.
-도입 시 '물·에너지 절감 KPI'를 명확히 두고, 월별 리포트를 공개하면 주민 수용성도 올라갑니다.`,
-        likes: 22,
-        opinion: 1,
-    },
-];
+// const discussionMock: DiscussionType = {
+//     sequence: 1,
+//     title: "우리 지역에도 청년 스마트팜을 도입해보는 건 어떨까요?",
+//     topic: {
+//         sequence: 1,
+//         title: "(전남 곡성군) 청년 농부들이 이끄는 지역 스마트팜 협동조합",
+//     },
+//     content:
+//         "저희 지역은 고령화가 빠르게 진행되고 있어 농업 인력 부족이 심각합니다. 지역 청년들이 주도하는 스마트팜을 도입하면, 기술 기반의 효율적인 농업 운영이 가능하고 청년 일자리 창출에도 도움이 될 것 같습니다. 여러분의 생각은 어떠신가요?",
+//     createdAt: "2025-11-09T10:00:00.000Z",
+//     expiredAt: "2025-12-31T00:00:00.000Z",
+//     hashTags: ["청년", "스마트팜", "농업혁신"],
+//     pros: 742,
+//     cons: 389,
+// };
+// const commentMock: CommentType[] = [
+//     {
+//         id: "1",
+//         authorId: "user-1",
+//         authorName: "곡성청년농부",
+//         timestamp: "25.11.01",
+//         content: `인력난이 심한 상황에서 스마트팜은 생산성과 품질을 동시에 끌어올릴 수 있습니다.
+// 물·양분·온습도 자동 제어 덕분에 초보 청년도 짧은 기간에 운영을 배울 수 있고,
+// 야간 근무나 과도한 노동을 줄이는 효과도 있어요. 지역에 교육·인큐베이션 센터까지
+// 붙이면 창업 진입장벽도 낮출 수 있습니다.`,
+//         likes: 78,
+//         opinion: 1,
+//     },
+//     {
+//         id: "2",
+//         authorId: "user-2",
+//         authorName: "재정지킴이",
+//         timestamp: "25.11.01",
+//         content: `초기 투자비와 운영비(전기료, 유지보수)가 만만치 않습니다.
+// 시설 지원만 하고 판로·수요 예측이 안 되면 실패 사례가 반복될 수 있어요.
+// 도입 전에 수익성 시뮬레이션과 단계별 지원 로드맵이 먼저라고 봅니다.`,
+//         likes: 19,
+//         opinion: 2,
+//     },
+//     {
+//         id: "3",
+//         authorId: localStorage.getItem("userId") ?? "user-3",
+//         authorName: "농업데이터연구자",
+//         timestamp: "25.11.01",
+//         content: `스마트팜 핵심은 '데이터'입니다. 센서 데이터 수집→표준화→분석을 통해
+// 품종별 생육 레시피를 만들고, 병해충 조기 경보 모델을 돌리면 손실을 크게 줄일 수 있어요.
+// 군 단위로 공용 데이터 플랫폼을 두고, 농가별 맞춤 대시보드를 제공하면 효과적입니다.`,
+//         likes: 41,
+//         opinion: 1,
+//     },
+//     {
+//         id: "4",
+//         authorId: "user-4",
+//         authorName: "마을이장_김",
+//         timestamp: "25.11.01",
+//         content: `시설보다 사람이 먼저라고 봅니다. 장비 깔아도 운영할 인력이 없으면 유지가 안 돼요.
+// 고장 나면 외부 업체 부르면 시간·비용이 크게 듭니다. 지역 내 기술자 양성과
+// A/S 체계가 갖춰지지 않으면, 도입 규모를 확대하는 건 위험합니다.`,
+//         likes: 33,
+//         opinion: 2,
+//     },
+//     {
+//         id: "5",
+//         authorId: "user-5",
+//         authorName: "스마트팜운영자",
+//         timestamp: "25.11.01",
+//         content: `동의합니다. 그래서 제안드립니다.
+// 1) 군청-대학-업체 컨소시엄으로 '현장 기술학교' 운영
+// 2) 군 단위 유지보수 공동센터 설립(예비 부품 상시 비치)
+// 3) 농가 간 장비 표준화로 A/S 시간 단축
+// 이렇게 묶으면 장애 대응이 빨라지고 비용도 낮출 수 있습니다.`,
+//         likes: 27,
+//         opinion: 1,
+//     },
+//     {
+//         id: "6",
+//         authorId: "user-6",
+//         authorName: "환경모니터링동아리",
+//         timestamp: "25.11.01",
+//         content: `수질 센서와 재활용 수배관을 붙이면 물 사용량을 20~30% 절감할 수 있습니다.
+// 태양광+배터리 연계로 전력 피크 비용도 낮출 수 있고요.
+// 도입 시 '물·에너지 절감 KPI'를 명확히 두고, 월별 리포트를 공개하면 주민 수용성도 올라갑니다.`,
+//         likes: 22,
+//         opinion: 1,
+//     },
+// ];
 
 export default function DiscussionPage() {
+    const { discussionSequence } = useParams<{ discussionSequence: string }>();
+    const userId = localStorage.getItem("userId");
+
+    const [discussionDetail, setDiscussionDetail] = useState<DiscussionType | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [myVote, setMyVote] = useState<"AGREE" | "DISAGREE" | null>(null);
+
+    useEffect(() => {
+        if (!discussionSequence) return;
+
+        const load = async () => {
+            const res = await findProposalDetail(Number(discussionSequence), userId ?? '');
+
+            if (!res.ok) {
+                alert(res.message);
+                setLoading(false);
+                return;
+            }
+
+            if (res.result.myVote?.didVote) setMyVote(res.result.myVote.type)
+
+            const converted = discussionDetailConverter(res);
+            setDiscussionDetail(converted);
+            setLoading(false);
+        };
+
+        load();
+    }, [discussionSequence, userId]);
+
+    if (loading) {
+        return (
+            <div className="px-16 py-8">
+                <DiscussionHeader />
+                <div>불러오는 중입니다...</div>
+            </div>
+        );
+    }
+
+    if (!discussionDetail) {
+        return (
+            <div className="px-16 py-8">
+                <DiscussionHeader />
+                <div>제안 정보를 찾을 수 없습니다.</div>
+            </div>
+        );
+    }
 
     return (
-        <div className="">
+        <div>
             <div className="px-16 py-8">
-                <DiscussionHeader/>
+                <DiscussionHeader />
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    <MainVotes discussion={discussionMock} />
+                    <MainVotes discussion={discussionDetail} myVote={myVote} />
                     <Sidebar sidebarDiscussions={sideBarDiscussionsMock} />
                 </div>
                 <div className="flex">
-                    <Comments comments={commentMock} />
+                    <Comments />
                 </div>
             </div>
         </div>
-    )
+    );
 }

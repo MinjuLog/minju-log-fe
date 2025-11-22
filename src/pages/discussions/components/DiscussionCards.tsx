@@ -13,8 +13,8 @@ export function DiscussionCards() {
         const load = async () => {
             const res = await findProposalList({
                 keyword: "",
-                status: "OPEN",
-                sort: "LATEST",
+                status: "COLLECTING",
+                sort: "latest",
                 pageable: {
                     page: 0,
                     size: 4,
