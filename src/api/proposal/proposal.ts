@@ -11,6 +11,9 @@ export const createProposal = async (
     data: CreateProposalRequest
 ): Promise<CreateProposalResponse | ErrorResponse> => {
     try {
+        // TODO 삭제
+        if (data.selectedTopicId === -1) delete data.selectedTopicId;
+        data.userId = 1;
         const res = await api.post("/api/proposals", data);
         return {
             ok: true,

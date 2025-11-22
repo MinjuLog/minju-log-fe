@@ -1,8 +1,8 @@
 export default interface CreateProposalRequest {
-    userId: string;
+    userId: string | number;
     title: string;
     body: string;
-    hashTags: string[];
+    hashtags: string[];
     dueDate: string;
-    topicId?: number;
+    selectedTopicId?: number;
 }

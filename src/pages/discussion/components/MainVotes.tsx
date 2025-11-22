@@ -5,6 +5,7 @@ import SignSubmitModal from "./SignSubmitModal.tsx";
 import type DiscussionType from "../types/DiscussionType.ts";
 import {Link, useParams} from "react-router-dom";
 import {createVote} from "../../../api/vote/vote.ts";
+import {createSignature} from "../../../api/signature/signature.ts";
 
 interface props {
     discussion: DiscussionType;
@@ -40,12 +41,32 @@ export default function MainVotes({ discussion, myVote }: props) {
         const seq = Number(discussionSequence);
         const type = id === 1 ? "AGREE" : "DISAGREE";
         const userId = localStorage.getItem("userId") ?? '';
-        await createVote(seq, userId, type)
+
+        const res = await createVote(seq, userId, type);
+
+        if (!res.ok) {
+            alert(res.message);
+        }
+
         setIsConfirmModalOpen(false);
         setIsSubmitModalOpen(true);
     };
 
-    const handleSubmit = () => setIsSubmitModalOpen(false);
+    const handleSubmit = async (content: string) => {
+        const seq = Number(discussionSequence);
+        const type = selectedId === 1 ? "AGREE" : "DISAGREE";
+
+        const userId = localStorage.getItem("userId") ?? '';
+
+        const res = await createSignature(seq, userId, type, content);
+
+        if (!res.ok) {
+            alert(res.message);
+        }
+
+        setIsSubmitModalOpen(false);
+        window.location.reload();
+    };
 
     // ✅ 남은 시간 계산 useEffect
     useEffect(() => {
@@ -143,7 +164,7 @@ export default function MainVotes({ discussion, myVote }: props) {
                                     setSelectedId(option.id);
                                     setIsConfirmModalOpen(true);
                                 }}
-                                disabled={timeLeft.expired || selectedId !== null} // 투표 종료 시 클릭 불가
+                                // disabled={timeLeft.expired || selectedId !== null} // 투표 종료 시 클릭 불가
                                 className={`group relative flex min-h-[120px] flex-col items-center justify-center gap-3 rounded-2xl p-6 transition-all ${option.color} ${
                                     isSelected ? "ring-4 ring-offset-2 ring-gray-100" : ""
                                 } ${(timeLeft.expired || selectedId !== null) ? "cursor-not-allowed" : ""}`}

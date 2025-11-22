@@ -46,23 +46,23 @@ export default function SignSubmitModal({ isOpen, onClose, selectedId, selectedO
             {/* Modal */}
             <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
                 {/* Close Button */}
-                <button
-                    onClick={onClose}
-                    className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
-                    aria-label="Close modal"
-                >
-                    <svg
-                        className="w-5 h-5 text-gray-600"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    >
-                        <path d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
+                {/*<button*/}
+                {/*    onClick={onClose}*/}
+                {/*    className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"*/}
+                {/*    aria-label="Close modal"*/}
+                {/*>*/}
+                {/*    <svg*/}
+                {/*        className="w-5 h-5 text-gray-600"*/}
+                {/*        fill="none"*/}
+                {/*        strokeLinecap="round"*/}
+                {/*        strokeLinejoin="round"*/}
+                {/*        strokeWidth="2"*/}
+                {/*        viewBox="0 0 24 24"*/}
+                {/*        stroke="currentColor"*/}
+                {/*    >*/}
+                {/*        <path d="M6 18L18 6M6 6l12 12" />*/}
+                {/*    </svg>*/}
+                {/*</button>*/}
 
                 {/* Content */}
                 <div className="p-8">
@@ -102,12 +102,12 @@ export default function SignSubmitModal({ isOpen, onClose, selectedId, selectedO
                         >
                             찬반 서명 남기기
                         </button>
-                        <button
-                            onClick={onClose}
-                            className="w-full text-gray-500 hover:text-gray-700 font-medium transition-colors"
-                        >
-                            다음에
-                        </button>
+                        {/*<button*/}
+                        {/*    onClick={onClose}*/}
+                        {/*    className="w-full text-gray-500 hover:text-gray-700 font-medium transition-colors"*/}
+                        {/*>*/}
+                        {/*    다음에*/}
+                        {/*</button>*/}
                     </div>
                 </div>
             </div>

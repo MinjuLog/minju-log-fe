@@ -97,7 +97,7 @@ export default function WritingPage() {
             userId: localStorage.getItem("userId") ?? "",
             title: title,
             body: content,
-            hashTags: selectedHashTags,
+            hashtags: selectedHashTags,
             dueDate: dueDate,
             ...(selectedTopicId != null && { selectedTopicId }),
         })

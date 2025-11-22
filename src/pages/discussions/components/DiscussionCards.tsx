@@ -15,11 +15,8 @@ export function DiscussionCards() {
                 keyword: "",
                 status: "COLLECTING",
                 sort: "latest",
-                pageable: {
-                    page: 0,
-                    size: 4,
-                    sort: ["proposalId,desc"],
-                },
+                page: 0,
+                size: 4,
             });
 
             // ErrorResponse | FindProposalListResponse 라고 가정
