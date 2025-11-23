@@ -1,14 +1,16 @@
 import type SidebarDiscussionType from "../types/SidebarDiscussionType.ts";
+import {useNavigate} from "react-router-dom";
 
 interface props {
     sidebarDiscussion: SidebarDiscussionType;
 }
 
 export default function SidebarDiscussion({ sidebarDiscussion }: props) {
+    const navigate = useNavigate();
     return (
         <div className="rounded-2xl p-5 bg-gray-100">
             <p className="mb-2 text-center text-sm text-gray-600">
-                종료까지 {sidebarDiscussion.endLeft}일 남음
+                종료까지 {sidebarDiscussion.endLeft} 남음
             </p>
 
             <h3 className="mb-4 text-center text-lg font-bold leading-tight text-gray-900">
@@ -53,7 +55,14 @@ export default function SidebarDiscussion({ sidebarDiscussion }: props) {
                 </div>
 
                 {/* 🔵 투표 버튼 */}
-                <button className="text-white w-full rounded-full bg-blue-600 py-2 text-base hover:bg-blue-700">
+                <button
+                    onClick={() => {
+                        navigate(`/discussions/${sidebarDiscussion.id}`);
+                        // 이동 직후 새로고침
+                        window.location.reload();
+                    }}
+                    className="text-white w-full rounded-full bg-blue-600 py-2 text-base hover:bg-blue-700"
+                >
                     투표하기
                 </button>
             </div>

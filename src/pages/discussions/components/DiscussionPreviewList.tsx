@@ -18,14 +18,61 @@ import discussionPreviewConverter from "../converter/discussionPreviewConverter.
 const PAGE_SIZE = 3;
 const WINDOW_SIZE = 5;
 
-// DiscussionStatusType → 백엔드에 넘길 status 값 매핑
 const statusParamMap: Record<DiscussionStatusType, string | null> = {
-    전체: null, // 전체면 status 파라미터 미사용 또는 빈 문자열로 처리
+    전체: null,
     COLLECTING: "OPEN",
     "전달 완료": "DELIVERED",
     "보도 중": "REPORTING",
     "반영 완료": "APPLIED",
 };
+
+// 스켈레톤 카드
+function DiscussionPreviewSkeleton() {
+    return (
+        <div
+            className="border-1 bg-secondary/20 rounded-xl p-6
+                       transition-all duration-300
+                       animate-pulse"
+        >
+            <div className="flex items-start justify-between mb-3">
+                <div className="flex gap-2">
+                    <span className="h-4 w-16 bg-gray-200 rounded" />
+                    <span className="h-4 w-14 bg-gray-200 rounded" />
+                    <span className="h-4 w-12 bg-gray-200 rounded" />
+                </div>
+                <span className="h-4 w-20 bg-gray-200 rounded" />
+            </div>
+
+            <div className="mb-4">
+                <div className="h-5 w-64 bg-gray-200 rounded mb-2" />
+                <div className="h-5 w-40 bg-gray-200 rounded" />
+            </div>
+
+            <div className="flex items-center justify-between">
+                <div className="flex gap-2">
+                    <div className="px-4 py-2 rounded-lg border-2 border-gray-200">
+                        <div className="h-4 w-28 bg-gray-200 rounded" />
+                    </div>
+                    <div className="px-4 py-2 rounded-lg border-2 border-gray-200">
+                        <div className="h-4 w-28 bg-gray-200 rounded" />
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-6">
+                    <div className="text-center">
+                        <div className="h-3 w-10 bg-gray-200 rounded mb-2" />
+                        <div className="h-4 w-8 bg-gray-200 rounded mx-auto" />
+                    </div>
+                    <div className="text-center">
+                        <div className="h-3 w-10 bg-gray-200 rounded mb-2" />
+                        <div className="h-4 w-8 bg-gray-200 rounded mx-auto" />
+                    </div>
+                    <div className="w-5 h-5 bg-gray-200 rounded-full" />
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export function DiscussionPreviewList() {
     const [discussionPreviews, setDiscussionPreviews] = useState<DiscussionPreviewType[]>([]);
@@ -35,18 +82,11 @@ export function DiscussionPreviewList() {
     const [error, setError] = useState<string | null>(null);
 
     const [selectedStatus, setSelectedStatus] = useState<DiscussionStatusType>("전체");
-
-    // 검색 입력값 & 실제 검색어
     const [inputValue, setInputValue] = useState("");
     const [query, setQuery] = useState("");
-
-    // 정렬: latest(최신순) / popular(인기순)
     const [sortOrder, setSortOrder] = useState<"latest" | "popular">("latest");
-
-    // 페이지 (1-based)
     const [page, setPage] = useState(1);
 
-    // 스크롤 유지용 ref
     const listWrapRef = useRef<HTMLDivElement | null>(null);
     const savedScrollRef = useRef<number>(0);
 
@@ -62,7 +102,6 @@ export function DiscussionPreviewList() {
         }
     });
 
-    // 서버에 필터/검색/정렬/페이지 반영해서 요청
     useEffect(() => {
         const load = async () => {
             try {
@@ -70,7 +109,6 @@ export function DiscussionPreviewList() {
                 setError(null);
 
                 const statusParam = statusParamMap[selectedStatus];
-
 
                 const params: any = {};
 
@@ -88,7 +126,6 @@ export function DiscussionPreviewList() {
                     return;
                 }
 
-                // convert → set state
                 const previews = discussionPreviewConverter(res);
                 setDiscussionPreviews(previews);
                 setTotalPages(res.totalPages);
@@ -102,7 +139,6 @@ export function DiscussionPreviewList() {
         load();
     }, [selectedStatus, sortOrder, query, page]);
 
-    // 검색 제출
     const submitSearch = () => {
         saveScroll();
         setPage(1);
@@ -129,7 +165,6 @@ export function DiscussionPreviewList() {
         setPage(p);
     };
 
-    // 페이지 번호 계산 (윈도우)
     const pageNumbers = (() => {
         const half = Math.floor(WINDOW_SIZE / 2);
         let start = Math.max(1, page - half);
@@ -145,7 +180,6 @@ export function DiscussionPreviewList() {
         <section className="mt-16 pt-16 border-t border-border">
             <h2 className="text-3xl font-bold mb-8">지난 동네한표</h2>
 
-            {/* 상태 필터 */}
             <DiscussionsStatusFilter
                 selectedStatus={selectedStatus}
                 setSelectedStatus={(v) => {
@@ -157,7 +191,6 @@ export function DiscussionPreviewList() {
 
             {/* 검색 + 정렬 */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
-                {/* 검색창 */}
                 <div className="relative flex-1 max-w-md">
                     <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
                     <input
@@ -189,7 +222,6 @@ export function DiscussionPreviewList() {
                     </button>
                 </div>
 
-                {/* 정렬 버튼 토글 */}
                 <button
                     onClick={() => {
                         saveScroll();
@@ -205,11 +237,10 @@ export function DiscussionPreviewList() {
 
             {/* 리스트 영역 */}
             <div ref={listWrapRef} className="space-y-4">
-                {loading && (
-                    <div className="text-center text-sm text-gray-500 py-6">
-                        불러오는 중입니다...
-                    </div>
-                )}
+                {loading &&
+                    Array.from({ length: PAGE_SIZE }).map((_, idx) => (
+                        <DiscussionPreviewSkeleton key={idx} />
+                    ))}
 
                 {!loading &&
                     discussionPreviews.map((preview) => (

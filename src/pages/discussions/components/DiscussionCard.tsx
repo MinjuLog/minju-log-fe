@@ -8,7 +8,7 @@ interface props {
 
 export default function DiscussionCard({ discussionCard }: props) {
 
-    const { votesCount, title, timeLeft, bgColor, image } = discussionCard;
+    const { votesCount, title, timeLeft, bgColor } = discussionCard;
 
     const navigate = useNavigate();
 
@@ -21,13 +21,13 @@ export default function DiscussionCard({ discussionCard }: props) {
                 <h2 className="text-3xl font-bold text-white leading-tight mb-6">{title}</h2>
             </div>
 
-            <div className="flex-1 flex items-center justify-center py-8">
-                <img
-                    src={image || "/placeholder.svg"}
-                    alt=""
-                    className="max-w-full h-auto object-contain"
-                />
-            </div>
+            {/*<div className="flex-1 flex items-center justify-center py-8">*/}
+            {/*    <img*/}
+            {/*        src={image || "/placeholder.svg"}*/}
+            {/*        alt=""*/}
+            {/*        className="max-w-full h-auto object-contain"*/}
+            {/*    />*/}
+            {/*</div>*/}
 
             <div className="flex items-center justify-between text-white/90">
                 <div className="flex items-center gap-2 text-sm">

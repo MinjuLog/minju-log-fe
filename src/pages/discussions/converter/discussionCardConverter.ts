@@ -1,6 +1,6 @@
 import type FindProposalListResponse from "../../../api/proposal/type/FindProposalListResponse.ts";
 import type DiscussionCardType from "../types/DiscussionCardType.ts";
-import getTimeLeft from "../util/getTimeLeft.ts";
+import getTimeLeft from "../../../utils/getTimeLeft.ts";
 
 export default function discussionCardConverter(
     data: FindProposalListResponse

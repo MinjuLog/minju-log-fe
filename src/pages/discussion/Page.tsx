@@ -3,35 +3,34 @@ import MainVotes from "./components/MainVotes.tsx";
 import Sidebar from "./components/Sidebar.tsx";
 import DiscussionHeader from "../../components/DiscussionHeader.tsx";
 import Comments from "./components/Comments.tsx";
-import type SidebarDiscussionType from "./types/SidebarDiscussionType.ts";
 import type DiscussionType from "./types/DiscussionType.ts";
 import {useEffect, useState} from "react";
 import {findProposalDetail} from "../../api/proposal/proposal.ts";
 import discussionDetailConverter from "./converter/discussionDetailConverter.ts";
 import {useParams} from "react-router-dom";
 
-const sideBarDiscussionsMock: SidebarDiscussionType[] = [
-    {
-        endLeft: 2,
-        mainTitle: "청년 창업 지원금",
-        subTitle: "절반 삭감, 타당한가?",
-        best: "찬성 66%",
-        content:
-            "예산 절감 명목으로 청년 지원이 줄어드는 건 이해하기 어렵네요. 실효성보다 생존이 먼저 아닐까요?",
-        votes: 731,
-        id: "local-budget-01",
-    },
-    {
-        endLeft: 3,
-        mainTitle: "지방의회",
-        subTitle: "특혜 논란 해소될까?",
-        best: "반대 71%",
-        content:
-            "의회 회의록 공개 확대는 환영하지만, 실제 실행력이 있을지가 문제. 공개만으로는 신뢰 못 얻습니다.",
-        votes: 418,
-        id: "local-council-02",
-    },
-];
+// const sideBarDiscussionsMock: SidebarDiscussionType[] = [
+//     {
+//         endLeft: 2,
+//         mainTitle: "청년 창업 지원금",
+//         subTitle: "절반 삭감, 타당한가?",
+//         best: "찬성 66%",
+//         content:
+//             "예산 절감 명목으로 청년 지원이 줄어드는 건 이해하기 어렵네요. 실효성보다 생존이 먼저 아닐까요?",
+//         votes: 731,
+//         id: "local-budget-01",
+//     },
+//     {
+//         endLeft: 3,
+//         mainTitle: "지방의회",
+//         subTitle: "특혜 논란 해소될까?",
+//         best: "반대 71%",
+//         content:
+//             "의회 회의록 공개 확대는 환영하지만, 실제 실행력이 있을지가 문제. 공개만으로는 신뢰 못 얻습니다.",
+//         votes: 418,
+//         id: "local-council-02",
+//     },
+// ];
 // const discussionMock: DiscussionType = {
 //     sequence: 1,
 //     title: "우리 지역에도 청년 스마트팜을 도입해보는 건 어떨까요?",
@@ -119,6 +118,89 @@ const sideBarDiscussionsMock: SidebarDiscussionType[] = [
 //     },
 // ];
 
+export function MainVotesSkeleton() {
+    return (
+        <div className="lg:col-span-2">
+            <div className="rounded-2xl bg-white p-8 shadow-sm animate-pulse">
+                {/* Header */}
+                <div className="mb-8 flex items-start justify-between">
+                    <div className="flex items-center gap-2 text-gray-600">
+                        <span className="h-5 w-40 bg-gray-200 rounded" />
+                    </div>
+                    <div className="h-9 w-9 rounded-lg bg-gray-200" />
+                </div>
+
+                {/* Title */}
+                <div className="mb-6 text-center">
+                    <div className="mx-auto h-6 w-64 bg-gray-200 rounded mb-2" />
+                    <div className="mx-auto h-6 w-40 bg-gray-200 rounded" />
+                </div>
+
+                {/* 주요 내용 박스 */}
+                <div className="mb-6 rounded-2xl bg-gray-50 p-8 shadow-inner">
+                    <div className="mx-auto max-w-3xl">
+                        <div className="mx-auto max-w-2xl space-y-3">
+                            <div className="h-3 w-full bg-gray-200 rounded" />
+                            <div className="h-3 w-5/6 bg-gray-200 rounded" />
+                            <div className="h-3 w-4/6 bg-gray-200 rounded" />
+                        </div>
+
+                        {/* 하단 라벨 */}
+                        <div className="mt-6 flex justify-center">
+                            <div className="h-7 w-44 rounded-full bg-gray-200" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* Voting Options Grid */}
+                <div className="mb-8 grid grid-cols-2 gap-4">
+                    {[0, 1].map(i => (
+                        <div
+                            key={i}
+                            className="relative flex min-h-[120px] flex-col items-center justify-center gap-3 rounded-2xl p-6 bg-gray-100"
+                        >
+                            <div className="h-12 w-12 rounded-full bg-gray-200" />
+                            <div className="h-5 w-28 bg-gray-200 rounded" />
+                        </div>
+                    ))}
+                </div>
+
+                {/* 투표 결과 */}
+                <div className="mb-12">
+                    <div className="flex items-center justify-between mb-3 text-sm text-gray-500">
+                        <span className="h-3 w-16 bg-gray-200 rounded" />
+                        <span className="h-3 w-16 bg-gray-200 rounded" />
+                    </div>
+
+                    <div className="relative h-6 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="absolute left-0 top-0 h-full w-1/2 bg-gray-200" />
+                        <div className="absolute right-0 top-0 h-full w-1/2 bg-gray-300" />
+                    </div>
+
+                    <div className="flex justify-between mt-3 font-bold text-gray-900">
+                        <span className="h-4 w-10 bg-gray-200 rounded" />
+                        <span className="h-4 w-10 bg-gray-200 rounded" />
+                    </div>
+                </div>
+
+                <hr />
+
+                {/* 투표 수 */}
+                <div className="my-6 flex items-center justify-center gap-2">
+                    <div className="h-5 w-5 rounded-full bg-gray-200" />
+                    <span className="h-4 w-32 bg-gray-200 rounded" />
+                </div>
+
+                {/* 남은 시간 표시 */}
+                <div className="text-center">
+                    <p className="mb-2 text-sm text-gray-600 h-4 w-24 bg-gray-200 rounded mx-auto" />
+                    <p className="mx-auto h-8 w-40 bg-gray-200 rounded" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function DiscussionPage() {
     const { discussionSequence } = useParams<{ discussionSequence: string }>();
     const userId = localStorage.getItem("userId");
@@ -149,31 +231,17 @@ export default function DiscussionPage() {
         load();
     }, [discussionSequence, userId]);
 
-    if (loading) {
-        return (
-            <div className="px-16 py-8">
-                <DiscussionHeader />
-                <div>불러오는 중입니다...</div>
-            </div>
-        );
-    }
-
-    if (!discussionDetail) {
-        return (
-            <div className="px-16 py-8">
-                <DiscussionHeader />
-                <div>제안 정보를 찾을 수 없습니다.</div>
-            </div>
-        );
-    }
-
     return (
         <div>
             <div className="px-16 py-8">
                 <DiscussionHeader />
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    <MainVotes discussion={discussionDetail} myVote={myVote} />
-                    <Sidebar sidebarDiscussions={sideBarDiscussionsMock} />
+                    {loading || !discussionDetail ? (
+                        <MainVotesSkeleton />
+                    ) : (
+                        <MainVotes discussion={discussionDetail} myVote={myVote} />
+                    )}
+                    <Sidebar/>
                 </div>
                 <div className="flex">
                     <Comments />
