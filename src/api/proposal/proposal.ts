@@ -70,11 +70,8 @@ export const findProposalDetail = async (
 ): Promise<FindProposalDetailResponse | ErrorResponse> => {
     try {
         const res = await api.get(`/api/proposals/${id}`, {
-            // params: {
-            //     userId,
-            // },
             params: {
-                userId: 1,
+                userId,
             },
         });
 

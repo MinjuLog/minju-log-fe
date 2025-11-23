@@ -36,13 +36,13 @@ export const getSignatureList = async (
 
 export const createSignature = async (
     proposalId: number,
-    userId: string,
+    userId: number,
     signatureType: "AGREE" | "DISAGREE",
     content: string
 ): Promise<CreateSignatureResponse | ErrorResponse> => {
     try {
         const res = await api.post(`/api/proposals/${proposalId}/signatures`, {
-            userId: 1,
+            userId,
             signatureType,
             content
         });

@@ -5,12 +5,12 @@ import axios from "axios";
 
 export const createVote = async (
     proposalId: number,
-    userId: string,
+    userId: number,
     voteType: "AGREE" | "DISAGREE"
 ): Promise<CreateVoteResponse | ErrorResponse> => {
     try {
         const res = await api.post(`/api/proposals/${proposalId}/votes`, {
-            userId: 1,
+            userId,
             voteType, // 서버에 vote 타입 전달
         });
 

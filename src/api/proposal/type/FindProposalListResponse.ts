@@ -7,7 +7,7 @@ export default interface FindProposalListResponse {
         title: string;
         status: "COLLECTING" | "전달 완료" | "보도 중" | "반영 완료";
         viewCount: number;
-        hashTags: string[];
+        hashtags: string[];
         dueDate: string;
         agreeSignatureCount: number;
         disagreeSignatureCount: number;

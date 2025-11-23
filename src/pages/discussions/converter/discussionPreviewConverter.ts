@@ -9,11 +9,11 @@ export default function discussionPreviewConverter(
         status: c.status,
         title: c.title,
         result: {
-            pros: c.agreeVoteCount,
-            cons: c.disagreeVoteCount,
+            pros: (c.agreeVoteCount + c.disagreeVoteCount) === 0 ? 0 : Number(((c.agreeVoteCount / (c.agreeVoteCount + c.disagreeVoteCount)) * 100).toFixed(1)),
+            cons: (c.agreeVoteCount + c.disagreeVoteCount) === 0 ? 0 : Number(((c.agreeVoteCount / (c.agreeVoteCount + c.disagreeVoteCount)) * 100).toFixed(1)),
         },
         votes: c.agreeVoteCount + c.disagreeVoteCount,
         discussions: c.agreeSignatureCount + c.disagreeVoteCount,
-        hashTags: c.hashTags,
+        hashTags: c.hashtags,
     }));
 }

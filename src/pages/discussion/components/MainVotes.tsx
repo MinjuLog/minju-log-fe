@@ -42,7 +42,7 @@ export default function MainVotes({ discussion, myVote }: props) {
         const type = id === 1 ? "AGREE" : "DISAGREE";
         const userId = localStorage.getItem("userId") ?? '';
 
-        const res = await createVote(seq, userId, type);
+        const res = await createVote(seq, Number(userId), type);
 
         if (!res.ok) {
             alert(res.message);
@@ -58,7 +58,7 @@ export default function MainVotes({ discussion, myVote }: props) {
 
         const userId = localStorage.getItem("userId") ?? '';
 
-        const res = await createSignature(seq, userId, type, content);
+        const res = await createSignature(seq, Number(userId), type, content);
 
         if (!res.ok) {
             alert(res.message);

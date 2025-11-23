@@ -33,7 +33,7 @@ export default function DiscussionPreview({ discussionPreview }: props) {
                             key={index}
                             className="text-sm text-muted-foreground font-medium"
                         >
-                          #{hashtag}
+                          {hashtag}
                         </span>
                     ))}
                 </div>

@@ -18,7 +18,7 @@ export default function discussionCardConverter(
         title: c.title,
         timeLeft: getTimeLeft(c.dueDate), // ← 여기
         bgColor: colors[idx % colors.length],
-        hashTags: c.hashTags,
+        hashTags: c.hashtags,
         status: c.status,
     }));
 }

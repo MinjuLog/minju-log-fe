@@ -9,8 +9,6 @@ import Comment from "./Comment"
 import { getSignatureList } from "../../../api/signature/signature"
 import commentsConverter from "../converter/commentsConverter"
 
-// ... 위의 import 그대로 유지
-
 const PAGE_SIZE = 5
 type SortBy = "likes" | "latest"
 
@@ -75,13 +73,10 @@ export default function CommentsPage() {
             try {
                 setLoading(true)
 
-                const page = 0
-                const size = 100
-
                 const res = await getSignatureList(
                     Number(discussionSequence),
-                    page,
-                    size
+                    0,
+                    PAGE_SIZE
                 )
 
                 if (!res.ok) {
@@ -98,7 +93,7 @@ export default function CommentsPage() {
         }
 
         load()
-    }, [discussionSequence])
+    }, [discussionSequence, sortBy])
 
     const filteredComments = comments
 

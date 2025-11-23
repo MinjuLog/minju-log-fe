@@ -56,7 +56,7 @@ export default function KanbanCard({ project }: Props) {
                             key={`${project.sequence}-${hashTag}`}
                             className={`${getRandomBg()} text-gray-700 px-2 py-1 rounded text-xs font-medium`}
                         >
-              #{hashTag}
+              {hashTag}
             </span>
                     ))}
                 </div>
