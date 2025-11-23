@@ -63,14 +63,14 @@ export default function Comment({ comment }: props) {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-4">
-                <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700">
-                    <ThumbsUp className="h-4 w-4" />
-                    {comment.likes > 0 && (
-                        <span className="text-sm">{comment.likes}</span>
-                    )}
-                </button>
-            </div>
+            {/*<div className="flex items-center gap-4">*/}
+            {/*    <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700">*/}
+            {/*        <ThumbsUp className="h-4 w-4" />*/}
+            {/*        {comment.likes > 0 && (*/}
+            {/*            <span className="text-sm">{comment.likes}</span>*/}
+            {/*        )}*/}
+            {/*    </button>*/}
+            {/*</div>*/}
         </div>
     );
 }

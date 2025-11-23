@@ -146,9 +146,9 @@ export default function CommentsPage() {
                         <ArrowDownUp className="h-4 w-4" />
                     </button>
 
-                    <button className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                        내가 쓴 찬반 서명
-                    </button>
+                    {/*<button className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">*/}
+                    {/*    내가 쓴 찬반 서명*/}
+                    {/*</button>*/}
                 </div>
             </div>
 
