@@ -1,4 +1,3 @@
-import { ThumbsUp } from "lucide-react";
 import type CommentType from "../types/CommentType.ts";
 
 interface props {
