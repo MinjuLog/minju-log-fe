@@ -139,7 +139,10 @@ import type FindProposalListResponse from "../../api/proposal/type/FindProposalL
 //             },
 //         ],
 //     },
-// ];
+// ];\
+
+
+const PAGE_SIZE = 2;
 
 export default function DashboardPage() {
     const [location, setLocation] = useState("");
@@ -147,10 +150,11 @@ export default function DashboardPage() {
 
     const [sortOrder, setSortOrder] = useState<"최신순" | "인기순">("최신순");
 
-    // Kanban 데이터 로딩 상태 + 실제 데이터
     const [kanbans, setKanbans] = useState<KanbanType[] | null>(null);
     const [kanbanLoading, setKanbanLoading] = useState(true);
     const [kanbanError, setKanbanError] = useState<string | null>(null);
+
+    const [loadingColumn, setLoadingColumn] = useState<string | null>(null); // 특정 컬럼 loadMore 로딩용
 
     const handleRefreshLocation: () => Promise<(() => void) | undefined> = async () => {
         if (!navigator.geolocation) {
@@ -214,26 +218,24 @@ export default function DashboardPage() {
         handleRefreshLocation();
     }, []);
 
-    // Kanban 데이터 로드
+    // Kanban 데이터 최초 로드 & 정렬 변경 시 재로드
     useEffect(() => {
         const loadKanbans = async () => {
             try {
                 setKanbanLoading(true);
                 setKanbanError(null);
 
-                // 컬럼별 설정: title / color / 백엔드 status 값
                 const columnsConfig: {
                     title: string;
                     color: KanbanType["color"];
                     status: string;
                 }[] = [
-                    { title: "의견 취합중", color: "purple", status: "COLLECTING" },
+                    { title: "의견 취합중",   color: "purple", status: "COLLECTING" },
                     { title: "의견 전달 완료", color: "indigo", status: "DELIVERED" },
-                    { title: "보도중", color: "orange", status: "REPORTING" },
-                    { title: "반영 완료", color: "green", status: "APPLIED" },
+                    { title: "보도중",       color: "orange", status: "REPORTING" },
+                    { title: "반영 완료",    color: "green",  status: "APPLIED" },
                 ];
 
-                // 병렬 호출
                 const responses = await Promise.all(
                     columnsConfig.map((col) =>
                         findProposalList({
@@ -241,12 +243,11 @@ export default function DashboardPage() {
                             status: col.status,
                             sort: sortOrder === "최신순" ? "latest" : "popular",
                             page: 0,
-                            size: 4,
+                            size: PAGE_SIZE,
                         })
                     )
                 );
 
-                // 에러 체크
                 const anyError = responses.find((r) => !r.ok);
                 if (anyError && !anyError.ok) {
                     setKanbanError(anyError.message);
@@ -255,15 +256,14 @@ export default function DashboardPage() {
                     return;
                 }
 
-                // ok 가정 후 변환
                 const mapped: KanbanType[] = responses.map((res, idx) => {
                     const col = columnsConfig[idx];
-                    // res는 FindProposalListResponse 형태라고 가정
-                    res = res as FindProposalListResponse
-                    const projects = kanbanConverter(res); // KanbanType["projects"] 배열 반환
+                    const okRes = res as FindProposalListResponse;
+                    const projects = kanbanConverter(okRes); // KanbanType["projects"][]
                     return {
                         title: col.title,
                         color: col.color,
+                        total: okRes.totalElements,
                         projects,
                     };
                 });
@@ -281,6 +281,69 @@ export default function DashboardPage() {
         loadKanbans();
     }, [sortOrder]);
 
+    // ✅ 특정 컬럼만 Load More
+    const handleColumnLoadMore = async (columnTitle: string) => {
+        if (!kanbans) return;
+
+        const target = kanbans.find((k) => k.title === columnTitle);
+        if (!target) return;
+
+        // 이미 다 불러왔으면 종료
+        if (target.projects.length >= target.total) return;
+
+        // 다음 page 계산 (0-based)
+        const nextPage = Math.floor(target.projects.length / PAGE_SIZE);
+
+        // title → status 매핑 (위 columnsConfig와 동일하게 관리)
+        const statusByTitle: Record<string, string> = {
+            "의견 취합중": "COLLECTING",
+            "의견 전달 완료": "DELIVERED",
+            "보도중": "REPORTING",
+            "반영 완료": "APPLIED",
+        };
+
+        const status = statusByTitle[columnTitle];
+        if (!status) return;
+
+        try {
+            setLoadingColumn(columnTitle);
+
+            const res = await findProposalList({
+                keyword: "",
+                status,
+                sort: sortOrder === "최신순" ? "latest" : "popular",
+                page: nextPage,
+                size: PAGE_SIZE,
+            });
+
+            if (!res.ok) {
+                alert(res.message);
+                return;
+            }
+
+            const okRes = res as FindProposalListResponse;
+            const moreProjects = kanbanConverter(okRes);
+
+            setKanbans((prev) => {
+                if (!prev) return prev;
+                return prev.map((col) =>
+                    col.title === columnTitle
+                        ? {
+                            ...col,
+                            projects: [...col.projects, ...moreProjects],
+                            total: okRes.totalElements, // 혹시 total이 변할 수 있다면 갱신
+                        }
+                        : col
+                );
+            });
+        } catch (err) {
+            console.error(err);
+            alert("추가 항목을 불러오지 못했습니다.");
+        } finally {
+            setLoadingColumn(null);
+        }
+    };
+
     const isBoardLoading = kanbanLoading || isLocLoading;
 
     return (
@@ -294,11 +357,14 @@ export default function DashboardPage() {
                 setSortOrder={setSortOrder}
             />
 
-            {/* Kanban Board */}
             {isBoardLoading || !kanbans ? (
                 <KanbanBoardSkeleton />
             ) : (
-                <KanbanBoard kanbans={kanbans} />
+                <KanbanBoard
+                    kanbans={kanbans}
+                    onLoadMore={handleColumnLoadMore}
+                    loadingColumn={loadingColumn}
+                />
             )}
 
             {kanbanError && (
