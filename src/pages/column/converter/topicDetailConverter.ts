@@ -7,7 +7,7 @@ export default function topicDetailConverter(data: GetTopicDetailResponse): Topi
         id: result.id,
         header: {
             tag: "HOT",
-            category: result.hashtags.join("# "),
+            category: result.hashtags.join(", "),
             title: result.title,
             timeAgo: "22분 전",
             author: "민주로그팀",
