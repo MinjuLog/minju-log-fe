@@ -12,7 +12,7 @@ export const createProposal = async (
 ): Promise<CreateProposalResponse | ErrorResponse> => {
     try {
         // TODO 삭제
-        if (data.selectedTopicId === -1) delete data.selectedTopicId;
+        if (data.topicId === -1) delete data.topicId;
         data.userId = 1;
         const res = await api.post("/api/proposals", data);
         return {

@@ -4,5 +4,5 @@ export default interface CreateProposalRequest {
     body: string;
     hashtags: string[];
     dueDate: string;
-    selectedTopicId?: number;
+    topicId?: number;
 }

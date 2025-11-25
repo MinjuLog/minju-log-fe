@@ -131,6 +131,11 @@ export default function WritingPage() {
     ]
 
     const handleSubmit = async () => {
+        if (!dueDate) {
+            alert(`게시 기간을 설정해야 합니다.`);
+            return;
+        }
+
         if (title.length < titleMinLength) {
             alert(`제목은 최소 ${titleMinLength}자 이상이어야 합니다.`)
             return
@@ -146,7 +151,7 @@ export default function WritingPage() {
             body: content,
             hashtags: selectedHashTags,
             dueDate: dueDate,
-            ...(selectedTopicId != null && { selectedTopicId }),
+            ...(selectedTopicId != null && { topicId: selectedTopicId }),
         })
 
         if (!res.ok) {
