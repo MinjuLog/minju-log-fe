@@ -1,1 +1,1 @@
-export type DiscussionStatusType = "전체" | "COLLECTING" | "전달 완료" | "보도 중" | "반영 완료";
+export type DiscussionStatusType = "전체" | "COLLECTING" | "DELIVERED" | "REPORTING" | "COMPLETED";

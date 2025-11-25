@@ -18,14 +18,6 @@ import discussionPreviewConverter from "../converter/discussionPreviewConverter.
 const PAGE_SIZE = 3;
 const WINDOW_SIZE = 5;
 
-const statusParamMap: Record<DiscussionStatusType, string | null> = {
-    전체: null,
-    COLLECTING: "OPEN",
-    "전달 완료": "DELIVERED",
-    "보도 중": "REPORTING",
-    "반영 완료": "COMPLETED",
-};
-
 // 스켈레톤 카드
 function DiscussionPreviewSkeleton() {
     return (
@@ -108,12 +100,10 @@ export function DiscussionPreviewList() {
                 setLoading(true);
                 setError(null);
 
-                const statusParam = statusParamMap[selectedStatus];
-
                 const params: any = {};
 
                 if (query) params.keyword = query;
-                if (statusParam) params.status = statusParam;
+                if (selectedStatus) params.status = selectedStatus;
                 if (sortOrder) params.sort = sortOrder;
                 if (page) params.page = page - 1;
                 params.size = PAGE_SIZE;

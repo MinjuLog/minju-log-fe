@@ -1,6 +1,6 @@
 export default interface DiscussionPreviewType {
     id: number;
-    status: "COLLECTING" | "전달 완료" | "보도 중" | "반영 완료";
+    status: "COLLECTING" | "DELIVERED" | "REPORTING" | "COMPLETED";
     title: string;
     result: {
         pros: number,

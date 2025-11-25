@@ -6,7 +6,7 @@ export default interface FindProposalListResponse {
         id: number;
         title: string;
         body: string;
-        status: "COLLECTING" | "전달 완료" | "보도 중" | "반영 완료";
+        status: "COLLECTING" | "DELIVERED" | "REPORTING" | "COMPLETED";
         viewCount: number;
         hashtags: string[];
         dueDate: string;
