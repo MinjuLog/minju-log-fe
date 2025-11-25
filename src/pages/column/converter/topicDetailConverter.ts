@@ -1,5 +1,6 @@
 import type GetTopicDetailResponse from "../../../api/topic/type/GetTopicDetailResponse.ts";
 import type TopicDetailType from "../type/TopicDetailType.ts";
+import formatDate from "../../../utils/formatDate.ts";
 
 export default function topicDetailConverter(data: GetTopicDetailResponse): TopicDetailType {
     const result = data.result;
@@ -9,7 +10,7 @@ export default function topicDetailConverter(data: GetTopicDetailResponse): Topi
             tag: "HOT",
             category: result.hashtags.join(", "),
             title: result.title,
-            timeAgo: "22분 전",
+            timeAgo: formatDate(result.createdAt),
             author: "민주로그팀",
         },
         body: {

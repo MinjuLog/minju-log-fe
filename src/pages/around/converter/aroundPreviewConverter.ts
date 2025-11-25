@@ -6,7 +6,7 @@ export default function aroundPreviewConverter(data: GetTopicListResponse) {
         const colors = getRandomColors()
         return {
             id: item.id,
-            label: "?",
+            label: item.region,
             title: item.title,
             bgColor: colors.bgColor,
             textColor: colors.textColor,

@@ -6,6 +6,6 @@ export default interface GetTopicDetailResponse {
         region: string;
         hashtags: string[];
         content: string;
-        createdAt: string;
+        createdAt: number[];
     }
 }
