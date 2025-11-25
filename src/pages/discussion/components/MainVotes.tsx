@@ -161,6 +161,15 @@ export default function MainVotes({ discussion, myVote }: props) {
                             <button
                                 key={option.id}
                                 onClick={() => {
+                                    if (timeLeft.expired) {
+                                        alert("투표가 종료되었습니다.")
+                                        return;
+                                    }
+                                    if (selectedId) {
+                                        alert("이미 투표하셨습니다.");
+                                        return;
+                                    }
+
                                     setSelectedId(option.id);
                                     setIsConfirmModalOpen(true);
                                 }}

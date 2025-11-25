@@ -12,6 +12,8 @@ export default interface FindProposalDetailResponse {
         disagreeSignatureCount: number;
         agreeVoteCount: number;
         disagreeVoteCount: number;
+        topicId?: number;
+        topicName?: string;
         mySignature: {
             didSign: boolean;
             type: string;

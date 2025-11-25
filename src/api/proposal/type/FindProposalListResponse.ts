@@ -14,5 +14,8 @@ export default interface FindProposalListResponse {
         disagreeSignatureCount: number;
         agreeVoteCount: number;
         disagreeVoteCount: number;
+        createdAt: number[];
+        topicId?: number;
+        topicName?: string;
     }[]
 }

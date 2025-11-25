@@ -10,10 +10,11 @@ export default function discussionPreviewConverter(
         title: c.title,
         result: {
             pros: (c.agreeVoteCount + c.disagreeVoteCount) === 0 ? 0 : Number(((c.agreeVoteCount / (c.agreeVoteCount + c.disagreeVoteCount)) * 100).toFixed(1)),
-            cons: (c.agreeVoteCount + c.disagreeVoteCount) === 0 ? 0 : Number(((c.agreeVoteCount / (c.agreeVoteCount + c.disagreeVoteCount)) * 100).toFixed(1)),
+            cons: (c.agreeVoteCount + c.disagreeVoteCount) === 0 ? 0 : Number(((c.disagreeVoteCount / (c.agreeVoteCount + c.disagreeVoteCount)) * 100).toFixed(1)),
         },
         votes: c.agreeVoteCount + c.disagreeVoteCount,
         discussions: c.agreeSignatureCount + c.disagreeVoteCount,
         hashTags: c.hashtags,
+        expiredAt: c.dueDate,
     }));
 }

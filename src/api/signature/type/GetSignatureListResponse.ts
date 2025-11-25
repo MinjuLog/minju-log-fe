@@ -12,7 +12,7 @@ export interface SignatureListResult {
         nickname: string;
         signatureType: "AGREE" | "DISAGREE" | string;
         content: string;
-        createdAt: string;
+        createdAt: number[];
     }[];
     number: number;
     last: boolean;

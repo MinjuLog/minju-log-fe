@@ -9,12 +9,12 @@ export default function discussionDetailConverter(
     return {
         sequence: result.id,
         title: result.title,
-        // topic: result.topic
-        //     ? {
-        //         sequence: result.topic.sequence,
-        //         title: result.topic.title,
-        //     }
-        //     : null,
+        topic: (result.topicId && result.topicName)
+            ? {
+                sequence: result.topicId,
+                title: result.topicName
+            }
+            : undefined,
         content: result.body,
         createdAt: result.createdAt,
         expiredAt: result.dueDate,

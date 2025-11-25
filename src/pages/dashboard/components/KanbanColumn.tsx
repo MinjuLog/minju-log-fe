@@ -42,7 +42,7 @@ export default function KanbanColumn({ kanban, onLoadMore, loadingColumn }: prop
             <div className="space-y-4">
                 {total === 0 ? (
                     <div className="text-sm text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-lg p-6">
-                        아직 등록된 카드가 없습니다.
+                        등록된 동네한표가 없습니다.
                     </div>
                 ) : (
                     kanban.projects.map((project) => (

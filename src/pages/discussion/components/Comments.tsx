@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { ArrowDownUp } from "lucide-react"
+import {ArrowLeftRightIcon} from "lucide-react"
 import { useParams } from "react-router-dom"
 
 import type CommentType from "../types/CommentType"
@@ -10,7 +10,8 @@ import { getSignatureList } from "../../../api/signature/signature"
 import commentsConverter from "../converter/commentsConverter"
 
 const PAGE_SIZE = 5
-type SortBy = "likes" | "latest"
+// type SortBy = "likes" | "latest"
+type FilterBy = "ALL" | "AGREE" | "DISAGREE"
 
 function CommentsSkeleton() {
     return (
@@ -64,7 +65,8 @@ export default function CommentsPage() {
     const [loading, setLoading] = useState(true)
     const [comments, setComments] = useState<CommentType[]>([])
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
-    const [sortBy, setSortBy] = useState<SortBy>("likes")
+    // const [sortBy, setSortBy] = useState<SortBy>("likes")
+    const [filterBy, setFilterBy] = useState<FilterBy>("ALL")
 
     useEffect(() => {
         if (!discussionSequence) return
@@ -93,21 +95,21 @@ export default function CommentsPage() {
         }
 
         load()
-    }, [discussionSequence, sortBy])
+    }, [discussionSequence, filterBy])
 
     const filteredComments = comments
 
-    const parseTs = (ts: string) => new Date(ts).getTime()
+    // const parseTs = (ts: string) => new Date(ts).getTime()
 
     const sortedComments = useMemo(() => {
         const arr = [...filteredComments]
-        if (sortBy === "likes") {
-            arr.sort((a, b) => b.likes - a.likes)
-        } else {
-            arr.sort((a, b) => parseTs(b.timestamp) - parseTs(a.timestamp))
-        }
+        // if (sortBy === "likes") {
+        //     arr.sort((a, b) => b.likes - a.likes)
+        // } else {
+        //     arr.sort((a, b) => parseTs(b.timestamp) - parseTs(a.timestamp))
+        // }
         return arr
-    }, [filteredComments, sortBy])
+    }, [filteredComments, filterBy])
 
     const canLoadMore = visibleCount < sortedComments.length
 
@@ -117,8 +119,13 @@ export default function CommentsPage() {
         )
     }
 
-    const handleToggleSort = () => {
-        setSortBy(prev => (prev === "likes" ? "latest" : "likes"))
+    // const handleToggleSort = () => {
+    //     setSortBy(prev => (prev === "likes" ? "latest" : "likes"))
+    //     setVisibleCount(PAGE_SIZE)
+    // }
+
+    const handleToggleFilter = () => {
+        setFilterBy(prev => (prev === "ALL" ? "AGREE" : (prev === 'AGREE' ? 'DISAGREE' : 'ALL')))
         setVisibleCount(PAGE_SIZE)
     }
 
@@ -137,13 +144,13 @@ export default function CommentsPage() {
                 <div className="flex items-center justify-between">
                     <button
                         type="button"
-                        onClick={handleToggleSort}
+                        onClick={handleToggleFilter}
                         className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
-                        aria-label="정렬 토글"
-                        title="공감순 / 최신순 전환"
+                        aria-label="필터 토글"
+                        title="찬성 / 반대 전환"
                     >
-                        {sortBy === "likes" ? "공감순" : "최신순"}
-                        <ArrowDownUp className="h-4 w-4" />
+                        {filterBy === "ALL" ? "전체" : (filterBy === 'AGREE' ? "찬성만" : "반대만")}
+                        <ArrowLeftRightIcon className="h-4 w-4" />
                     </button>
 
                     {/*<button className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">*/}

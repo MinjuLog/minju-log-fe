@@ -39,7 +39,7 @@ function App() {
                 <Header />
                 <main className="container mx-auto px-4 py-12 max-w-8xl">
                     <Routes>
-                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                        <Route path="/" element={<Navigate to="/discussions" replace />} />
 
                         <Route path="/discussions" element={<DiscussionsPage />} />
                         <Route path="/discussions/:discussionSequence" element={<DiscussionPage />} />
@@ -52,7 +52,7 @@ function App() {
 
                         <Route path="/dashboard" element={<DashboardPage />} />
 
-                        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                        <Route path="*" element={<Navigate to="/discussions" replace />} />
                     </Routes>
                 </main>
             </div>

@@ -23,7 +23,7 @@ const statusParamMap: Record<DiscussionStatusType, string | null> = {
     COLLECTING: "OPEN",
     "전달 완료": "DELIVERED",
     "보도 중": "REPORTING",
-    "반영 완료": "APPLIED",
+    "반영 완료": "COMPLETED",
 };
 
 // 스켈레톤 카드

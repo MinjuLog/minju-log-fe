@@ -233,7 +233,7 @@ export default function DashboardPage() {
                     { title: "의견 취합중",   color: "purple", status: "COLLECTING" },
                     { title: "의견 전달 완료", color: "indigo", status: "DELIVERED" },
                     { title: "보도중",       color: "orange", status: "REPORTING" },
-                    { title: "반영 완료",    color: "green",  status: "APPLIED" },
+                    { title: "반영 완료",    color: "green",  status: "COMPLETED" },
                 ];
 
                 const responses = await Promise.all(
@@ -299,7 +299,7 @@ export default function DashboardPage() {
             "의견 취합중": "COLLECTING",
             "의견 전달 완료": "DELIVERED",
             "보도중": "REPORTING",
-            "반영 완료": "APPLIED",
+            "반영 완료": "COMPLETED",
         };
 
         const status = statusByTitle[columnTitle];

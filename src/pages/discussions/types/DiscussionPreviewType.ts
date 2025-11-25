@@ -9,4 +9,5 @@ export default interface DiscussionPreviewType {
     votes: number;
     discussions: number;
     hashTags: string[];
+    expiredAt: string;
 }
