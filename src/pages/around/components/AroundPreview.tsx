@@ -10,7 +10,7 @@ export default function AroundPreview({ aroundPreview }: props) {
     const navigate = useNavigate();
 
     const handleClick = () => {
-        navigate(`/columns/${1}`);
+        navigate(`/columns/${aroundPreview.id}`);
     };
 
     return (
@@ -32,7 +32,7 @@ export default function AroundPreview({ aroundPreview }: props) {
             {aroundPreview.hashTags && (
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/60 px-3 py-1.5">
                     <span className="text-sm font-medium text-gray-700">
-                      {aroundPreview.hashTags.map(tag => `${tag}`).join(" ")}
+                      {aroundPreview.hashTags.map(tag => `#${tag}`).join(" ")}
                     </span>
                 </div>
             )}

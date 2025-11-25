@@ -4,69 +4,98 @@ import { useEffect, useMemo, useState } from "react";
 import AroundHeader from "../../components/AroundHeader.tsx";
 import type AroundPreviewType from "./types/AroundPreviewType.ts";
 import AroundPreview from "./components/AroundPreview.tsx";
+import {getTopicList} from "../../api/topic/topic.ts";
+import aroundPreviewConverter from "./converter/aroundPreviewConverter.ts";
 
-const aroundPreviewMock: AroundPreviewType[] = [
-    {
-        id: 1,
-        label: "전남 곡성군",
-        title: "청년 농부들이 만든\n스마트팜 협동조합",
-        bgColor: "bg-green-50",
-        textColor: "text-green-700",
-        titleColor: "text-gray-900",
-        illustration: "/smartfarm.jpg",
-        hashTags: ["청년", "농업", "스마트팜"],
-    },
-    {
-        id: 2,
-        label: "강원 춘천시",
-        title: "도심 속 폐공장을\n청년 창업 공간으로 재탄생",
-        bgColor: "bg-amber-50",
-        textColor: "text-amber-700",
-        titleColor: "text-gray-900",
-        illustration: "/urban-renewal.jpg",
-        hashTags: ["청년", "도시재생", "창업"],
-    },
-    {
-        id: 3,
-        label: "전북 전주시",
-        title: "지역 예술가와 함께 하는\n‘거리 예술 축제’ 운영",
-        bgColor: "bg-blue-50",
-        textColor: "text-blue-700",
-        titleColor: "text-gray-900",
-        illustration: "/street-art.jpg",
-        hashTags: ["문화", "예술", "지역활성화"],
-    },
-    {
-        id: 4,
-        label: "경북 안동시",
-        title: "전통시장 디지털화로\n소상공인 매출 30%↑",
-        bgColor: "bg-yellow-50",
-        textColor: "text-yellow-700",
-        titleColor: "text-gray-900",
-        illustration: "/digital-market.jpg",
-        hashTags: ["경제", "소상공인", "디지털전환"],
-    },
-    {
-        id: 5,
-        label: "제주 서귀포시",
-        title: "친환경 전기차 공유로\n탄소중립 도시 실현",
-        bgColor: "bg-teal-50",
-        textColor: "text-teal-700",
-        titleColor: "text-gray-900",
-        illustration: "/ev-sharing.jpg",
-        hashTags: ["환경", "교통", "탄소중립"],
-    },
-    {
-        id: 6,
-        label: "서울 은평구",
-        title: "주민이 직접 기획하는\n마을 의사결정 플랫폼",
-        bgColor: "bg-pink-50",
-        textColor: "text-pink-700",
-        titleColor: "text-gray-900",
-        illustration: "/community-meeting.jpg",
-        hashTags: ["시민참여", "디지털행정", "커뮤니티"],
-    },
-];
+// const aroundPreviewMock: AroundPreviewType[] = [
+//     {
+//         id: 1,
+//         label: "전남 곡성군",
+//         title: "청년 농부들이 만든\n스마트팜 협동조합",
+//         bgColor: "bg-green-50",
+//         textColor: "text-green-700",
+//         titleColor: "text-gray-900",
+//         illustration: "/smartfarm.jpg",
+//         hashTags: ["청년", "농업", "스마트팜"],
+//     },
+//     {
+//         id: 2,
+//         label: "강원 춘천시",
+//         title: "도심 속 폐공장을\n청년 창업 공간으로 재탄생",
+//         bgColor: "bg-amber-50",
+//         textColor: "text-amber-700",
+//         titleColor: "text-gray-900",
+//         illustration: "/urban-renewal.jpg",
+//         hashTags: ["청년", "도시재생", "창업"],
+//     },
+//     {
+//         id: 3,
+//         label: "전북 전주시",
+//         title: "지역 예술가와 함께 하는\n‘거리 예술 축제’ 운영",
+//         bgColor: "bg-blue-50",
+//         textColor: "text-blue-700",
+//         titleColor: "text-gray-900",
+//         illustration: "/street-art.jpg",
+//         hashTags: ["문화", "예술", "지역활성화"],
+//     },
+//     {
+//         id: 4,
+//         label: "경북 안동시",
+//         title: "전통시장 디지털화로\n소상공인 매출 30%↑",
+//         bgColor: "bg-yellow-50",
+//         textColor: "text-yellow-700",
+//         titleColor: "text-gray-900",
+//         illustration: "/digital-market.jpg",
+//         hashTags: ["경제", "소상공인", "디지털전환"],
+//     },
+//     {
+//         id: 5,
+//         label: "제주 서귀포시",
+//         title: "친환경 전기차 공유로\n탄소중립 도시 실현",
+//         bgColor: "bg-teal-50",
+//         textColor: "text-teal-700",
+//         titleColor: "text-gray-900",
+//         illustration: "/ev-sharing.jpg",
+//         hashTags: ["환경", "교통", "탄소중립"],
+//     },
+//     {
+//         id: 6,
+//         label: "서울 은평구",
+//         title: "주민이 직접 기획하는\n마을 의사결정 플랫폼",
+//         bgColor: "bg-pink-50",
+//         textColor: "text-pink-700",
+//         titleColor: "text-gray-900",
+//         illustration: "/community-meeting.jpg",
+//         hashTags: ["시민참여", "디지털행정", "커뮤니티"],
+//     },
+// ];
+
+function AroundPreviewSkeleton() {
+    return (
+        <div
+            className="relative overflow-hidden rounded-3xl bg-gray-100 p-8 animate-pulse"
+            style={{ minHeight: "320px" }}
+        >
+            {/* Label */}
+            <div className="mb-3 h-4 w-24 rounded-full bg-gray-300" />
+
+            {/* Title (2~3 lines) */}
+            <div className="mb-2 h-5 w-3/4 rounded-md bg-gray-300" />
+            <div className="mb-2 h-5 w-2/3 rounded-md bg-gray-300" />
+            <div className="mb-4 h-5 w-1/3 rounded-md bg-gray-300" />
+
+            {/* HashTags */}
+            <div className="mb-6 inline-flex rounded-full bg-gray-200 px-3 py-2">
+                <div className="h-4 w-32 rounded-full bg-gray-300" />
+            </div>
+
+            {/* Illustration */}
+            <div className="absolute bottom-6 right-6">
+                <div className="h-32 w-32 rounded-xl bg-gray-300 opacity-70" />
+            </div>
+        </div>
+    );
+}
 
 const PAGE_SIZE = 6;
 const WINDOW_SIZE = 5;
@@ -74,18 +103,38 @@ const WINDOW_SIZE = 5;
 export default function AroundPage() {
     const [query, setQuery] = useState("");
     const [page, setPage] = useState(1); // 1-based
+    const [loading, setLoading] = useState(false);
+    const [aroundPreview, setAroundPreview] = useState<AroundPreviewType[]>([]);
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                setLoading(true);
+                const res = await getTopicList();
+                if (!res.ok) {
+                    alert(res.message);
+                    return
+                }
+                setAroundPreview(aroundPreviewConverter(res));
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        load();
+    }, []);
 
     // 필터링
     const filtered = useMemo(() => {
         const q = query.trim();
-        if (!q) return aroundPreviewMock;
+        if (!q) return aroundPreview;
         const norm = (s: string) => s.replace(/\s+/g, "").toLowerCase();
         const nq = norm(q);
-        return aroundPreviewMock.filter((item) => {
+        return aroundPreview.filter((item) => {
             const text = `${item.label} ${item.title} ${item.hashTags?.join(" ")}`.replace(/\n/g, " ");
             return norm(text).includes(nq);
         });
-    }, [query]);
+    }, [aroundPreview, query]);
 
     // 총 페이지/현재 슬라이스
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -136,12 +185,21 @@ export default function AroundPage() {
 
             {/* Grid */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {current.map((aroundPreview) => (
-                    <AroundPreview aroundPreview={aroundPreview} key={aroundPreview.id} />
+                {loading && (
+                    <>
+                        {Array.from({ length: PAGE_SIZE }).map((_, i) => (
+                            <AroundPreviewSkeleton key={i} />
+                        ))}
+                    </>
+                )}
+
+                {!loading && current.map((aroundPreview) => (
+                    <AroundPreview aroundPreview={aroundPreview} key={aroundPreview.id}/>
                 ))}
 
-                {filtered.length === 0 && (
-                    <div className="col-span-full text-center text-sm text-gray-500 border border-dashed border-gray-200 rounded-lg py-12">
+                {!loading && filtered.length === 0 && (
+                    <div
+                        className="col-span-full text-center text-sm text-gray-500 border border-dashed border-gray-200 rounded-lg py-12">
                         검색 결과가 없습니다.
                     </div>
                 )}

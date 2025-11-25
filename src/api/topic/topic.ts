@@ -1,20 +1,12 @@
 import type ErrorResponse from "../type/ErrorResponse.ts";
 import {api} from "../api.ts";
 import axios from "axios";
-import type getSignatureListResponse from "./type/GetSignatureListResponse.ts";
-import type CreateSignatureResponse from "./type/CreateSignatureResponse.ts";
+import type GetTopicListResponse from "./type/GetTopicListResponse.ts";
+import type GetTopicDetailResponse from "./type/GetTopicDetailResponse.ts";
 
-export const getSignatureList = async (
-    proposalId: number,
-    page: number = 0,
-    size: number = 10,
-): Promise<getSignatureListResponse | ErrorResponse> => {
+export const getTopicList = async (): Promise<GetTopicListResponse | ErrorResponse> => {
     try {
-        const res = await api.get(`/api/proposals/${proposalId}/signatures`, {
-            params: {
-                page, size
-            }
-        });
+        const res = await api.get(`/api/topics`);
         return {
             ok: true,
             result: res.data.result,
@@ -34,21 +26,11 @@ export const getSignatureList = async (
     }
 };
 
-export const createSignature = async (
-    proposalId: number,
-    userId: number,
-    nickname: string,
-    signatureType: "AGREE" | "DISAGREE",
-    content: string
-): Promise<CreateSignatureResponse | ErrorResponse> => {
+export const getTopicDetail = async (
+    id: number
+): Promise<GetTopicDetailResponse | ErrorResponse> => {
     try {
-        const res = await api.post(`/api/proposals/${proposalId}/signatures`, {
-            userId,
-            signatureType,
-            content,
-            nickname,
-        });
-
+        const res = await api.get(`/api/topics/${id}`);
         return {
             ok: true,
             result: res.data.result,
@@ -66,4 +48,4 @@ export const createSignature = async (
             message: "네트워크 오류 발생",
         };
     }
-};
+}

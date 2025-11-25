@@ -22,7 +22,7 @@ export default function sidebarDiscussionConverter(
             endLeft: getTimeLeft(c.dueDate),
             mainTitle: c.title,
             subTitle: "",
-            content: "임시 값",
+            content: c.body,
             best,
             votes: c.agreeVoteCount + c.disagreeVoteCount,
         };

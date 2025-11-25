@@ -7,7 +7,7 @@ interface props {
     onClose: () => void
     selectedId: number | null
     selectedOption: string
-    onSubmit: (rebuttalText: string) => void
+    onSubmit: (authorName: string, rebuttalText: string) => void
 }
 
 export default function SignSubmitModal({ isOpen, onClose, selectedId, selectedOption, onSubmit }: props) {
@@ -17,11 +17,17 @@ export default function SignSubmitModal({ isOpen, onClose, selectedId, selectedO
     if (!isOpen) return null
 
     const handleSubmit = () => {
-        if (rebuttalText.trim()) {
-            onSubmit(rebuttalText)
-            setRebuttalText("")
-            onClose()
+        if (authorNameText.trim() === "") {
+            alert("작성자 명을 입력해주세요.")
         }
+
+        if (rebuttalText.trim() === "") {
+            alert("서명 내용을 입력해주세요.")
+        }
+        onSubmit(authorNameText, rebuttalText);
+        setRebuttalText("");
+        setAuthorNameText("");
+        onClose()
     }
 
     const bgMap: Record<number, string> = {

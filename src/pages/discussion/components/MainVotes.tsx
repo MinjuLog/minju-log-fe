@@ -52,13 +52,13 @@ export default function MainVotes({ discussion, myVote }: props) {
         setIsSubmitModalOpen(true);
     };
 
-    const handleSubmit = async (content: string) => {
+    const handleSubmit = async (nickname: string, content: string) => {
         const seq = Number(discussionSequence);
         const type = selectedId === 1 ? "AGREE" : "DISAGREE";
 
         const userId = localStorage.getItem("userId") ?? '';
 
-        const res = await createSignature(seq, Number(userId), type, content);
+        const res = await createSignature(seq, Number(userId), nickname, type, content);
 
         if (!res.ok) {
             alert(res.message);
