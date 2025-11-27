@@ -17,7 +17,7 @@ function App() {
         const initUser = async () => {
             const existingUserId = localStorage.getItem("userId");
 
-            if (!existingUserId) {
+            if (!existingUserId || isNaN(Number(existingUserId))) {
                 const res = await createUser();
 
                 if (!res.ok) {

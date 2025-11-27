@@ -9,7 +9,7 @@ export default function Sidebar({ handleSubmit }: props) {
                 onClick={handleSubmit}
                 className="mb-6 w-full rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
             >
-                질문하기
+                게시하기
             </button>
 
             <div className="rounded-lg bg-white p-6 shadow-sm">

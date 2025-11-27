@@ -19,10 +19,12 @@ export default function SignSubmitModal({ isOpen, onClose, selectedId, selectedO
     const handleSubmit = () => {
         if (authorNameText.trim() === "") {
             alert("작성자 명을 입력해주세요.")
+            return;
         }
 
         if (rebuttalText.trim() === "") {
             alert("서명 내용을 입력해주세요.")
+            return;
         }
         onSubmit(authorNameText, rebuttalText);
         setRebuttalText("");
@@ -103,7 +105,7 @@ export default function SignSubmitModal({ isOpen, onClose, selectedId, selectedO
                     <div className="space-y-3">
                         <button
                             onClick={handleSubmit}
-                            disabled={!rebuttalText.trim()}
+                            disabled={!authorNameText.trim() || !rebuttalText.trim()}
                             className="w-full py-4 bg-blue-400 hover:bg-blue-500 disabled:bg-blue-200 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors"
                         >
                             찬반 서명 남기기

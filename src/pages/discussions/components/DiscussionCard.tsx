@@ -37,7 +37,7 @@ export default function DiscussionCard({ discussionCard }: props) {
 
                 {/* ✅ 참여하기 버튼 클릭 시 상세 페이지 이동 */}
                 <button
-                    onClick={() => navigate("/discussions/1")}
+                    onClick={() => navigate(`/discussions/${discussionCard.id}`)}
                     className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-sm font-medium backdrop-blur-sm"
                 >
                     <BookOpen className="w-4 h-4" />

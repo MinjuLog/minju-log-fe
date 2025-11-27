@@ -42,7 +42,7 @@ export default function KanbanColumn({ kanban, onLoadMore, loadingColumn }: prop
             <div className="space-y-4">
                 {total === 0 ? (
                     <div className="text-sm text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-lg p-6">
-                        등록된 동네한표가 없습니다.
+                        {kanban.title}{kanban.title === '보도중' ? '인' : '된'} 동네한표가 없습니다.
                     </div>
                 ) : (
                     kanban.projects.map((project) => (
