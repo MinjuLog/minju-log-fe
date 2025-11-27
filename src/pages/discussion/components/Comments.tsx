@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import {useEffect, useMemo, useState} from "react"
 import {ArrowLeftRightIcon} from "lucide-react"
-import { useParams } from "react-router-dom"
+import {useParams} from "react-router-dom"
 
 import type CommentType from "../types/CommentType"
 import Comment from "./Comment"
-import { getSignatureList } from "../../../api/signature/signature"
+import {getSignatureList} from "../../../api/signature/signature"
 import commentsConverter from "../converter/commentsConverter"
 
 const PAGE_SIZE = 5
@@ -67,6 +67,8 @@ export default function CommentsPage() {
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
     // const [sortBy, setSortBy] = useState<SortBy>("likes")
     const [filterBy, setFilterBy] = useState<FilterBy>("ALL")
+    const [totalElements, setTotalElements] = useState<number>(0)
+    const [page, setPage] = useState(0)
 
     useEffect(() => {
         if (!discussionSequence) return
@@ -74,10 +76,10 @@ export default function CommentsPage() {
         const load = async () => {
             try {
                 setLoading(true)
-
                 const res = await getSignatureList(
                     Number(discussionSequence),
-                    0,
+                    filterBy,
+                    page,
                     PAGE_SIZE
                 )
 
@@ -86,16 +88,20 @@ export default function CommentsPage() {
                     return
                 }
 
-                const converted = commentsConverter(res)
-                setComments(converted)
-                setVisibleCount(PAGE_SIZE)
+                const converted = commentsConverter(res);
+                setTotalElements(res.result.totalElements);
+                setComments(prev =>  Array.from(
+                        new Map([...prev, ...converted].map(item => [item.id, item])).values()
+                    )
+                );
+
             } finally {
                 setLoading(false)
             }
         }
 
         load()
-    }, [discussionSequence, filterBy])
+    }, [discussionSequence, filterBy, page])
 
     const filteredComments = comments
 
@@ -111,12 +117,13 @@ export default function CommentsPage() {
         return arr
     }, [filteredComments, filterBy])
 
-    const canLoadMore = visibleCount < sortedComments.length
+    const canLoadMore = visibleCount < totalElements;
 
     const handleLoadMore = () => {
         setVisibleCount(prev =>
-            Math.min(prev + PAGE_SIZE, sortedComments.length)
+            Math.min(prev + PAGE_SIZE, totalElements)
         )
+        setPage(page + 1)
     }
 
     // const handleToggleSort = () => {
@@ -138,7 +145,7 @@ export default function CommentsPage() {
             {/* Header */}
             <div className="mb-6">
                 <h1 className="mb-4 text-2xl font-bold text-gray-900">
-                    찬반 서명 {sortedComments.length}
+                    찬반 서명 {totalElements}
                 </h1>
 
                 <div className="flex items-center justify-between">
@@ -167,7 +174,7 @@ export default function CommentsPage() {
                         <Comment key={comment.id} comment={comment} />
                     ))}
 
-                {sortedComments.length === 0 && !loading && (
+                {totalElements === 0 && !loading && (
                     <div className="text-center text-gray-500 text-sm py-8 border border-dashed border-gray-200 rounded-lg">
                         아직 등록된 찬반 서명이 없습니다.
                     </div>
@@ -182,7 +189,7 @@ export default function CommentsPage() {
                         >
                             더 불러오기{" "}
                             <span className="text-gray-400">
-                                ({visibleCount}/{sortedComments.length})
+                                ({visibleCount}/{totalElements})
                             </span>
                         </button>
                     </div>

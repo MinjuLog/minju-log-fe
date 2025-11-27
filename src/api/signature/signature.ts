@@ -6,13 +6,14 @@ import type CreateSignatureResponse from "./type/CreateSignatureResponse.ts";
 
 export const getSignatureList = async (
     proposalId: number,
+    filter: "ALL" | "AGREE" | "DISAGREE" = "ALL",
     page: number = 0,
     size: number = 10,
 ): Promise<getSignatureListResponse | ErrorResponse> => {
     try {
         const res = await api.get(`/api/proposals/${proposalId}/signatures`, {
             params: {
-                page, size
+                page, size, filter
             }
         });
         return {

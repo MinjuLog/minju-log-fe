@@ -46,6 +46,7 @@ export default function MainVotes({ discussion, myVote }: props) {
 
         if (!res.ok) {
             alert(res.message);
+            return;
         }
 
         setIsConfirmModalOpen(false);
@@ -62,6 +63,7 @@ export default function MainVotes({ discussion, myVote }: props) {
 
         if (!res.ok) {
             alert(res.message);
+            return;
         }
 
         setIsSubmitModalOpen(false);
@@ -111,7 +113,7 @@ export default function MainVotes({ discussion, myVote }: props) {
                 {/* Header */}
                 <div className="mb-8 flex items-start justify-between">
                     <div className="flex items-center gap-2 text-gray-600">
-                        <span className="text-lg font-medium">{discussion.hashTags.map(tag => `${tag}`).join(" ")}</span>
+                        <span className="text-lg font-medium">{discussion.hashTags.map(tag => `#${tag}`).join(" ")}</span>
                     </div>
                     <button onClick={() => alert("아직 투표가 종료되지 않아 공유할 수 없습니다.")} className="rounded-lg p-2 hover:bg-gray-100">
                         <Share2 className="h-5 w-5 text-gray-600"/>

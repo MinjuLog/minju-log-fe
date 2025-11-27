@@ -155,7 +155,8 @@ export default function WritingPage() {
         })
 
         if (!res.ok) {
-            alert(res.message)
+            alert(res.message);
+            return;
         } else {
             navigate(`/discussions/${res.proposalId}`)
         }

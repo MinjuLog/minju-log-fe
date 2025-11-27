@@ -78,7 +78,7 @@ export default function Sidebar() {
             const res = await findProposalList({
                 keyword: "",
                 status: "COLLECTING",
-                sort: "latest",
+                sort: "popular",
                 page: 0,
                 size: 3,
             });
