@@ -1,13 +1,14 @@
 import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import {useNavigate, useSearchParams} from "react-router-dom";
 import type TopicType from "../types/TopicType.ts";
+import {FileSymlink} from "lucide-react";
 
 interface props {
     topics: TopicType[];
-    selectedTopicId?: number | null;
+    selectedTopicId?: number;
     selectedTopic: string;
     setSelectedTopic: (topic: string) => void;
-    setSelectedTopicId?: (id: number | null) => void;
+    setSelectedTopicId?: (id: number) => void;
     isTopicDropdownOpen: boolean;
     setIsTopicDropdownOpen: (isOpen: boolean) => void;
 }
@@ -23,6 +24,7 @@ export default function TopicSelection({
                                        }: props) {
     const [searchParams] = useSearchParams();
     const quotationId = searchParams.get("quotation");
+    const navigate = useNavigate();
 
     // quotation param이 있으면 해당 토픽을 자동으로 선택
     useEffect(() => {
@@ -36,7 +38,8 @@ export default function TopicSelection({
         }
     }, [quotationId, topics, setSelectedTopic, setSelectedTopicId, setIsTopicDropdownOpen]);
 
-    const isDisabled = Boolean(quotationId);
+    // const isDisabled = Boolean(quotationId);
+    const isDisabled = false;
 
     return (
         <div className="mb-8">
@@ -85,7 +88,7 @@ export default function TopicSelection({
                                     type="button"
                                     onClick={() => {
                                         setSelectedTopic("");
-                                        setSelectedTopicId?.(null);
+                                        setSelectedTopicId?.(-1);
                                         setIsTopicDropdownOpen(false);
                                     }}
                                     className={`w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 ${
@@ -103,11 +106,22 @@ export default function TopicSelection({
                                         setSelectedTopicId?.(topic.id);
                                         setIsTopicDropdownOpen(false);
                                     }}
-                                    className={`w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 ${
+                                    className={`group flex justify-between w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 ${
                                         topic.id === selectedTopicId ? "bg-gray-100 font-medium" : ""
                                     }`}
                                 >
                                     {`(${topic.region}) ${topic.title}`}
+
+                                    {/* 아이콘 영역 */}
+                                    <span
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // 부모 클릭 방지
+                                            navigate(`/columns/${topic.id}`);
+                                        }}
+                                        className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+                                    >
+                                    <FileSymlink size={16}/>
+                                  </span>
                                 </button>
                             )
                         )}

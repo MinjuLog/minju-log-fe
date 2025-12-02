@@ -1,7 +1,7 @@
 export default interface DiscussionType {
     sequence: number;
     title: string;
-    topic: {
+    topic?: {
         sequence: number;
         title: string;
     },

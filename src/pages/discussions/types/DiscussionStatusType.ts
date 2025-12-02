@@ -1,4 +1,1 @@
-export default interface DiscussionStatusType {
-    id: number;
-    text: string;
-}
+export type DiscussionStatusType = "전체" | "COLLECTING" | "DELIVERED" | "REPORTING" | "COMPLETED";

@@ -5,6 +5,6 @@ export default interface AroundPreviewType {
     bgColor: string;
     textColor: string;
     titleColor: string;
-    illustration: string;
-    hashTags?: string[];
+    illustration?: string;
+    hashTags: string[];
 }

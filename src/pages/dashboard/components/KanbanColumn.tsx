@@ -4,6 +4,8 @@ import type KanbanType from "../types/KanbanType.ts";
 
 interface props {
     kanban: KanbanType;
+    onLoadMore: (columTitle: string) => Promise<void>;
+    loadingColumn: string | null;
 }
 
 const PAGE_SIZE = 2;
@@ -15,14 +17,13 @@ const colorMap: Record<string, string> = {
     green: "bg-green-500",
 };
 
-export default function KanbanColumn({ kanban }: props) {
+export default function KanbanColumn({ kanban, onLoadMore, loadingColumn }: props) {
     const [visible, setVisible] = useState(PAGE_SIZE);
-    const total = kanban.projects.length;
-    const canLoadMore = visible < total;
+    const total = kanban.total
+    const canLoadMore = kanban.projects.length < kanban.total;
+    const isLoadingThisColumn = loadingColumn === kanban.title;
 
-    const handleLoadMore = () => {
-        setVisible((v) => Math.min(v + PAGE_SIZE, total));
-    };
+
 
     return (
         <div className="space-y-4" key={kanban.title}>
@@ -41,10 +42,10 @@ export default function KanbanColumn({ kanban }: props) {
             <div className="space-y-4">
                 {total === 0 ? (
                     <div className="text-sm text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-lg p-6">
-                        아직 등록된 카드가 없습니다.
+                        {kanban.title}{kanban.title === '보도중' || kanban.title === '의견 취합중' ? '인' : '된'} 동네한표가 없습니다.
                     </div>
                 ) : (
-                    kanban.projects.slice(0, visible).map((project) => (
+                    kanban.projects.map((project) => (
                         <KanbanCard key={project.sequence ?? project.title} project={project} />
                     ))
                 )}
@@ -53,14 +54,18 @@ export default function KanbanColumn({ kanban }: props) {
                 {canLoadMore && (
                     <button
                         type="button"
-                        onClick={handleLoadMore}
+                        disabled={isLoadingThisColumn}
+                        onClick={async () => {
+                            await onLoadMore(kanban.title)
+                            setVisible(kanban.projects.length + PAGE_SIZE)
+                        }}
                         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition"
                         aria-label={`${kanban.title} 더 불러오기`}
                     >
                         더 불러오기{" "}
                         <span className="text-gray-400">
-              ({visible}/{total})
-            </span>
+                          ({visible}/{total})
+                        </span>
                     </button>
                 )}
             </div>

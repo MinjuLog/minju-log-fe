@@ -1,6 +1,6 @@
 export default interface SidebarDiscussionType {
     id: string,
-    endLeft: number;
+    endLeft: string;
     mainTitle: string;
     subTitle: string;
     best: string;

@@ -1,13 +1,13 @@
 export default interface DiscussionPreviewType {
     id: number;
-    status: number;
+    status: "COLLECTING" | "DELIVERED" | "REPORTING" | "COMPLETED";
     title: string;
-    sequence: number;
     result: {
         pros: number,
         cons: number;
     };
     votes: number;
     discussions: number;
-    hashtags?: string[];
+    hashTags: string[];
+    expiredAt: string;
 }

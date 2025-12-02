@@ -9,17 +9,29 @@ import AroundPage from "./pages/around/Page.tsx";
 import WritingPage from "./pages/writing/Page.tsx";
 import DashboardPage from "./pages/dashboard/Page.tsx";
 import {useEffect} from "react";
+import {createUser} from "./api/user/user.ts";
 
 function App() {
-    useEffect(() => {
-        // uuid가 로컬 스토리지에 없으면 생성
-        const existingUuid: string | null = localStorage.getItem("userId");
-        if (!existingUuid) {
-            const newUuid = crypto.randomUUID();
-            localStorage.setItem("userId", newUuid);
-        }
-    }, []);
 
+    useEffect(() => {
+        const initUser = async () => {
+            const existingUserId = localStorage.getItem("userId");
+
+            if (!existingUserId || isNaN(Number(existingUserId))) {
+                const res = await createUser();
+
+                if (!res.ok) {
+                    alert(res.message);
+                    return;
+                }
+
+                // 반드시 문자열로 저장해야 함
+                localStorage.setItem("userId", String(res.result.userId));
+            }
+        };
+
+        initUser();
+    }, []);
 
     return (
         <BrowserRouter>
@@ -27,26 +39,20 @@ function App() {
                 <Header />
                 <main className="container mx-auto px-4 py-12 max-w-8xl">
                     <Routes>
-                        {/* 기본 루트는 /discussions 로 리다이렉트 */}
-                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                        {/* 목록 페이지 */}
-                        <Route path="/discussions" element={<DiscussionsPage />} />
-                        {/* 상세 페이지: 동적 파라미터 사용 */}
-                        <Route path="/discussions/:discussionSequence" element={<DiscussionPage />} />
+                        <Route path="/" element={<Navigate to="/discussions" replace />} />
 
+                        <Route path="/discussions" element={<DiscussionsPage />} />
+                        <Route path="/discussions/:discussionSequence" element={<DiscussionPage />} />
                         <Route path="/discussions/write" element={<WritingPage />} />
 
-                        {/* 목록 페이지 */}
                         <Route path="/columns" element={<ColumnsPage />} />
-                        {/* 상세 페이지: 동적 파라미터 사용 */}
                         <Route path="/columns/:id" element={<ColumnPage />} />
 
-                        <Route path="/around" element={<AroundPage/>} />
+                        <Route path="/around" element={<AroundPage />} />
 
-                        <Route path="/dashboard" element={<DashboardPage/>} />
+                        <Route path="/dashboard" element={<DashboardPage />} />
 
-                        {/* 없으면 목록으로 */}
-                        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                        <Route path="*" element={<Navigate to="/discussions" replace />} />
                     </Routes>
                 </main>
             </div>

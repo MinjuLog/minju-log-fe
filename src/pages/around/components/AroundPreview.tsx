@@ -10,7 +10,7 @@ export default function AroundPreview({ aroundPreview }: props) {
     const navigate = useNavigate();
 
     const handleClick = () => {
-        navigate(`/columns/${1}`);
+        navigate(`/columns/${aroundPreview.id}`);
     };
 
     return (

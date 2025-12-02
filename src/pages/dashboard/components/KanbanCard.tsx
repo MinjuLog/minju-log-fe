@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { FileText, MessageCircleMore, CheckSquare } from "lucide-react";
 import type ProjectType from "../types/ProjectType.ts";
 import React from "react";
+import getTimeLeft from "../../../utils/getTimeLeft.ts";
 
 interface Props {
     project: ProjectType;
@@ -51,13 +52,19 @@ export default function KanbanCard({ project }: Props) {
         >
             <div className="flex items-start justify-between mb-3">
                 <div className="flex flex-wrap gap-2">
+                    <span
+                        key={`${project.sequence}-${project.expiredAt}`}
+                        className={`${getRandomBg()} text-gray-700 px-2 py-1 rounded text-xs font-medium`}
+                    >
+                          {`${getTimeLeft(project.expiredAt)}${getTimeLeft(project.expiredAt) !== '마감' ? ' 남음' : ''}`}
+                    </span>
                     {project.hashTags?.map((hashTag) => (
                         <span
                             key={`${project.sequence}-${hashTag}`}
                             className={`${getRandomBg()} text-gray-700 px-2 py-1 rounded text-xs font-medium`}
                         >
-              #{hashTag}
-            </span>
+                          #{hashTag}
+                        </span>
                     ))}
                 </div>
                 {project.createdAt && (

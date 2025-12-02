@@ -12,7 +12,7 @@ interface props {
 export default function HashTagInput({
                                          selectedHashTags,
                                          setSelectedHashTags,
-                                         placeholder = "해시태그를 입력하고 Enter 로 추가",
+                                         placeholder = "해시태그를 입력하고 Enter를 누르면 추가됩니다 (최대 5자, 예: 교통, 안전)",
                                          maxTags = 3,
                                          maxLength = 6,
                                      }: props) {
