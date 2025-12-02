@@ -23,11 +23,11 @@ export default function Sidebar({ handleSubmit }: props) {
                 <ul className="space-y-2 text-sm text-gray-600">
                     <li className="flex gap-2">
                         <span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-gray-400"/>
-                        <span>내가신 질문은 타 사이트에서 검색될 통해 노출될 수 있어요.</span>
+                        <span>내가 올린 동네한표는 타 사이트에서 검색될 통해 노출될 수 있어요.</span>
                     </li>
                     <li className="flex gap-2">
                         <span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-gray-400"/>
-                        <span>답변이 달리면 질문을 수정할 수 없어요.</span>
+                        <span>동네한표는 수정할 수 없어요.</span>
                     </li>
                 </ul>
             </div>

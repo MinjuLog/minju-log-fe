@@ -49,7 +49,7 @@ export default function SignSubmitModal({ isOpen, onClose, selectedId, selectedO
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+            <div className="absolute inset-0 bg-black/50"/>
 
             {/* Modal */}
             <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">

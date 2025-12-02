@@ -5,7 +5,7 @@ import DashboardHeader from "../../components/DashboardHeader.tsx";
 import KanbanBoard from "./components/KanbanBoard.tsx";
 import type KanbanType from "./types/KanbanType.ts";
 import KanbanBoardSkeleton from "./components/KanbanBoardSkeleton.tsx";
-import LocationControl from "./components/LocationControl.tsx";
+import LocationControl from "../../components/LocationControl.tsx";
 import {findProposalList} from "../../api/proposal/proposal.ts";
 import kanbanConverter from "./converter/kanbanConverter.ts";
 import type FindProposalListResponse from "../../api/proposal/type/FindProposalListResponse.ts";

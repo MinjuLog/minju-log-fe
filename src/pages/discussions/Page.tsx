@@ -1,6 +1,8 @@
 import {DiscussionCards} from "./components/DiscussionCards.tsx";
 import {DiscussionPreviewList} from "./components/DiscussionPreviewList.tsx";
 import DiscussionHeader from "../../components/DiscussionHeader.tsx";
+import LocationControl from "../../components/LocationControl.tsx";
+import {useEffect, useState} from "react";
 
 // const discussionCardsMock: DiscussionCardType[] = [
 //     {
@@ -159,11 +161,80 @@ import DiscussionHeader from "../../components/DiscussionHeader.tsx";
 
 
 export default function DiscussionsPage() {
+    const [location, setLocation] = useState("");
+    const [isLocLoading, setIsLocLoading] = useState(false);
+
+    const handleRefreshLocation: () => Promise<(() => void) | undefined> = async () => {
+        if (!navigator.geolocation) {
+            alert("이 브라우저에서는 위치 정보 사용이 불가능합니다.");
+            return;
+        }
+        setIsLocLoading(true);
+
+        const abort = new AbortController();
+        try {
+            const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: false,
+                    maximumAge: 60_000,
+                    timeout: 10_000,
+                })
+            );
+
+            const { latitude, longitude } = pos.coords;
+
+            const res = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=jsonv2`,
+                {
+                    signal: abort.signal,
+                    headers: {
+                        "User-Agent": "HeatPick-Dashboard/1.0 (contact: example@example.com)",
+                        "Accept-Language": "ko",
+                        "Referer":
+                            typeof window !== "undefined"
+                                ? window.location.origin
+                                : "https://example.com",
+                    },
+                }
+            );
+
+            if (!res.ok) throw new Error(`Reverse geocoding failed: ${res.status}`);
+            const data = await res.json();
+
+            const a = data.address ?? {};
+            const regionName =
+                [a.state, a.city, a.town, a.county, a.suburb, a.village]
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .join(" ") ||
+                data.display_name ||
+                `${latitude.toFixed(3)}, ${longitude.toFixed(3)}`;
+
+            setLocation(regionName);
+        } catch (e: unknown) {
+            console.error(e);
+            setLocation("위치 정보를 불러오지 못했습니다.");
+        } finally {
+            setIsLocLoading(false);
+        }
+
+        return () => abort.abort();
+    };
+
+    useEffect(() => {
+        handleRefreshLocation();
+    }, []);
+
     return (
         <>
             <DiscussionHeader/>
-            <DiscussionCards/>
-            <DiscussionPreviewList/>
+            <LocationControl
+                location={location}
+                isLocLoading={isLocLoading}
+                handleRefreshLocation={handleRefreshLocation}
+            />
+            <DiscussionCards isLocLoading={isLocLoading} />
+            <DiscussionPreviewList isLocLoading={isLocLoading} />
         </>
     )
 }
