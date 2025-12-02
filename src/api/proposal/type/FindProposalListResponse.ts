@@ -9,7 +9,7 @@ export default interface FindProposalListResponse {
         status: "COLLECTING" | "DELIVERED" | "REPORTING" | "COMPLETED";
         viewCount: number;
         hashtags: string[];
-        dueDate: string;
+        dueDate: number[];
         agreeSignatureCount: number;
         disagreeSignatureCount: number;
         agreeVoteCount: number;

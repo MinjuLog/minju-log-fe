@@ -7,7 +7,7 @@ export default interface DiscussionType {
     },
     content: string;
     createdAt: string;
-    expiredAt: string;
+    expiredAt: number[];
     hashTags: string[];
     pros: number;
     cons: number;

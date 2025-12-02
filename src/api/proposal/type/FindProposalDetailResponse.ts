@@ -7,7 +7,7 @@ export default interface FindProposalDetailResponse {
         status: string;
         viewCount: number;
         hashtags: string[];
-        dueDate: string;
+        dueDate: number[];
         agreeSignatureCount: number;
         disagreeSignatureCount: number;
         agreeVoteCount: number;

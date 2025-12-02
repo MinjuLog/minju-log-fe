@@ -5,7 +5,7 @@ const tabs: {
     text: string,
     isHighlighted?: boolean,
 }[] = [
-    { href: "/", text: "홈", },
+    // { href: "/", text: "홈", },
     { href: "/dashboard", text: "진행로그", isHighlighted: true },
     { href: "/discussions", text: "동네한표", isHighlighted: true },
     { href: "/around", text: "다른 지역은?", isHighlighted: true }

@@ -72,7 +72,8 @@ export default function MainVotes({ discussion, myVote }: props) {
 
     // ✅ 남은 시간 계산 useEffect
     useEffect(() => {
-        const deadline = new Date(discussion.expiredAt).getTime();
+        const expiredAt = discussion.expiredAt;
+        const deadline = new Date(expiredAt[0], expiredAt[1] - 1, expiredAt[2]).getTime();
 
         const timer = setInterval(() => {
             const now = new Date().getTime();
