@@ -71,6 +71,12 @@ export default function CommentsPage() {
     const [page, setPage] = useState(0)
 
     useEffect(() => {
+        // 필터나 discussion 바뀌면 page 0으로 돌림
+        setPage(0);
+        setComments([]); // 내부 초기화
+    }, [discussionSequence, filterBy]);
+
+    useEffect(() => {
         if (!discussionSequence) return
 
         const load = async () => {
@@ -176,7 +182,7 @@ export default function CommentsPage() {
 
                 {totalElements === 0 && !loading && (
                     <div className="text-center text-gray-500 text-sm py-8 border border-dashed border-gray-200 rounded-lg">
-                        아직 등록된 찬반 서명이 없습니다.
+                        아직 등록된 서명이 없습니다.
                     </div>
                 )}
 
