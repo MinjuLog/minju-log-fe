@@ -32,7 +32,19 @@ export default function SidebarDiscussion({ sidebarDiscussion }: props) {
                 <span className="text-sm font-medium text-red-500">{sidebarDiscussion.best}</span>
             </div>
 
-            <p className="mb-8 text-[13px] leading-relaxed text-gray-500">{sidebarDiscussion.content}</p>
+            <p
+                className="
+                mb-8 text-[13px] leading-relaxed text-gray-500
+                overflow-hidden
+                "
+                style={{
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical"
+                }}
+            >
+                {sidebarDiscussion.content}
+            </p>
 
             <div className="relative w-full">
                 {/* 🔥 베스트 배지 */}
