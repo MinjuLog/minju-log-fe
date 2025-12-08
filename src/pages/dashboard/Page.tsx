@@ -229,11 +229,32 @@ export default function DashboardPage() {
                     title: string;
                     color: KanbanType["color"];
                     status: string;
+                    desc: string;
                 }[] = [
-                    { title: "의견 취합중",   color: "purple", status: "COLLECTING" },
-                    { title: "의견 전달 완료", color: "indigo", status: "DELIVERED" },
-                    { title: "보도중",       color: "orange", status: "REPORTING" },
-                    { title: "반영 완료",    color: "green",  status: "COMPLETED" },
+                    {
+                        title: "의견 취합중",
+                        color: "purple",
+                        status: "COLLECTING",
+                        desc: "진행 중인 동네한표로, 주민들의 의견과 투표가 계속 모이고 있는 단계예요."
+                    },
+                    {
+                        title: "의견 전달 완료",
+                        color: "indigo",
+                        status: "DELIVERED",
+                        desc: "취합된 의견이 지역 신문사에 전달된 상태예요. 이제 보도를 통해 지역사회에 알려질 준비를 하고 있어요."
+                    },
+                    {
+                        title: "보도중",
+                        color: "orange",
+                        status: "REPORTING",
+                        desc: "지역 신문사에서 의견을 기사로 작성하거나 보도하는 단계예요. 주민들의 목소리가 공론장에 등장하고 있어요."
+                    },
+                    {
+                        title: "반영 완료",
+                        color: "green",
+                        status: "COMPLETED",
+                        desc: "보도와 검토를 거쳐 의견이 실제 정책이나 개선 조치로 반영된 상태예요."
+                    },
                 ];
 
                 const responses = await Promise.all(
@@ -264,6 +285,7 @@ export default function DashboardPage() {
                         title: col.title,
                         color: col.color,
                         total: okRes.totalElements,
+                        desc: col.desc,
                         projects,
                     };
                 });

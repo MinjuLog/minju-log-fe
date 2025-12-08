@@ -29,6 +29,10 @@ export default function Sidebar({ handleSubmit }: props) {
                         <span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-gray-400"/>
                         <span>동네한표는 수정할 수 없어요.</span>
                     </li>
+                    <li className="flex gap-2">
+                        <span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-gray-400"/>
+                        <span>정치적인 성향의 글은 무통보 삭제될 수 있어요.</span>
+                    </li>
                 </ul>
             </div>
         </div>

@@ -10,6 +10,7 @@ import WritingPage from "./pages/writing/Page.tsx";
 import DashboardPage from "./pages/dashboard/Page.tsx";
 import {useEffect} from "react";
 import {createUser} from "./api/user/user.ts";
+import GuidePage from "./pages/guide/Page.tsx";
 
 function App() {
 
@@ -40,6 +41,8 @@ function App() {
                 <main className="container mx-auto px-4 py-12 max-w-8xl">
                     <Routes>
                         <Route path="/" element={<Navigate to="/discussions" replace />} />
+
+                        <Route path="/guide" element={<GuidePage />} />
 
                         <Route path="/discussions" element={<DiscussionsPage />} />
                         <Route path="/discussions/:discussionSequence" element={<DiscussionPage />} />

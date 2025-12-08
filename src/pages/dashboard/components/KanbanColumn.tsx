@@ -1,6 +1,7 @@
-import {useState} from "react";
-import KanbanCard from "./KanbanCard.tsx";
-import type KanbanType from "../types/KanbanType.ts";
+import { useState } from "react"
+import { Info } from "lucide-react"
+import KanbanCard from "./KanbanCard.tsx"
+import type KanbanType from "../types/KanbanType.ts"
 
 interface props {
     kanban: KanbanType;
@@ -19,20 +20,32 @@ const colorMap: Record<string, string> = {
 
 export default function KanbanColumn({ kanban, onLoadMore, loadingColumn }: props) {
     const [visible, setVisible] = useState(PAGE_SIZE);
-    const total = kanban.total
+    const total = kanban.total;
     const canLoadMore = kanban.projects.length < kanban.total;
     const isLoadingThisColumn = loadingColumn === kanban.title;
 
-
-
     return (
         <div className="space-y-4" key={kanban.title}>
-            {/* Header */}
+            {/* Header + Tooltip */}
             <div className="flex items-center gap-2 mb-4">
                 <div className={`w-3 h-3 rounded-full ${colorMap[kanban.color]}`} />
-                <h2 className="font-semibold text-gray-900">
-                    {kanban.title} <span className="text-gray-500 ml-2">{total}</span>
-                </h2>
+
+                <div className="flex items-center gap-2">
+                    <h2 className="font-semibold text-gray-900">
+                        {kanban.title} <span className="text-gray-500 ml-2">{total}</span>
+                    </h2>
+
+                    {kanban.desc && (
+                        <div className="relative group">
+                            <Info className="w-4 h-4 text-gray-400 cursor-pointer" />
+
+                            {/* Tooltip */}
+                            <div className="absolute left-0 top-6 z-20 hidden w-64 rounded-md bg-gray-900 px-3 py-2 text-xs text-white shadow-lg group-hover:block">
+                                {kanban.desc}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* Border */}
@@ -42,7 +55,8 @@ export default function KanbanColumn({ kanban, onLoadMore, loadingColumn }: prop
             <div className="space-y-4">
                 {total === 0 ? (
                     <div className="text-sm text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-lg p-6">
-                        {kanban.title}{kanban.title === '보도중' || kanban.title === '의견 취합중' ? '인' : '된'} 동네한표가 없습니다.
+                        {kanban.title}
+                        {kanban.title === "보도중" || kanban.title === "의견 취합중" ? "인" : "된"} 동네한표가 없습니다.
                     </div>
                 ) : (
                     kanban.projects.map((project) => (
@@ -70,5 +84,5 @@ export default function KanbanColumn({ kanban, onLoadMore, loadingColumn }: prop
                 )}
             </div>
         </div>
-    );
+    )
 }

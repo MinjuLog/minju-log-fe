@@ -1,4 +1,4 @@
-import {Check, FileText, Share2} from "lucide-react";
+import {Check, FileText} from "lucide-react";
 import { useEffect, useState } from "react";
 import VoteConfirmationModal from "./VoteConfirmationModal.tsx";
 import SignSubmitModal from "./SignSubmitModal.tsx";
@@ -6,6 +6,7 @@ import type DiscussionType from "../types/DiscussionType.ts";
 import {Link, useParams} from "react-router-dom";
 import {createVote} from "../../../api/vote/vote.ts";
 import {createSignature} from "../../../api/signature/signature.ts";
+import CopyButton from "../../../components/CopyButton.tsx";
 
 interface props {
     discussion: DiscussionType;
@@ -116,9 +117,7 @@ export default function MainVotes({ discussion, myVote }: props) {
                     <div className="flex items-center gap-2 text-gray-600">
                         <span className="text-lg font-medium">{discussion.hashTags.map(tag => `#${tag}`).join(" ")}</span>
                     </div>
-                    <button onClick={() => alert("아직 투표가 종료되지 않아 공유할 수 없습니다.")} className="rounded-lg p-2 hover:bg-gray-100">
-                        <Share2 className="h-5 w-5 text-gray-600"/>
-                    </button>
+                    <CopyButton/>
                 </div>
 
                 {/* Title */}
