@@ -169,7 +169,7 @@ export default function DashboardPage() {
                 navigator.geolocation.getCurrentPosition(resolve, reject, {
                     enableHighAccuracy: false,
                     maximumAge: 60_000,
-                    timeout: 10_000,
+                    timeout: 3000,
                 })
             );
 
