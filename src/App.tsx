@@ -40,7 +40,7 @@ function App() {
                 <Header />
                 <main className="container mx-auto px-4 py-12 max-w-8xl">
                     <Routes>
-                        <Route path="/" element={<Navigate to="/discussions" replace />} />
+                        <Route path="/" element={<Navigate to="/guide" replace />} />
 
                         <Route path="/guide" element={<GuidePage />} />
 

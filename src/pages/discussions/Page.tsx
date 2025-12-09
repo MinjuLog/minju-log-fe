@@ -164,61 +164,90 @@ export default function DiscussionsPage() {
     const [location, setLocation] = useState("");
     const [isLocLoading, setIsLocLoading] = useState(false);
 
-    const handleRefreshLocation: () => Promise<(() => void) | undefined> = async () => {
+    const handleRefreshLocation: () => Promise<void> = async () => {
         if (!navigator.geolocation) {
             alert("이 브라우저에서는 위치 정보 사용이 불가능합니다.");
             return;
         }
         setIsLocLoading(true);
 
-        const abort = new AbortController();
         try {
-            const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
-                navigator.geolocation.getCurrentPosition(resolve, reject, {
-                    enableHighAccuracy: false,
-                    maximumAge: 60_000,
-                    timeout: 3000,
-                })
-            );
+            // 1. 위치 가져오기 + 안전 타임아웃
+            const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+                const timer = setTimeout(() => {
+                    reject(new Error("Geolocation timeout"));
+                }, 5000); // 5초
+
+                navigator.geolocation.getCurrentPosition(
+                    (p) => {
+                        clearTimeout(timer);
+                        resolve(p);
+                    },
+                    (err) => {
+                        clearTimeout(timer);
+                        reject(err);
+                    },
+                    {
+                        enableHighAccuracy: false,
+                        maximumAge: 60_000,
+                        timeout: 3000, // 브라우저가 지원하면 이거도 사용
+                    }
+                );
+            });
 
             const { latitude, longitude } = pos.coords;
 
-            const res = await fetch(
-                `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=jsonv2`,
-                {
-                    signal: abort.signal,
-                    headers: {
-                        "User-Agent": "HeatPick-Dashboard/1.0 (contact: example@example.com)",
-                        "Accept-Language": "ko",
-                        "Referer":
-                            typeof window !== "undefined"
-                                ? window.location.origin
-                                : "https://example.com",
-                    },
+            // 2. reverse geocoding fetch에도 타임아웃
+            const controller = new AbortController();
+            const fetchTimeout = setTimeout(() => {
+                controller.abort();
+            }, 5000); // 5초 후 강제 abort
+
+            try {
+                const res = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=jsonv2`,
+                    {
+                        signal: controller.signal,
+                        headers: {
+                            "User-Agent": "HeatPick-Dashboard/1.0 (contact: example@example.com)",
+                            "Accept-Language": "ko",
+                            "Referer":
+                                typeof window !== "undefined"
+                                    ? window.location.origin
+                                    : "https://example.com",
+                        },
+                    }
+                );
+
+                if (!res.ok) throw new Error(`Reverse geocoding failed: ${res.status}`);
+
+                const data = await res.json();
+                const a = data.address ?? {};
+                const regionName =
+                    [a.state, a.city, a.town, a.county, a.suburb, a.village]
+                        .filter(Boolean)
+                        .slice(0, 2)
+                        .join(" ") ||
+                    data.display_name ||
+                    `${latitude.toFixed(3)}, ${longitude.toFixed(3)}`;
+
+                setLocation(regionName);
+            } catch (e: unknown) {
+                if (e instanceof DOMException && e.name === "AbortError") {
+                    console.warn("Reverse geocoding request aborted (timeout)");
+                } else {
+                    console.error(e);
                 }
-            );
-
-            if (!res.ok) throw new Error(`Reverse geocoding failed: ${res.status}`);
-            const data = await res.json();
-
-            const a = data.address ?? {};
-            const regionName =
-                [a.state, a.city, a.town, a.county, a.suburb, a.village]
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .join(" ") ||
-                data.display_name ||
-                `${latitude.toFixed(3)}, ${longitude.toFixed(3)}`;
-
-            setLocation(regionName);
+                setLocation("위치 정보를 불러오지 못했습니다.");
+            } finally {
+                clearTimeout(fetchTimeout);
+            }
         } catch (e: unknown) {
             console.error(e);
             setLocation("위치 정보를 불러오지 못했습니다.");
         } finally {
             setIsLocLoading(false);
         }
-
-        return () => abort.abort();
     };
 
     useEffect(() => {

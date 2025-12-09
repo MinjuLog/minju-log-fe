@@ -3,7 +3,7 @@ import { RefreshCw, Sliders } from "lucide-react";
 interface Props {
     location: string;
     isLocLoading: boolean;
-    handleRefreshLocation: () => Promise<(() => void) | undefined>
+    handleRefreshLocation: () => Promise<void>
     sortOrder?: string
     setSortOrder?: (sortOrder: "최신순" | "인기순") => void
 }
