@@ -28,7 +28,8 @@ export function Header() {
                         </Link>
                         <nav className="hidden md:flex items-center gap-6">
                             {tabs.map((tab) => {
-                                const isActive = location.pathname === tab.href;
+                                const isActive = location.pathname.startsWith(tab.href) || (tab.href === '/around' && location.pathname.startsWith('/columns'));
+
                                 return (
                                     <Link
                                         key={tab.href}
