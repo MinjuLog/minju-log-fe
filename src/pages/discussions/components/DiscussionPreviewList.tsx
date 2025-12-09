@@ -16,7 +16,7 @@ import { findProposalList } from "../../../api/proposal/proposal";
 import discussionPreviewConverter from "../converter/discussionPreviewConverter.ts";
 import DiscussionPreviewSkeleton from "./DiscussionPreviewSkeleton.tsx";
 
-const PAGE_SIZE = 3;
+const PAGE_SIZE = 10;
 const WINDOW_SIZE = 5;
 
 export function DiscussionPreviewList({ isLocLoading }: { isLocLoading: boolean }) {
