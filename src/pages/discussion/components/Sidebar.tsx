@@ -111,7 +111,7 @@ export default function Sidebar() {
         <div className="rounded-2xl bg-white p-5 shadow-sm">
             <div className="sticky top-4 space-y-4">
                 {/* Home Link */}
-                <Link to="/" className="mb-4 flex items-center rounded-lg p-1 hover:bg-gray-100">
+                <Link to="/discussions" className="mb-4 flex items-center rounded-lg p-1 hover:bg-gray-100">
                     <span className="font-medium text-gray-900">동네한표 홈</span>
                     <svg className="css-111o5ku" fill="none" height="20" viewBox="0 0 20 20" width="20"
                          xmlns="http://www.w3.org/2000/svg">
