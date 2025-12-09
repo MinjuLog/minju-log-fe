@@ -168,7 +168,7 @@ export default function DashboardPage() {
             const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
                 const timer = setTimeout(() => {
                     reject(new Error("Geolocation timeout"));
-                }, 5000); // 5초
+                }, 3000); // 3초
 
                 navigator.geolocation.getCurrentPosition(
                     (p) => {
@@ -193,7 +193,7 @@ export default function DashboardPage() {
             const controller = new AbortController();
             const fetchTimeout = setTimeout(() => {
                 controller.abort();
-            }, 5000); // 5초 후 강제 abort
+            }, 3000); // 5초 후 강제 abort
 
             try {
                 const res = await fetch(
