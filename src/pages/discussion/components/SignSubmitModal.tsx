@@ -7,16 +7,17 @@ interface props {
     onClose: () => void
     selectedId: number | null
     selectedOption: string
-    onSubmit: (authorName: string, rebuttalText: string) => void
+    loading: boolean
+    onSubmit: (authorName: string, rebuttalText: string) => Promise<void>
 }
 
-export default function SignSubmitModal({ isOpen, onClose, selectedId, selectedOption, onSubmit }: props) {
+export default function SignSubmitModal({ isOpen, onClose, selectedId, selectedOption, loading, onSubmit }: props) {
     const [rebuttalText, setRebuttalText] = useState("")
     const [authorNameText, setAuthorNameText] = useState("")
 
     if (!isOpen) return null
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (authorNameText.trim() === "") {
             alert("작성자 명을 입력해주세요.")
             return;
@@ -26,7 +27,7 @@ export default function SignSubmitModal({ isOpen, onClose, selectedId, selectedO
             alert("서명 내용을 입력해주세요.")
             return;
         }
-        onSubmit(authorNameText, rebuttalText);
+        await onSubmit(authorNameText, rebuttalText);
         setRebuttalText("");
         setAuthorNameText("");
         onClose()
@@ -105,10 +106,36 @@ export default function SignSubmitModal({ isOpen, onClose, selectedId, selectedO
                     <div className="space-y-3">
                         <button
                             onClick={handleSubmit}
-                            disabled={!authorNameText.trim() || !rebuttalText.trim()}
-                            className="w-full py-4 bg-blue-400 hover:bg-blue-500 disabled:bg-blue-200 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors"
+                            disabled={!authorNameText.trim() || !rebuttalText.trim() || loading}
+                            className="w-full py-4 bg-blue-400 hover:bg-blue-500 disabled:bg-blue-200 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex justify-center items-center gap-2"
                         >
-                            찬반 서명 남기기
+                            {loading ? (
+                                <>
+                                    <svg
+                                        className="h-5 w-5 animate-spin text-white"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        ></circle>
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                        ></path>
+                                    </svg>
+                                    반영 중
+                                </>
+                            ) : (
+                                "찬반 서명 남기기"
+                            )}
                         </button>
                         {/*<button*/}
                         {/*    onClick={onClose}*/}

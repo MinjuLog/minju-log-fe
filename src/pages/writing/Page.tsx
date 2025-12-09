@@ -73,7 +73,7 @@ export default function WritingPage() {
     const [dueDate, setDueDate] = useState("")
     const [topics, setTopics] = useState<TopicType[]>([])
     const [loading, setLoading] = useState(true);
-
+    const [submitLoading, setSubmitLoading] = useState(false);
     const [selectedHashTags, setSelectedHashTags] = useState<string[]>([]);
 
 
@@ -145,6 +145,7 @@ export default function WritingPage() {
             return
         }
 
+        setSubmitLoading(true);
         const res: CreateProposalResponse | ErrorResponse = await createProposal({
             userId: localStorage.getItem("userId") ?? "",
             title: title,
@@ -153,6 +154,7 @@ export default function WritingPage() {
             dueDate: dueDate,
             ...(selectedTopicId != null && { topicId: selectedTopicId }),
         })
+        setSubmitLoading(false);
 
         if (!res.ok) {
             alert(res.message);
@@ -226,7 +228,7 @@ export default function WritingPage() {
                     </div>
 
                     {/* Sidebar */}
-                    <Sidebar handleSubmit={handleSubmit} />
+                    <Sidebar loading={submitLoading} handleSubmit={handleSubmit} />
                 </div>
             </div>
         </div>

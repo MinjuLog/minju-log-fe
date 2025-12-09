@@ -37,13 +37,16 @@ export default function MainVotes({ discussion, myVote }: props) {
     );
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+    const [submitLoading, setSubmitLoading] = useState(false);
 
     const handleConfirm = async (id: number | null) => {
         const seq = Number(discussionSequence);
         const type = id === 1 ? "AGREE" : "DISAGREE";
         const userId = localStorage.getItem("userId") ?? '';
 
+        setSubmitLoading(true);
         const res = await createVote(seq, Number(userId), type);
+        setSubmitLoading(false);
 
         if (!res.ok) {
             alert(res.message);
@@ -60,7 +63,9 @@ export default function MainVotes({ discussion, myVote }: props) {
 
         const userId = localStorage.getItem("userId") ?? '';
 
+        setSubmitLoading(true);
         const res = await createSignature(seq, Number(userId), nickname, type, content);
+        setSubmitLoading(false);
 
         if (!res.ok) {
             alert(res.message);
@@ -287,6 +292,7 @@ export default function MainVotes({ discussion, myVote }: props) {
                 }}
                 selectedOption={selectedId === 1 ? "찬성합니다." : "반대합니다."}
                 selectedId={selectedId}
+                loading={submitLoading}
                 onConfirm={() => handleConfirm(selectedId)}
             />
 
@@ -295,6 +301,7 @@ export default function MainVotes({ discussion, myVote }: props) {
                 onClose={() => setIsSubmitModalOpen(false)}
                 selectedId={selectedId}
                 selectedOption={selectedId === 1 ? "찬성합니다." : "반대합니다."}
+                loading={submitLoading}
                 onSubmit={handleSubmit}
             />
         </div>

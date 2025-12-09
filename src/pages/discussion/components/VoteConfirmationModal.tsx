@@ -5,6 +5,7 @@ interface Props {
     onClose: () => void;
     selectedOption: string;
     selectedId: number | null;
+    loading: boolean;
     onConfirm: () => void;
 }
 
@@ -13,6 +14,7 @@ export default function VoteConfirmationModal({
                                                   onClose,
                                                   selectedOption,
                                                   selectedId,
+                                                  loading,
                                                   onConfirm,
                                               }: Props) {
     if (!isOpen) return null;
@@ -82,10 +84,37 @@ export default function VoteConfirmationModal({
 
                 {/* Confirm button */}
                 <button
+                    disabled={loading}
                     onClick={onConfirm}
-                    className="w-full rounded-xl bg-blue-600 py-4 font-semibold text-white transition-colors hover:bg-blue-700"
+                    className="w-full rounded-xl bg-blue-600 py-4 disabled:opacity-70 flex justify-center items-center gap-2 font-semibold text-white transition-colors hover:bg-blue-700"
                 >
-                    투표하기
+                    {loading ? (
+                        <>
+                            <svg
+                                className="h-5 w-5 animate-spin text-white"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                ></circle>
+                                <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                ></path>
+                            </svg>
+                            반영 중
+                        </>
+                    ) : (
+                        "투표하기"
+                    )}
                 </button>
             </div>
         </div>
