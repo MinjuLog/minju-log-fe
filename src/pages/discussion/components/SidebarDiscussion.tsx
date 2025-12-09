@@ -71,7 +71,7 @@ export default function SidebarDiscussion({ sidebarDiscussion }: props) {
                     onClick={() => {
                         navigate(`/discussions/${sidebarDiscussion.id}`);
                         // 이동 직후 새로고침
-                        window.location.reload();
+                        // window.location.reload();
                     }}
                     className="text-white w-full rounded-full bg-blue-600 py-2 text-base hover:bg-blue-700"
                 >

@@ -212,6 +212,7 @@ export default function DiscussionPage() {
     useEffect(() => {
         if (!discussionSequence) return;
 
+        setLoading(true);
         const load = async () => {
             const res = await findProposalDetail(Number(discussionSequence), userId ?? '');
 

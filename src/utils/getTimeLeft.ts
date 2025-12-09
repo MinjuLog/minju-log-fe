@@ -1,8 +1,6 @@
 export default function getTimeLeft(dueDate: number[]): string {
     const now = new Date();
     const due = new Date(dueDate[0], dueDate[1] - 1, dueDate[2]);
-    console.log(dueDate)
-    console.log(now, due);
 
     const diffMs = due.getTime() - now.getTime();
 
