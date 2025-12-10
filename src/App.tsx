@@ -11,6 +11,7 @@ import DashboardPage from "./pages/dashboard/Page.tsx";
 import {useEffect} from "react";
 import {createUser} from "./api/user/user.ts";
 import GuidePage from "./pages/guide/Page.tsx";
+import NoticePage from "./pages/notice/Page.tsx";
 
 function App() {
 
@@ -58,6 +59,7 @@ function App() {
                     <Routes>
                         <Route path="/" element={<Navigate to="/guide" replace />} />
 
+                        <Route path="/notice" element={<NoticePage/>} />
                         <Route path="/guide" element={<GuidePage />} />
 
                         <Route path="/discussions" element={<DiscussionsPage />} />

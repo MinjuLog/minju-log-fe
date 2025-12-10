@@ -15,6 +15,7 @@ import type DiscussionPreviewType from "../types/DiscussionPreviewType";
 import { findProposalList } from "../../../api/proposal/proposal";
 import discussionPreviewConverter from "../converter/discussionPreviewConverter.ts";
 import DiscussionPreviewSkeleton from "./DiscussionPreviewSkeleton.tsx";
+import DiscussionNoticePreview from "./DiscussionNoticePreview.tsx";
 
 const PAGE_SIZE = 10;
 const WINDOW_SIZE = 5;
@@ -185,13 +186,19 @@ export function DiscussionPreviewList({ isLocLoading }: { isLocLoading: boolean 
                         <DiscussionPreviewSkeleton key={idx} />
                     ))}
 
-                {!loading &&
-                    discussionPreviews.map((preview) => (
-                        <DiscussionPreview
-                            key={preview.id}
-                            discussionPreview={preview}
-                        />
-                    ))}
+
+                {!loading && (
+                    <>
+                        <DiscussionNoticePreview key="notice" />
+
+                        {discussionPreviews.map((preview) => (
+                            <DiscussionPreview
+                                key={preview.id}
+                                discussionPreview={preview}
+                            />
+                        ))}
+                    </>
+                )}
 
                 {!loading && discussionPreviews.length === 0 && (
                     <div className="text-center text-sm text-gray-500 border border-dashed border-gray-200 rounded-lg py-10">
