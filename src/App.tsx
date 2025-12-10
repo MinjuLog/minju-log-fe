@@ -34,6 +34,22 @@ function App() {
         initUser();
     }, []);
 
+    useEffect(() => {
+        const isFirstVisit = sessionStorage.getItem("visited");
+        const currentPath = window.location.pathname;
+
+        if (!isFirstVisit) {
+            // 첫 방문이면 플래그 저장
+            sessionStorage.setItem("visited", "true");
+
+            // 첫 방문 & URL이 root가 아니면 → 강제로 /guide 이동
+            if (currentPath !== "/" && currentPath !== "/guide") {
+                window.location.replace("/guide");
+                return;
+            }
+        }
+    }, []);
+
     return (
         <BrowserRouter>
             <div className="min-h-screen bg-background">
