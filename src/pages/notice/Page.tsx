@@ -1,5 +1,6 @@
 import ContentHeader from "../column/components/ContentHeader.tsx";
 import ContentBody from "../column/components/ContentBody.tsx";
+import {useEffect} from "react";
 const mock = {
     id: 9999,
     header: {
@@ -92,6 +93,15 @@ const mock = {
 };
 
 export default function NoticePage() {
+    useEffect(() => {
+        // 페이지 진입 시 스크롤 맨 위로
+        window.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: "auto", // 또는 "smooth"로 천천히 올리게 할 수도 있음
+        });
+    }, []);
+
     return (
         <div className="mx-auto max-w-3xl px-4 py-8">
             <ContentHeader
