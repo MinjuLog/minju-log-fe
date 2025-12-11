@@ -254,6 +254,15 @@ export default function DiscussionsPage() {
         handleRefreshLocation();
     }, []);
 
+    useEffect(() => {
+        // 페이지 진입 시 스크롤 맨 위로
+        window.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: "auto", // 또는 "smooth"로 천천히 올리게 할 수도 있음
+        });
+    }, []);
+
     return (
         <>
             <DiscussionHeader/>
