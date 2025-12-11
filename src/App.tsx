@@ -8,12 +8,13 @@ import ColumnPage from "./pages/column/Page.tsx";
 import AroundPage from "./pages/around/Page.tsx";
 import WritingPage from "./pages/writing/Page.tsx";
 import DashboardPage from "./pages/dashboard/Page.tsx";
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 import {createUser} from "./api/user/user.ts";
 import GuidePage from "./pages/guide/Page.tsx";
 import NoticePage from "./pages/notice/Page.tsx";
 
 function App() {
+    const [ready, setReady] = useState(false);
 
     useEffect(() => {
         const bootstrap = async () => {
@@ -27,7 +28,7 @@ function App() {
                 // 첫 방문 + /, /guide 가 아니면 → /guide로 보내고 종료
                 if (currentPath !== "/" && currentPath !== "/guide") {
                     window.location.replace("/guide");
-                    return; // 여기서 끝내서 createUser 안 타게 함
+                    return; // 여기서 끝나고, 새 페이지에서 다시 로딩됨
                 }
             }
 
@@ -39,15 +40,26 @@ function App() {
 
                 if (!res.ok) {
                     alert(res.message);
+                    // 실패해도 일단 화면은 띄워야 하니 ready는 true로
+                    setReady(true);
                     return;
                 }
 
                 localStorage.setItem("userId", String(res.result.userId));
             }
+
+            setReady(true);
         };
 
         void bootstrap();
     }, []);
+
+    // 부트스트랩 끝나기 전에는 아무 것도 렌더링하지 않음 (또는 로딩 화면)
+    if (!ready) {
+        return null;
+        // 또는
+        // return <div className="min-h-screen flex items-center justify-center">로딩 중...</div>;
+    }
 
     return (
         <BrowserRouter>
@@ -57,7 +69,7 @@ function App() {
                     <Routes>
                         <Route path="/" element={<Navigate to="/guide" replace />} />
 
-                        <Route path="/notice" element={<NoticePage/>} />
+                        <Route path="/notice" element={<NoticePage />} />
                         <Route path="/guide" element={<GuidePage />} />
 
                         <Route path="/discussions" element={<DiscussionsPage />} />
