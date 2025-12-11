@@ -16,7 +16,22 @@ import NoticePage from "./pages/notice/Page.tsx";
 function App() {
 
     useEffect(() => {
-        const initUser = async () => {
+        const bootstrap = async () => {
+            // 1. 첫 방문 체크 & 리다이렉트 먼저
+            const isFirstVisit = sessionStorage.getItem("visited");
+            const currentPath = window.location.pathname;
+
+            if (!isFirstVisit) {
+                sessionStorage.setItem("visited", "true");
+
+                // 첫 방문 + /, /guide 가 아니면 → /guide로 보내고 종료
+                if (currentPath !== "/" && currentPath !== "/guide") {
+                    window.location.replace("/guide");
+                    return; // 여기서 끝내서 createUser 안 타게 함
+                }
+            }
+
+            // 2. 리다이렉트 안 한 경우에만 사용자 초기화
             const existingUserId = localStorage.getItem("userId");
 
             if (!existingUserId || isNaN(Number(existingUserId))) {
@@ -27,28 +42,11 @@ function App() {
                     return;
                 }
 
-                // 반드시 문자열로 저장해야 함
                 localStorage.setItem("userId", String(res.result.userId));
             }
         };
 
-        initUser();
-    }, []);
-
-    useEffect(() => {
-        const isFirstVisit = sessionStorage.getItem("visited");
-        const currentPath = window.location.pathname;
-
-        if (!isFirstVisit) {
-            // 첫 방문이면 플래그 저장
-            sessionStorage.setItem("visited", "true");
-
-            // 첫 방문 & URL이 root가 아니면 → 강제로 /guide 이동
-            if (currentPath !== "/" && currentPath !== "/guide") {
-                window.location.replace("/guide");
-                return;
-            }
-        }
+        void bootstrap();
     }, []);
 
     return (
@@ -73,7 +71,7 @@ function App() {
 
                         <Route path="/dashboard" element={<DashboardPage />} />
 
-                        <Route path="*" element={<Navigate to="/discussions" replace />} />
+                        <Route path="*" element={<Navigate to="/guide" replace />} />
                     </Routes>
                 </main>
             </div>
