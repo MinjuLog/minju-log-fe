@@ -11,7 +11,7 @@ export default function commentsConverter(data: GetSignatureListResponse): Comme
         authorName: c.nickname,
         timestamp: formatDate(c.createdAt),
         content: c.content,
-        opinion: c.signatureType === "AGREE" ? 1 : 2, // 기존 CommentType 구조에 맞게
+        opinion: c.signatureType === "AGREE" ? 1 : 2, // 기존 FeedType 구조에 맞게
         likes: 0, // 서버에서 없으면 기본값
     }));
 }

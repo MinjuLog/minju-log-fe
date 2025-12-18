@@ -12,6 +12,7 @@ import {useEffect, useState} from "react";
 import {createUser} from "./api/user/user.ts";
 import GuidePage from "./pages/guide/Page.tsx";
 import NoticePage from "./pages/notice/Page.tsx";
+import FeedPage from "./pages/feed/Page.tsx";
 
 function App() {
     const [ready, setReady] = useState(false);
@@ -82,6 +83,7 @@ function App() {
                         <Route path="/around" element={<AroundPage />} />
 
                         <Route path="/dashboard" element={<DashboardPage />} />
+                        <Route path="/feed" element={<FeedPage />} />
 
                         <Route path="*" element={<Navigate to="/guide" replace />} />
                     </Routes>
