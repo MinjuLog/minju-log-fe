@@ -21,7 +21,7 @@ export default function Comment({ comment }: props) {
                 isMine ? "border-gray-600" : "border-gray-200"
             }`}
         >
-            {/* Comment Header */}
+            {/* Feed Header */}
             <div className="mb-3 flex items-start justify-between">
                 <div className="flex items-center gap-3">
                     <div>

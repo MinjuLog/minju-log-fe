@@ -46,7 +46,7 @@ import {useParams} from "react-router-dom";
 //     pros: 742,
 //     cons: 389,
 // };
-// const commentMock: CommentType[] = [
+// const commentMock: FeedType[] = [
 //     {
 //         id: "1",
 //         authorId: "user-1",

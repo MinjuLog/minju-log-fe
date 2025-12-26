@@ -1,0 +1,27 @@
+import type ErrorResponse from "../../../api/type/ErrorResponse.ts";
+import axios from "axios";
+import {feedApi} from "./api.ts";
+import type GetFeedListResponse from "./GetFeedListResponse.ts";
+
+export const getFeedList = async (
+): Promise<GetFeedListResponse | ErrorResponse> => {
+    try {
+        const res = await feedApi.get(`/api/feeds`);
+        return {
+            ok: true,
+            result: res.data,
+        }
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            return {
+                ok: false,
+                message: error.response?.data?.message ?? "알 수 없는 오류",
+            };
+        }
+
+        return {
+            ok: false,
+            message: "네트워크 오류 발생",
+        };
+    }
+};
