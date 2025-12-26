@@ -1,173 +1,137 @@
-"use client"
+"use client";
 
-import {useEffect, useState} from "react"
-import type FeedType from "../types/FeedType.ts"
-import Feed from "./Feed.tsx"
-import {FeedInput} from "./FeedInput.tsx";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Client, type IMessage } from "@stomp/stompjs";
+import Feed from "./Feed";
+import { FeedInput } from "./FeedInput";
+import type FeedType from "../types/FeedType.ts";
+import {getFeedList} from "../api/feed.ts";
 
-const PAGE_SIZE = 30
-function FeedsSkeleton() {
-    return (
-        <div className="flex-1 mt-20 animate-pulse">
-            {/* Header */}
-            <div className="mb-6">
-                <div className="mb-4 h-6 w-48 bg-gray-200 rounded" />
 
-                <div className="flex items-center justify-between">
-                    <div className="h-5 w-24 bg-gray-200 rounded" />
-                    <div className="h-8 w-32 bg-gray-200 rounded-full" />
-                </div>
-            </div>
-
-            {/* feeds List Skeleton */}
-            <div className="space-y-4">
-                {[0, 1, 2, 3, 4].map(i => (
-                    <div
-                        key={i}
-                        className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
-                    >
-                        <div className="mb-3 flex items-center gap-3">
-                            <div className="h-9 w-9 rounded-full bg-gray-200" />
-                            <div className="flex-1">
-                                <div className="h-4 w-32 bg-gray-200 rounded mb-1" />
-                                <div className="h-3 w-20 bg-gray-200 rounded" />
-                            </div>
-                            <div className="h-3 w-10 bg-gray-200 rounded" />
-                        </div>
-
-                        <div className="space-y-2 mb-3">
-                            <div className="h-3 w-full bg-gray-200 rounded" />
-                            <div className="h-3 w-5/6 bg-gray-200 rounded" />
-                            <div className="h-3 w-3/5 bg-gray-200 rounded" />
-                        </div>
-
-                        <div className="flex items-center justify-between mt-2">
-                            <div className="h-4 w-20 bg-gray-200 rounded" />
-                            <div className="h-8 w-16 bg-gray-200 rounded-full" />
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    )
-}
+const PAGE_SIZE = 30;
 
 export default function Feeds() {
+    const WS_URL = "ws://localhost:8080/ws";
+    const SUB_DEST = "/topic/room.1";
+    const SEND_DEST = "/app/feed";
+    // const SEND_DEST = "/topic/room.1";
 
-    const [loading, setLoading] = useState(true)
-    const [feeds, setFeeds] = useState<FeedType[]>([])
-    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
-    const [totalElements, setTotalElements] = useState<number>(0)
-    const [page, setPage] = useState(0)
+    const clientRef = useRef<Client | null>(null);
 
-    useEffect(() => {
-        // 필터나 discussion 바뀌면 page 0으로 돌림
-        setPage(0);
-        setFeeds([]); // 내부 초기화
+    const [connected, setConnected] = useState(false);
+    const [feeds, setFeeds] = useState<FeedType[]>([]);
+    const [totalElements, setTotalElements] = useState(0);
+
+    const [loading, setLoading] = useState(true);
+    const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+    const [page, setPage] = useState(0);
+
+    const client = useMemo(() => {
+        return new Client({
+            brokerURL: WS_URL,
+            reconnectDelay: 2000,
+            heartbeatIncoming: 10000,
+            heartbeatOutgoing: 10000,
+            debug: (s) => console.log("[stomp]", s),
+        });
     }, []);
 
     useEffect(() => {
+        const bootstrap = async () => {
+            const feedList = await getFeedList();
 
+            if (!feedList.ok) {
+                alert(feedList.message);
+                return;
+            }
+            setTotalElements(feedList.result.length);
+            setFeeds(feedList.result);
+        }
+        void bootstrap();
+    }, []);
+
+    useEffect(() => {
+        clientRef.current = client;
+
+        client.onConnect = () => {
+            setConnected(true);
+
+            // 구독
+            client.subscribe(SUB_DEST, (frame: IMessage) => {
+                setFeeds((prev) => {
+                    const next = [
+                        JSON.parse(frame.body),
+                    ...prev];
+                    setTotalElements(next.length); // next 기준이라 항상 정확
+                    return next;
+                });
+            });
+
+            // 연결 확인용(서버 echo가 있으면 바로 하나 들어와야 함)
+            // client.publish({ destination: SEND_DEST, body: "ping" });
+        };
+
+        client.onDisconnect = () => setConnected(false);
+        client.onWebSocketClose = () => setConnected(false);
+
+        client.onStompError = (frame) => {
+            setConnected(false);
+            console.error("STOMP error:", frame.headers["message"], frame.body);
+        };
+
+        client.onWebSocketError = (e) => {
+            setConnected(false);
+            console.error("WebSocket error:", e);
+        };
+
+        client.activate();
+
+        return () => {
+            client.deactivate(); // 충분
+        };
+    }, [client]);
+
+    useEffect(() => {
         const load = async () => {
             try {
-                setLoading(true)
-                // const res = await getSignatureList(
-                //     Number(discussionSequence),
-                //     filterBy,
-                //     page,
-                //     PAGE_SIZE
-                // )
-
-                // if (!res.ok) {
-                //     alert(res.message)
-                //     return
-                // }
-                //
-                // const converted = feedsConverter(res);
-                // setTotalElements(res.result.totalElements);
-                // setFeeds(prev =>  Array.from(
-                //         new Map([...prev, ...converted].map(item => [item.id, item])).values()
-                //     )
-                // );
-                setTotalElements(1)
-                setFeeds([
-                    {
-                        id: "1",
-                        authorId: "1",
-                        authorName: "나",
-                        timestamp: new Date().toISOString(),
-                        content: "1",
-                        likes: 1,
-                        opinion: 1
-                    },
-                    {
-                        id: crypto.randomUUID(),
-                        authorId: "me",
-                        authorName: "나",
-                        timestamp: new Date().toISOString(),
-                        content: "1",
-                        likes: 1,
-                        opinion: 1
-                    }
-                ])
-
+                setLoading(true);
+                // TODO: page 기반으로 기존 HTTP 피드 로딩을 붙일 거면 여기서 fetch
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
-        }
-
-        load()
-    }, [page])
-
-    const handleCreateFeed = async (content: string) => {
-        // 실제 API 호출 자리
-        // await createFeed(content)
-
-        const newFeed: FeedType = {
-            id: crypto.randomUUID(),
-            authorId: "me",
-            authorName: "나",
-            timestamp: new Date().toISOString(),
-            content,
-            likes: 0,
-            opinion: 0,
-        }
-
-        setFeeds(prev => [newFeed, ...prev])
-        setTotalElements(prev => prev + 1)
-    }
+        };
+        load();
+    }, [page]);
 
     const canLoadMore = visibleCount < totalElements;
 
     const handleLoadMore = () => {
-        setVisibleCount(prev =>
-            Math.min(prev + PAGE_SIZE, totalElements)
-        )
-        setPage(page + 1)
-    }
+        setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, totalElements));
+        setPage((p) => p + 1);
+    };
 
     if (loading) {
-        return <FeedsSkeleton />
+        return <div>loading...</div>;
     }
 
     return (
         <div className="flex-1">
-
-            {/* Header */}
             <div className="mb-6">
                 <h1 className="mb-4 text-2xl font-bold text-gray-900">
-                    피드 {totalElements}
+                    전체 {totalElements} {connected ? "(연결됨)" : "(끊김)"}
                 </h1>
             </div>
 
-            {/* feeds List */}
             <div className="space-y-4">
-                <FeedInput onSubmit={handleCreateFeed} />
-                {feeds
-                    .slice(0, visibleCount)
-                    .map(feed => (
-                        <Feed key={feed.id} feed={feed} />
-                    ))}
+                <FeedInput
+                    client={clientRef}
+                    sendDest={SEND_DEST}
+                    connected={connected}
+                />
+
+                {feeds.slice(0, visibleCount).map((message: FeedType) => (
+                    <Feed key={message.id} feed={message} />
+                ))}
 
                 {totalElements === 0 && !loading && (
                     <div className="text-center text-gray-500 text-sm py-8 border border-dashed border-gray-200 rounded-lg">
@@ -180,16 +144,13 @@ export default function Feeds() {
                         <button
                             type="button"
                             onClick={handleLoadMore}
-                            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition"
+                            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400"
                         >
-                            더 불러오기{" "}
-                            <span className="text-gray-400">
-                            ({visibleCount}/{totalElements})
-                        </span>
+                            더 불러오기 <span className="text-gray-400">({visibleCount}/{totalElements})</span>
                         </button>
                     </div>
                 )}
             </div>
         </div>
-    )
+    );
 }

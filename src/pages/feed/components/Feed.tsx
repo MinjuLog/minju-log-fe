@@ -5,8 +5,9 @@ interface props {
 }
 
 export default function Feed({ feed }: props) {
-    const myUuid = localStorage.getItem("userId");
-    const isMine = myUuid === feed.authorId;
+    // const myUuid = localStorage.getItem("userId");
+    // const isMine = myUuid === feed.authorId;
+    const isMine = false;
 
     return (
         <div

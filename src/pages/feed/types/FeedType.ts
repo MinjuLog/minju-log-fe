@@ -1,9 +1,8 @@
 export default interface FeedType {
-    id: string
-    authorId: string
-    authorName: string
-    timestamp: string
-    content: string
-    likes: number
-    opinion: number
+    id: number;
+    authorId: number;
+    authorName: string;
+    timestamp: string;
+    content: string;
+    likes: number;
 }
