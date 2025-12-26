@@ -11,7 +11,7 @@ import {getFeedList} from "../api/feed.ts";
 const PAGE_SIZE = 30;
 
 export default function Feeds() {
-    const WS_URL = "ws://localhost:8080/ws";
+    const WS_URL = "ws://mcphubcorp.site/ws";
     const SUB_DEST = "/topic/room.1";
     const SEND_DEST = "/app/feed";
     // const SEND_DEST = "/topic/room.1";
