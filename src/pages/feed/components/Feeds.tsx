@@ -12,6 +12,7 @@ const PAGE_SIZE = 30;
 
 export default function Feeds() {
     const WS_URL = "wss://mcphubcorp.site/ws";
+    // const WS_URL = "ws://localhost:8080/ws";
     const SUB_DEST = "/topic/room.1";
     const SEND_DEST = "/app/feed";
     // const SEND_DEST = "/topic/room.1";
@@ -32,6 +33,9 @@ export default function Feeds() {
             reconnectDelay: 2000,
             heartbeatIncoming: 10000,
             heartbeatOutgoing: 10000,
+            connectHeaders: {
+                userId: localStorage.getItem("userId") ?? ''
+            },
             debug: (s) => console.log("[stomp]", s),
         });
     }, []);

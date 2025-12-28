@@ -1,12 +1,12 @@
 import type ErrorResponse from "../../../api/type/ErrorResponse.ts";
 import axios from "axios";
-import {feedApi} from "./api.ts";
 import type GetFeedListResponse from "./GetFeedListResponse.ts";
+import {api} from "../../../api/api.ts";
 
 export const getFeedList = async (
 ): Promise<GetFeedListResponse | ErrorResponse> => {
     try {
-        const res = await feedApi.get(`/api/feeds`);
+        const res = await api.get(`/api/feeds`);
         return {
             ok: true,
             result: res.data,
