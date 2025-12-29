@@ -9,13 +9,11 @@ import {getFeedList} from "../api/feed.ts";
 
 
 const PAGE_SIZE = 30;
+const WS_URL = import.meta.env.VITE_WS_HOST
 
 export default function Feeds() {
-    const WS_URL = "wss://mcphubcorp.site/ws";
-    // const WS_URL = "ws://localhost:8080/ws";
     const SUB_DEST = "/topic/room.1";
     const SEND_DEST = "/app/feed";
-    // const SEND_DEST = "/topic/room.1";
 
     const clientRef = useRef<Client | null>(null);
 
