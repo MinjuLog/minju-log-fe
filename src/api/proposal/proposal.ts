@@ -13,7 +13,6 @@ export const createProposal = async (
     try {
         // TODO 삭제
         if (data.topicId === -1) delete data.topicId;
-        data.userId = 1;
         const res = await api.post("/api/proposals", data);
         return {
             ok: true,
