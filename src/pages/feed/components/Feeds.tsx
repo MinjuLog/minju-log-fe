@@ -47,7 +47,7 @@ export default function Feeds() {
             setFeeds(feedList.result);
         }
         void bootstrap();
-    }, [feeds]);
+    }, []);
 
 
     useEffect(() => {
