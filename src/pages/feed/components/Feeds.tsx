@@ -22,6 +22,7 @@ export default function Feeds() {
     const [loading, setLoading] = useState(true);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const [page, setPage] = useState(0);
+    const userId = localStorage.getItem("userId") ?? '';
 
     const client = useMemo(() => {
         return new Client({
@@ -29,12 +30,10 @@ export default function Feeds() {
             reconnectDelay: 2000,
             heartbeatIncoming: 10000,
             heartbeatOutgoing: 10000,
-            connectHeaders: {
-                userId: localStorage.getItem("userId") ?? ''
-            },
+            connectHeaders: { userId },
             debug: (s) => console.log("[stomp]", s),
         });
-    }, []);
+    }, [userId]);
 
     useEffect(() => {
         const bootstrap = async () => {
@@ -48,7 +47,8 @@ export default function Feeds() {
             setFeeds(feedList.result);
         }
         void bootstrap();
-    }, []);
+    }, [feeds]);
+
 
     useEffect(() => {
         clientRef.current = client;
@@ -68,12 +68,14 @@ export default function Feeds() {
             });
 
             client.subscribe("/topic/room.1/like", (frame: IMessage) => {
-                const { feedId, likeCount } = JSON.parse(frame.body);
+                const { actorId, feedId } = JSON.parse(frame.body);
+
+                if (actorId === Number(userId)) return;
 
                 setFeeds(prev =>
                     prev.map(feed =>
                         feed.id === feedId
-                            ? { ...feed, likes: likeCount }
+                            ? { ...feed, likes: feed.likes + 1 }
                             : feed
                     )
                 );
@@ -101,7 +103,7 @@ export default function Feeds() {
         return () => {
             client.deactivate(); // 충분
         };
-    }, [client]);
+    }, [client, userId]);
 
     useEffect(() => {
         const load = async () => {
@@ -141,9 +143,11 @@ export default function Feeds() {
                 />
 
                 {feeds.slice(0, visibleCount).map((message: FeedType) => (
-                    <Feed key={message.id}
-                          feed={message}
-                          client={clientRef}
+                    <Feed
+                        key={message.id}
+                        feed={message}
+                        setFeeds={setFeeds}
+                        client={clientRef}
                     />
                 ))}
 

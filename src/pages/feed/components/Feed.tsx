@@ -4,10 +4,11 @@ import {formatKoreanDate} from "../../../utils/formatKoreanDate.ts";
 
 interface props {
     feed: FeedType;
+    setFeeds: any;
     client: any;
 }
 
-export default function Feed({ feed, client }: props) {
+export default function Feed({ feed, setFeeds, client }: props) {
     const userId = Number(localStorage.getItem("userId"));
     const isMine = userId === feed.authorId;
 
@@ -19,6 +20,14 @@ export default function Feed({ feed, client }: props) {
                 feedId: feed.id,
             }),
         });
+
+        setFeeds((prev: FeedType[]) =>
+            prev.map((f: FeedType) =>
+                feed.id === f.id
+                    ? { ...f, likes: f.likes + 1 }
+                    : f
+            )
+        );
     };
 
     return (
