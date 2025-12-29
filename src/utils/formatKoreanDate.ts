@@ -1,18 +1,19 @@
 export function formatKoreanDate(isoString: string): string {
     const date = new Date(isoString);
 
-    const year = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
+    const formatter = new Intl.DateTimeFormat("ko-KR", {
+        timeZone: "Asia/Seoul",
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true,
+    });
 
-    const hours24 = date.getHours();
-    const period = hours24 < 12 ? "오전" : "오후";
-    const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+    const parts = formatter.formatToParts(date);
+    const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
 
-    const minutes = date.getMinutes();
-    const seconds = date.getSeconds();
-
-    const pad = (n: number) => n.toString().padStart(2, "0");
-
-    return `${year}년 ${month}월 ${day}일 ${period} ${pad(hours12)}시 ${pad(minutes)}분 ${pad(seconds)}초`;
+    return `${map.year}년 ${map.month}월 ${map.day}일 ${map.dayPeriod} ${map.hour.padStart(2, "0")}시 ${map.minute}분 ${map.second}초`;
 }
