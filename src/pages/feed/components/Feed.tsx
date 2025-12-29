@@ -1,5 +1,6 @@
 import type FeedType from "../types/FeedType.ts";
 import {ThumbsUp} from "lucide-react";
+import {formatKoreanDate} from "../../../utils/formatKoreanDate.ts";
 
 interface props {
     feed: FeedType;
@@ -40,7 +41,7 @@ export default function Feed({ feed, client }: props) {
                             )}
                         </div>
                         <div className="text-xs text-gray-500">
-                            {feed.timestamp}
+                            {formatKoreanDate(feed.timestamp)}
                         </div>
                     </div>
                 </div>
