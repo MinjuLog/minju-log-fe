@@ -1,16 +1,17 @@
 import type FeedType from "../types/FeedType.ts";
 import {ThumbsUp} from "lucide-react";
 import {formatKoreanDate} from "../../../utils/formatKoreanDate.ts";
+import {useState} from "react";
 
 interface props {
     feed: FeedType;
-    setFeeds: any;
     client: any;
 }
 
-export default function Feed({ feed, setFeeds, client }: props) {
+export default function Feed({ feed, client }: props) {
     const userId = Number(localStorage.getItem("userId"));
     const isMine = userId === feed.authorId;
+    const [likeView, setLikeView] = useState(feed.likes);
 
     const handleLikeSubmit = () => {
         client.current.publish({
@@ -20,14 +21,7 @@ export default function Feed({ feed, setFeeds, client }: props) {
                 feedId: feed.id,
             }),
         });
-
-        setFeeds((prev: FeedType[]) =>
-            prev.map((f: FeedType) =>
-                feed.id === f.id
-                    ? { ...f, likes: f.likes + 1 }
-                    : f
-            )
-        );
+        setLikeView((prev) => prev + 1);
     };
 
     return (
@@ -68,7 +62,7 @@ export default function Feed({ feed, setFeeds, client }: props) {
                     className="flex items-center gap-1 text-gray-500 hover:text-gray-700"
                 >
                     <ThumbsUp className="h-4 w-4" />
-                    <span className="text-sm">{feed.likes}</span>
+                    <span className="text-sm">{likeView}</span>
                 </button>
             </div>
         </div>

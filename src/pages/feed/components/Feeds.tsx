@@ -146,7 +146,6 @@ export default function Feeds() {
                     <Feed
                         key={message.id}
                         feed={message}
-                        setFeeds={setFeeds}
                         client={clientRef}
                     />
                 ))}
