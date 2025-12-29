@@ -1,13 +1,24 @@
 import type FeedType from "../types/FeedType.ts";
+import {ThumbsUp} from "lucide-react";
 
 interface props {
     feed: FeedType;
+    client: any;
 }
 
-export default function Feed({ feed }: props) {
-    // const myUuid = localStorage.getItem("userId");
-    // const isMine = myUuid === feed.authorId;
-    const isMine = false;
+export default function Feed({ feed, client }: props) {
+    const userId = Number(localStorage.getItem("userId"));
+    const isMine = userId === feed.authorId;
+
+    const handleLikeSubmit = () => {
+        client.current.publish({
+            destination: '/app/feed/like',
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+                feedId: feed.id,
+            }),
+        });
+    };
 
     return (
         <div
@@ -41,14 +52,15 @@ export default function Feed({ feed }: props) {
             </div>
 
             {/* Actions */}
-            {/*<div className="flex items-center gap-4">*/}
-            {/*    <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700">*/}
-            {/*        <ThumbsUp className="h-4 w-4" />*/}
-            {/*        {feed.likes > 0 && (*/}
-            {/*            <span className="text-sm">{feed.likes}</span>*/}
-            {/*        )}*/}
-            {/*    </button>*/}
-            {/*</div>*/}
+            <div className="flex items-center gap-4">
+                <button
+                    onClick={handleLikeSubmit}
+                    className="flex items-center gap-1 text-gray-500 hover:text-gray-700"
+                >
+                    <ThumbsUp className="h-4 w-4" />
+                    <span className="text-sm">{feed.likes}</span>
+                </button>
+            </div>
         </div>
     );
 }

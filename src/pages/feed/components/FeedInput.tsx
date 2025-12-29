@@ -2,11 +2,10 @@ import { useState } from "react";
 
 interface FeedInputProps {
     client: any;
-    sendDest: string;
     connected: boolean;
 }
 
-export function FeedInput({ client, sendDest, connected }: FeedInputProps) {
+export function FeedInput({ client, connected }: FeedInputProps) {
     const [content, setContent] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const userId = Number(localStorage.getItem("userId"));
@@ -18,7 +17,7 @@ export function FeedInput({ client, sendDest, connected }: FeedInputProps) {
         setSubmitting(true);
 
         client.current.publish({
-            destination: sendDest,
+            destination: '/app/feed',
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
                 content: text,

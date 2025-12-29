@@ -13,8 +13,6 @@ const WS_URL = import.meta.env.VITE_WS_HOST
 
 export default function Feeds() {
     const SUB_DEST = "/topic/room.1";
-    const SEND_DEST = "/app/feed";
-
     const clientRef = useRef<Client | null>(null);
 
     const [connected, setConnected] = useState(false);
@@ -67,6 +65,18 @@ export default function Feeds() {
                     setTotalElements(next.length); // next 기준이라 항상 정확
                     return next;
                 });
+            });
+
+            client.subscribe("/topic/room.1/like", (frame: IMessage) => {
+                const { feedId, likeCount } = JSON.parse(frame.body);
+
+                setFeeds(prev =>
+                    prev.map(feed =>
+                        feed.id === feedId
+                            ? { ...feed, likes: likeCount }
+                            : feed
+                    )
+                );
             });
 
             // 연결 확인용(서버 echo가 있으면 바로 하나 들어와야 함)
@@ -127,12 +137,14 @@ export default function Feeds() {
             <div className="space-y-4">
                 <FeedInput
                     client={clientRef}
-                    sendDest={SEND_DEST}
                     connected={connected}
                 />
 
                 {feeds.slice(0, visibleCount).map((message: FeedType) => (
-                    <Feed key={message.id} feed={message} />
+                    <Feed key={message.id}
+                          feed={message}
+                          client={clientRef}
+                    />
                 ))}
 
                 {totalElements === 0 && !loading && (
