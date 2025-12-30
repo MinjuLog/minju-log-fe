@@ -6,6 +6,9 @@ import Feed from "./Feed";
 import { FeedInput } from "./FeedInput";
 import type FeedType from "../types/FeedType.ts";
 import {getFeedList} from "../api/feed.ts";
+import FeedSkeleton from "./FeedSkeleton.tsx";
+import OnlineUsersPanel from "./OnlineUserPanel.tsx";
+import ConnectionStatus from "./ConnectionStatus.tsx";
 
 
 const PAGE_SIZE = 30;
@@ -80,9 +83,6 @@ export default function Feeds() {
                     )
                 );
             });
-
-            // 연결 확인용(서버 echo가 있으면 바로 하나 들어와야 함)
-            // client.publish({ destination: SEND_DEST, body: "ping" });
         };
 
         client.onDisconnect = () => setConnected(false);
@@ -125,49 +125,82 @@ export default function Feeds() {
     };
 
     if (loading) {
-        return <div>loading...</div>;
+        return <FeedSkeleton count={6} />;
     }
 
     return (
         <div className="flex-1">
-            <div className="mb-6">
-                <h1 className="mb-4 text-2xl font-bold text-gray-900">
-                    전체 {totalElements} {connected ? "(연결됨)" : "(끊김)"}
-                </h1>
+            {/* Header */}
+            <div className="mb-6 flex items-start justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">
+                        전체 {totalElements}
+                    </h1>
+                    <p className="mt-1 text-sm text-gray-500">
+                        실시간 피드와 좋아요 업데이트를 수신합니다.
+                    </p>
+                </div>
+
+                <ConnectionStatus connected={connected} />
             </div>
 
-            <div className="space-y-4">
-                <FeedInput
-                    client={clientRef}
-                    connected={connected}
-                />
+            {/* Content Layout */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+                {/* Left: Feed */}
+                <div className="lg:col-span-8 space-y-4">
+                    <FeedInput client={clientRef} connected={connected} />
 
-                {feeds.slice(0, visibleCount).map((message: FeedType) => (
-                    <Feed
-                        key={message.id}
-                        feed={message}
-                        setFeeds={setFeeds}
-                        client={clientRef}
-                    />
-                ))}
+                    {feeds.slice(0, visibleCount).map((message) => (
+                        <Feed
+                            key={message.id}
+                            feed={message}
+                            setFeeds={setFeeds}
+                            client={clientRef}
+                        />
+                    ))}
 
-                {totalElements === 0 && !loading && (
-                    <div className="text-center text-gray-500 text-sm py-8 border border-dashed border-gray-200 rounded-lg">
-                        아직 등록된 피드가 없습니다.
+                    {totalElements === 0 && !loading && (
+                        <div className="text-center text-gray-500 text-sm py-8 border border-dashed border-gray-200 rounded-lg">
+                            아직 등록된 피드가 없습니다.
+                        </div>
+                    )}
+
+                    {canLoadMore && (
+                        <div className="flex justify-center mt-6">
+                            <button
+                                type="button"
+                                onClick={handleLoadMore}
+                                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+                            >
+                                더 불러오기{" "}
+                                <span className="text-gray-400">
+                  ({visibleCount}/{totalElements})
+                </span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {/* Right: Online Users (placeholder UI) */}
+                <div className="lg:col-span-4">
+                    <div className="sticky top-6 space-y-4">
+                        <OnlineUsersPanel users={[
+                            {
+                                id: 1,
+                                name: "",
+                                role: "me",
+                                status: "online",
+                            },
+                            {
+                                id: 2,
+                                name: "",
+                                role: "user",
+                                status: "online",
+                            }
+                        ]} connected={connected} />
+                        {/* 나중에 룸 정보/공지/필터 같은 카드도 여기에 추가 가능 */}
                     </div>
-                )}
-
-                {canLoadMore && (
-                    <div className="flex justify-center mt-6">
-                        <button
-                            type="button"
-                            onClick={handleLoadMore}
-                            className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400"
-                        >
-                            더 불러오기 <span className="text-gray-400">({visibleCount}/{totalElements})</span>
-                        </button>
-                    </div>
-                )}
+                </div>
             </div>
         </div>
     );
