@@ -5,9 +5,9 @@ import { Client, type IMessage } from "@stomp/stompjs";
 import Feed from "./Feed";
 import { FeedInput } from "./FeedInput";
 import type FeedType from "../types/FeedType.ts";
-import {getFeedList} from "../api/feed.ts";
+import {getFeedList, getOnlineUserList} from "../api/feed.ts";
 import FeedSkeleton from "./FeedSkeleton.tsx";
-import OnlineUsersPanel from "./OnlineUserPanel.tsx";
+import OnlineUsersPanel, {type OnlineUser} from "./OnlineUserPanel.tsx";
 import ConnectionStatus from "./ConnectionStatus.tsx";
 
 
@@ -20,6 +20,7 @@ export default function Feeds() {
 
     const [connected, setConnected] = useState(false);
     const [feeds, setFeeds] = useState<FeedType[]>([]);
+    const [onlineUserList, setOnlineUserList] = useState<OnlineUser[]>([]);
     const [totalElements, setTotalElements] = useState(0);
 
     const [loading, setLoading] = useState(true);
@@ -57,8 +58,6 @@ export default function Feeds() {
         clientRef.current = client;
 
         client.onConnect = () => {
-            setConnected(true);
-
             // 구독
             client.subscribe(SUB_DEST, (frame: IMessage) => {
                 setFeeds((prev) => {
@@ -83,6 +82,19 @@ export default function Feeds() {
                     )
                 );
             });
+
+            client.subscribe("/topic/room.1/connect", (frame: IMessage) => {
+                const { type, userId } = JSON.parse(frame.body);
+
+                if (type === 'JOIN') setOnlineUserList(prev => [...prev, {
+                    id: prev.length,
+                    name: userId
+                }]);
+                if (type === 'LEAVE') setOnlineUserList(prev => prev.filter(i => i.name !== userId));
+
+            });
+
+            setConnected(true);
         };
 
         client.onDisconnect = () => setConnected(false);
@@ -101,9 +113,29 @@ export default function Feeds() {
         client.activate();
 
         return () => {
-            client.deactivate(); // 충분
+            void client.deactivate(); // 충분
         };
     }, [client, userId]);
+
+    useEffect(() => {
+        if (!connected) return;
+        const fetchData = async () => {
+            const onlineUserList = await getOnlineUserList();
+            if (!onlineUserList.ok) {
+                alert(onlineUserList.message);
+                return;
+            }
+
+            const m = onlineUserList.result.map((s, idx) => ({
+                id: idx,
+                name: s,
+            }))
+            setOnlineUserList(m)
+        }
+
+        void fetchData();
+    }, [connected]);
+
 
     useEffect(() => {
         const load = async () => {
@@ -184,20 +216,7 @@ export default function Feeds() {
                 {/* Right: Online Users (placeholder UI) */}
                 <div className="lg:col-span-4">
                     <div className="sticky top-6 space-y-4">
-                        <OnlineUsersPanel users={[
-                            {
-                                id: 1,
-                                name: "",
-                                role: "me",
-                                status: "online",
-                            },
-                            {
-                                id: 2,
-                                name: "",
-                                role: "user",
-                                status: "online",
-                            }
-                        ]} connected={connected} />
+                        <OnlineUsersPanel onlineUserList={onlineUserList} connected={connected} />
                         {/* 나중에 룸 정보/공지/필터 같은 카드도 여기에 추가 가능 */}
                     </div>
                 </div>
