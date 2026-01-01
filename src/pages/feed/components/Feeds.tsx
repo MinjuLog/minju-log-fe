@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Client, type IMessage } from "@stomp/stompjs";
+import {Client, type IFrame, type IMessage} from "@stomp/stompjs";
 import Feed from "./Feed";
 import { FeedInput } from "./FeedInput";
 import type FeedType from "../types/FeedType.ts";
@@ -27,6 +27,7 @@ export default function Feeds() {
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
     const [page, setPage] = useState(0);
     const userId = localStorage.getItem("userId") ?? '';
+    const [myName, setMyName] = useState<string>('unknown');
 
     const client = useMemo(() => {
         return new Client({
@@ -57,7 +58,12 @@ export default function Feeds() {
     useEffect(() => {
         clientRef.current = client;
 
-        client.onConnect = () => {
+        client.onConnect = (frame: IFrame) => {
+            const username = frame.headers["user-name"]; // 또는 "user-name" 키 확인
+            if (username) {
+                setMyName(username); // state든 ref든 저장
+            }
+
             // 구독
             client.subscribe(SUB_DEST, (frame: IMessage) => {
                 setFeeds((prev) => {
@@ -126,11 +132,16 @@ export default function Feeds() {
                 return;
             }
 
-            const m = onlineUserList.result.map((s, idx) => ({
+            const m = onlineUserList.result.map((s, idx): OnlineUser => ({
                 id: idx,
                 name: s,
-            }))
-            setOnlineUserList(m)
+                role: myName === s ? "me" : "user",
+            }));
+
+            const me = m.find(u => u.role === "me");
+            const others = m.filter(u => u.role !== "me");
+
+            setOnlineUserList(me ? [me, ...others] : others);
         }
 
         void fetchData();
