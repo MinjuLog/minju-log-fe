@@ -1,33 +1,56 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import {Client, type IFrame, type IMessage} from "@stomp/stompjs";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { Client, type IFrame, type IMessage, type StompSubscription } from "@stomp/stompjs";
 import Feed from "./Feed";
 import { FeedInput } from "./FeedInput";
-import type FeedType from "../types/FeedType.ts";
-import {getFeedList, getOnlineUserList} from "../api/feed.ts";
-import FeedSkeleton from "./FeedSkeleton.tsx";
-import OnlineUsersPanel, {type OnlineUser} from "./OnlineUserPanel.tsx";
-import ConnectionStatus from "./ConnectionStatus.tsx";
-
+import type FeedType from "../types/FeedType";
+import { getFeedList, getOnlineUserList } from "../api/feed";
+import FeedSkeleton from "./FeedSkeleton";
+import OnlineUsersPanel, { type OnlineUser } from "./OnlineUserPanel";
+import ConnectionStatus from "./ConnectionStatus";
 
 const PAGE_SIZE = 30;
-const WS_URL = import.meta.env.VITE_WS_HOST
+const WS_URL = import.meta.env.VITE_WS_HOST;
+const ROOM_ID = "1";
+
+const TOPIC_FEED = `/topic/room.${ROOM_ID}`;
+const TOPIC_LIKE = `/topic/room.${ROOM_ID}/like`;
+const TOPIC_PRESENCE = `/topic/room.${ROOM_ID}/connect`;
+
+function uniqByName(users: OnlineUser[]): OnlineUser[] {
+    const seen = new Set<string>();
+    const out: OnlineUser[] = [];
+    for (const u of users) {
+        if (seen.has(u.name)) continue;
+        seen.add(u.name);
+        out.push(u);
+    }
+    return out;
+}
+
+function sortMeFirst(users: OnlineUser[]): OnlineUser[] {
+    const me = users.find(u => u.role === "me");
+    const others = users.filter(u => u.role !== "me");
+    return me ? [me, ...others] : others;
+}
 
 export default function Feeds() {
-    const SUB_DEST = "/topic/room.1";
     const clientRef = useRef<Client | null>(null);
+    const subsRef = useRef<StompSubscription[]>([]);
 
     const [connected, setConnected] = useState(false);
+
     const [feeds, setFeeds] = useState<FeedType[]>([]);
-    const [onlineUserList, setOnlineUserList] = useState<OnlineUser[]>([]);
     const [totalElements, setTotalElements] = useState(0);
+
+    const [onlineUserList, setOnlineUserList] = useState<OnlineUser[]>([]);
+    const [myName, setMyName] = useState<string>("unknown");
 
     const [loading, setLoading] = useState(true);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-    const [page, setPage] = useState(0);
-    const userId = localStorage.getItem("userId") ?? '';
-    const [myName, setMyName] = useState<string>('unknown');
+
+    const userId = localStorage.getItem("userId") ?? "";
 
     const client = useMemo(() => {
         return new Client({
@@ -40,156 +63,166 @@ export default function Feeds() {
         });
     }, [userId]);
 
+    // 1) 초기 피드 스냅샷
     useEffect(() => {
         const bootstrap = async () => {
-            const feedList = await getFeedList();
-
-            if (!feedList.ok) {
-                alert(feedList.message);
-                return;
+            try {
+                setLoading(true);
+                const feedList = await getFeedList();
+                if (!feedList.ok) {
+                    alert(feedList.message);
+                    return;
+                }
+                setFeeds(feedList.result);
+                setTotalElements(feedList.result.length);
+            } finally {
+                setLoading(false);
             }
-            setTotalElements(feedList.result.length);
-            setFeeds(feedList.result);
-        }
+        };
         void bootstrap();
     }, []);
 
+    // 2) 온라인 유저 스냅샷 (connected + myName 준비되면)
+    const refreshOnlineUsers = useCallback(async () => {
+        const res = await getOnlineUserList();
+        if (!res.ok) {
+            alert(res.message);
+            return;
+        }
 
+        const mapped: OnlineUser[] = res.result.map((name) => ({
+            id: name, // key 안정화
+            name,
+            role: myName === name ? "me" : "user",
+            status: "online",
+        }));
+
+        setOnlineUserList(sortMeFirst(uniqByName(mapped)));
+    }, [myName]);
+
+    useEffect(() => {
+        if (!connected) return;
+        if (myName === "unknown") return; // myName 세팅 전에 fetch 금지
+        void refreshOnlineUsers();
+    }, [connected, myName, refreshOnlineUsers]);
+
+    // 3) WS 연결/구독
     useEffect(() => {
         clientRef.current = client;
 
+        const clearSubs = () => {
+            subsRef.current.forEach((s) => s.unsubscribe());
+            subsRef.current = [];
+        };
+
+        const setDisconnected = () => {
+            setConnected(false);
+            clearSubs();
+        };
+
         client.onConnect = (frame: IFrame) => {
-            const username = frame.headers["user-name"]; // 또는 "user-name" 키 확인
-            if (username) {
-                setMyName(username); // state든 ref든 저장
-            }
+            const username = frame.headers["user-name"];
+            if (username) setMyName(username);
 
-            // 구독
-            client.subscribe(SUB_DEST, (frame: IMessage) => {
-                setFeeds((prev) => {
-                    const next = [
-                        JSON.parse(frame.body),
-                    ...prev];
-                    setTotalElements(next.length); // next 기준이라 항상 정확
-                    return next;
-                });
-            });
+            clearSubs();
 
-            client.subscribe("/topic/room.1/like", (frame: IMessage) => {
-                const { actorId, feedId } = JSON.parse(frame.body);
+            // 피드 구독
+            subsRef.current.push(
+                client.subscribe(TOPIC_FEED, (msg: IMessage) => {
+                    const payload = JSON.parse(msg.body);
+                    setFeeds((prev) => {
+                        const next = [payload, ...prev];
+                        setTotalElements(next.length);
+                        return next;
+                    });
+                })
+            );
 
-                if (actorId === Number(userId)) return;
+            // 좋아요 구독
+            subsRef.current.push(
+                client.subscribe(TOPIC_LIKE, (msg: IMessage) => {
+                    const { actorId, feedId } = JSON.parse(msg.body);
+                    if (actorId === Number(userId)) return;
 
-                setFeeds(prev =>
-                    prev.map(feed =>
-                        feed.id === feedId
-                            ? { ...feed, likes: feed.likes + 1 }
-                            : feed
-                    )
-                );
-            });
+                    setFeeds((prev) =>
+                        prev.map((feed) =>
+                            feed.id === feedId ? { ...feed, likes: feed.likes + 1 } : feed
+                        )
+                    );
+                })
+            );
 
-            client.subscribe("/topic/room.1/connect", (frame: IMessage) => {
-                const { type, userId } = JSON.parse(frame.body);
+            // 접속/해제 구독 (delta)
+            subsRef.current.push(
+                client.subscribe(TOPIC_PRESENCE, (msg: IMessage) => {
+                    const { type, userId: name } = JSON.parse(msg.body) as { type: "JOIN" | "LEAVE"; userId: string };
 
-                if (type === 'JOIN') setOnlineUserList(prev => [...prev, {
-                    id: prev.length,
-                    name: userId
-                }]);
-                if (type === 'LEAVE') setOnlineUserList(prev => prev.filter(i => i.name !== userId));
+                    setOnlineUserList((prev) => {
+                        if (type === "JOIN") {
+                            const next: OnlineUser[] = uniqByName([
+                                ...prev,
+                                {
+                                    id: name,
+                                    name,
+                                    role: myName === name ? "me" : "user",
+                                    status: "online",
+                                },
+                            ]);
+                            return sortMeFirst(next);
+                        }
 
-            });
+                        if (type === "LEAVE") {
+                            const next = prev.filter((u) => u.name !== name);
+                            return sortMeFirst(next);
+                        }
+
+                        return prev;
+                    });
+                })
+            );
 
             setConnected(true);
         };
 
-        client.onDisconnect = () => setConnected(false);
-        client.onWebSocketClose = () => setConnected(false);
+        client.onDisconnect = setDisconnected;
+        client.onWebSocketClose = setDisconnected;
 
         client.onStompError = (frame) => {
-            setConnected(false);
+            setDisconnected();
             console.error("STOMP error:", frame.headers["message"], frame.body);
         };
 
         client.onWebSocketError = (e) => {
-            setConnected(false);
+            setDisconnected();
             console.error("WebSocket error:", e);
         };
 
         client.activate();
 
         return () => {
-            void client.deactivate(); // 충분
+            setDisconnected();
+            void client.deactivate();
         };
-    }, [client, userId]);
-
-    useEffect(() => {
-        if (!connected) return;
-        const fetchData = async () => {
-            const onlineUserList = await getOnlineUserList();
-            if (!onlineUserList.ok) {
-                alert(onlineUserList.message);
-                return;
-            }
-
-            const m = onlineUserList.result.map((s, idx): OnlineUser => ({
-                id: idx,
-                name: s,
-                role: myName === s ? "me" : "user",
-            }));
-
-            const me = m.find(u => u.role === "me");
-            const others = m.filter(u => u.role !== "me");
-
-            setOnlineUserList(me ? [me, ...others] : others);
-        }
-
-        void fetchData();
-    }, [connected]);
-
-
-    useEffect(() => {
-        const load = async () => {
-            try {
-                setLoading(true);
-                // TODO: page 기반으로 기존 HTTP 피드 로딩을 붙일 거면 여기서 fetch
-            } finally {
-                setLoading(false);
-            }
-        };
-        load();
-    }, [page]);
+    }, [client, userId, myName]);
 
     const canLoadMore = visibleCount < totalElements;
-
     const handleLoadMore = () => {
         setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, totalElements));
-        setPage((p) => p + 1);
     };
 
-    if (loading) {
-        return <FeedSkeleton count={6} />;
-    }
+    if (loading) return <FeedSkeleton count={6} />;
 
     return (
         <div className="flex-1">
-            {/* Header */}
             <div className="mb-6 flex items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">
-                        전체 {totalElements}
-                    </h1>
-                    <p className="mt-1 text-sm text-gray-500">
-                        실시간 피드와 좋아요 업데이트를 수신합니다.
-                    </p>
+                    <h1 className="text-2xl font-bold text-gray-900">전체 {totalElements}</h1>
+                    <p className="mt-1 text-sm text-gray-500">실시간 피드와 좋아요 업데이트를 수신합니다.</p>
                 </div>
-
                 <ConnectionStatus connected={connected} />
             </div>
 
-            {/* Content Layout */}
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                {/* Left: Feed */}
                 <div className="lg:col-span-8 space-y-4">
                     <FeedInput client={clientRef} connected={connected} />
 
@@ -215,20 +248,15 @@ export default function Feeds() {
                                 onClick={handleLoadMore}
                                 className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400"
                             >
-                                더 불러오기{" "}
-                                <span className="text-gray-400">
-                  ({visibleCount}/{totalElements})
-                </span>
+                                더 불러오기 <span className="text-gray-400">({visibleCount}/{totalElements})</span>
                             </button>
                         </div>
                     )}
                 </div>
 
-                {/* Right: Online Users (placeholder UI) */}
                 <div className="lg:col-span-4">
                     <div className="sticky top-6 space-y-4">
                         <OnlineUsersPanel onlineUserList={onlineUserList} connected={connected} />
-                        {/* 나중에 룸 정보/공지/필터 같은 카드도 여기에 추가 가능 */}
                     </div>
                 </div>
             </div>
