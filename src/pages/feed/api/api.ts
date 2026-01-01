@@ -1,6 +1,6 @@
 import axios from "axios";
-const APP_HOST = import.meta.env.VITE_APP_HOST;
+const FEED_HOST = import.meta.env.VITE_FEED_HOST;
 export const api = axios.create({
-    baseURL: APP_HOST,
+    baseURL: FEED_HOST,
     timeout: 5000,
 });

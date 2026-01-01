@@ -1,8 +1,8 @@
 import type ErrorResponse from "../../../api/type/ErrorResponse.ts";
 import axios from "axios";
 import type GetFeedListResponse from "./GetFeedListResponse.ts";
-import {api} from "../../../api/api.ts";
 import type GetOnlineUserList from "./GetOnlineUserList.ts";
+import {api} from "./api.ts";
 
 export const getFeedList = async (
 ): Promise<GetFeedListResponse | ErrorResponse> => {

@@ -11,7 +11,7 @@ import OnlineUsersPanel, { type OnlineUser } from "./OnlineUserPanel";
 import ConnectionStatus from "./ConnectionStatus";
 
 const PAGE_SIZE = 30;
-const WS_URL = import.meta.env.VITE_WS_HOST;
+const WS_URL = import.meta.env.VITE_FEED_WS_HOST;
 const ROOM_ID = "1";
 
 const TOPIC_FEED = `/topic/room.${ROOM_ID}`;
