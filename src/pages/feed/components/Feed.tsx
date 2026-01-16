@@ -8,7 +8,7 @@ interface props {
     client: any;
 }
 
-const BASE_URL = "http://localhost:9000/minjulog/"
+const STATIC_HOST = import.meta.env.VITE_STATIC_HOST;
 
 export default function Feed({ feed, setFeeds, client }: props) {
     const userId = Number(localStorage.getItem("userId"));
@@ -56,9 +56,9 @@ export default function Feed({ feed, setFeeds, client }: props) {
             {feed.attachments.length > 0 && (
                 <div className="mb-4 grid grid-cols-2 gap-2">
                     {feed.attachments.map((att) => (
-                        <a key={att.objectKey} href={BASE_URL + att.objectKey} target="_blank" rel="noreferrer">
+                        <a key={att.objectKey} href={STATIC_HOST + att.objectKey} target="_blank" rel="noreferrer">
                             <img
-                                src={BASE_URL + att.objectKey}
+                                src={STATIC_HOST + att.objectKey}
                                 alt={att.originalName ?? "attachment"}
                                 className="w-full h-40 object-cover rounded-md border"
                                 loading="lazy"
