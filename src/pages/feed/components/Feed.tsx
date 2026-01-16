@@ -1,12 +1,14 @@
-import type FeedType from "../types/FeedType.ts";
-import {ThumbsUp} from "lucide-react";
-import {formatKoreanDate} from "../../../utils/formatKoreanDate.ts";
+import type FeedType from "../types/FeedType";
+import { ThumbsUp } from "lucide-react";
+import { formatKoreanDate } from "../../../utils/formatKoreanDate";
 
 interface props {
     feed: FeedType;
-    setFeeds: (feeds: (prev: FeedType[]) => any) => void;
+    setFeeds: (feeds: (prev: FeedType[]) => FeedType[]) => void;
     client: any;
 }
+
+const BASE_URL = "http://localhost:9000/minjulog/"
 
 export default function Feed({ feed, setFeeds, client }: props) {
     const userId = Number(localStorage.getItem("userId"));
@@ -14,18 +16,12 @@ export default function Feed({ feed, setFeeds, client }: props) {
 
     const handleLikeSubmit = () => {
         client.current.publish({
-            destination: '/app/feed/like',
+            destination: "/app/feed/like",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({
-                feedId: feed.id,
-            }),
+            body: JSON.stringify({ feedId: feed.id }),
         });
-        setFeeds(prev =>
-            prev.map(f =>
-                f.id === feed.id
-                    ? { ...f, likes: f.likes + 1 }
-                    : f
-            )
+        setFeeds((prev: FeedType[]) =>
+            prev.map((f) => (f.id === feed.id ? { ...f, likes: f.likes + 1 } : f))
         );
     };
 
@@ -36,7 +32,6 @@ export default function Feed({ feed, setFeeds, client }: props) {
                 isMine ? "border-gray-600" : "border-gray-200"
             }`}
         >
-            {/* Feed Header */}
             <div className="mb-3 flex items-start justify-between">
                 <div className="flex items-center gap-3">
                     <div>
@@ -44,23 +39,35 @@ export default function Feed({ feed, setFeeds, client }: props) {
                             {feed.authorName}
                             {isMine && (
                                 <span className="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded">
-                                    내 피드
-                                </span>
+                  내 피드
+                </span>
                             )}
                         </div>
-                        <div className="text-xs text-gray-500">
-                            {formatKoreanDate(feed.timestamp)}
-                        </div>
+                        <div className="text-xs text-gray-500">{formatKoreanDate(feed.timestamp)}</div>
                     </div>
                 </div>
             </div>
 
-            {/* Content */}
-            <div className="mb-4 whitespace-pre-line text-[12px] leading-relaxed text-gray-800">
+            <div className="mb-3 whitespace-pre-line text-[12px] leading-relaxed text-gray-800">
                 {feed.content}
             </div>
 
-            {/* Actions */}
+            {/* Attachments: images only */}
+            {feed.attachments.length > 0 && (
+                <div className="mb-4 grid grid-cols-2 gap-2">
+                    {feed.attachments.map((att) => (
+                        <a key={att.objectKey} href={BASE_URL + att.objectKey} target="_blank" rel="noreferrer">
+                            <img
+                                src={BASE_URL + att.objectKey}
+                                alt={att.originalName ?? "attachment"}
+                                className="w-full h-40 object-cover rounded-md border"
+                                loading="lazy"
+                            />
+                        </a>
+                    ))}
+                </div>
+            )}
+
             <div className="flex items-center gap-4">
                 <button
                     onClick={handleLikeSubmit}

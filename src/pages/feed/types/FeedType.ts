@@ -5,4 +5,10 @@ export default interface FeedType {
     timestamp: string;
     content: string;
     likes: number;
+    attachments: {
+        objectKey: string;
+        originalName: string;
+        contentType: string;
+        size: number;
+    }[]
 }

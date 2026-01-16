@@ -84,8 +84,11 @@ export const uploadToPreSignedUrl = async (
     try {
         const res = await api.put(
             uploadUrl,
+            file,
             {
-                body: file,
+                headers: {
+                    "Content-Type": file.type,
+                },
             }
         );
         return {

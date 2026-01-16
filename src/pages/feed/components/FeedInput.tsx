@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useRef, useState} from "react";
-import {getPreSignedUrl} from "../api/feed.ts";
+import {getPreSignedUrl, uploadToPreSignedUrl} from "../api/feed.ts";
 
 interface FeedInputProps {
     client: any;
@@ -18,13 +18,15 @@ type LocalFile = {
     progress: number; // 0~100 (XHR로만 정확히 가능, fetch는 제한적)
     objectKey?: string;
     errorMessage?: string;
+    previewUrl?: string;
 };
 
-// 필요하면 파일명 안전하게 정리
-function sanitizeFileName(name: string) {
-    // 너무 공격적으로 바꾸고 싶지 않으면 최소한만
-    return name.replace(/[^\w.\-() ]+/g, "_");
-}
+type UploadedAttachment = {
+    objectKey: string;
+    originalName: string;
+    contentType: string;
+    size: number;
+};
 
 function formatBytes(bytes: number) {
     if (bytes < 1024) return `${bytes} B`;
@@ -91,15 +93,19 @@ export function FeedInput({ client, connected }: FeedInputProps) {
             return;
         }
 
-        const next: LocalFile[] = picked.map((file) => ({
-            id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(16).slice(2)}`,
-            file,
-            name: file.name,
-            type: file.type || "application/octet-stream",
-            size: file.size,
-            status: "queued",
-            progress: 0,
-        }));
+        const next: LocalFile[] = picked.map((file) => {
+            const isImage = file.type.startsWith("image/");
+            return {
+                id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(16).slice(2)}`,
+                file,
+                name: file.name,
+                type: file.type || "application/octet-stream",
+                size: file.size,
+                status: "queued",
+                progress: 0,
+                previewUrl: isImage ? URL.createObjectURL(file) : undefined,
+            }
+        });
 
         // 단순 중복 제거(같은 name+size+lastModified)
         setFiles((prev) => {
@@ -110,92 +116,94 @@ export function FeedInput({ client, connected }: FeedInputProps) {
         });
     };
 
+    const revokePreview = (f: LocalFile) => {
+        if (f.previewUrl) URL.revokeObjectURL(f.previewUrl);
+    };
+
     const removeFile = (id: string) => {
-        setFiles((prev) => prev.filter((f) => f.id !== id));
+        setFiles((prev) => {
+            const target = prev.find((f) => f.id === id);
+            if (target) revokePreview(target);
+            return prev.filter((f) => f.id !== id);
+        });
         setFileError(null);
     };
 
     const clearFiles = () => {
-        setFiles([]);
+        setFiles((prev) => {
+            prev.forEach(revokePreview);
+            return [];
+        });
         setFileError(null);
     };
 
-    // 2) uploadUrl에 업로드 (fetch PUT)
-    // - S3 계열 presigned PUT은 보통 Content-Type 헤더를 요구하거나, 서명에 포함되면 반드시 동일해야 함
-    const uploadToPresignedUrl = async (uploadUrl: string, file: File) => {
-        const res = await fetch(uploadUrl, {
-            method: "PUT",
-            body: file,
-            // presigned 생성 시 Content-Type을 서명에 포함했으면 반드시 동일하게 보내야 함
-            headers: {
-                "Content-Type": file.type || "application/octet-stream",
-            },
-        });
+// 컴포넌트 언마운트 시에도 정리
+    useEffect(() => {
+        return () => {
+            filesRef.current.forEach(revokePreview);
+        };
+    }, []);
 
-        if (!res.ok) {
-            const text = await res.text().catch(() => "");
-            throw new Error(text || "업로드에 실패했어요.");
-        }
-    };
 
     // 여러 파일 병렬 업로드(동시성 제한 포함)
-    const uploadAllFiles = async (type: UploadType) => {
-        // 동시 업로드 제한 (너무 많이 동시에 올리면 네트워크/서버에 부담)
-        const CONCURRENCY = 3;
+    const uploadAllFiles = async (type: UploadType): Promise<UploadedAttachment[]> => {
+        const queued = filesRef.current.filter((f) => f.status === "queued");
+        if (queued.length === 0) return [];
 
-        // 업로드 대상만
-        const targets = files.filter((f) => f.status === "queued");
-        if (targets.length === 0) return;
+        // queued -> uploading
+        setFiles((prev) =>
+            prev.map((f) => (f.status === "queued" ? { ...f, status: "uploading", progress: 0 } : f))
+        );
 
-        let idx = 0;
+        const results = await Promise.allSettled(
+            queued.map(async (current) => {
+                const safeName = current.name;
+                const preSign = await getPreSignedUrl(type, safeName);
+                if (!preSign.ok) throw { id: current.id, message: preSign.message };
 
-        const worker = async () => {
-            while (idx < targets.length) {
-                const current = targets[idx++];
-                // 상태 업데이트: uploading
-                setFiles((prev) =>
-                    prev.map((f) => (f.id === current.id ? { ...f, status: "uploading", progress: 0 } : f))
-                );
+                const { uploadUrl, objectKey } = preSign.result;
+                const uploadRes = await uploadToPreSignedUrl(uploadUrl, current.file);
+                if (!uploadRes.ok) throw { id: current.id, message: "파일 업로드 실패" };
 
-                try {
-                    const safeName = sanitizeFileName(current.name);
-                    const res = await getPreSignedUrl(type, safeName);
+                return {
+                    id: current.id,
+                    objectKey,
+                    originalName: current.name,
+                    contentType: current.type || "application/octet-stream",
+                    size: current.size,
+                };
+            })
+        );
 
-                    if (!res.ok) {
-                        alert(res.message);
-                        return;
-                    }
-                    const { uploadUrl, objectKey } = res.result;
+        const successById = new Map<string, any>();
+        const errorById = new Map<string, string>();
 
-                    // fetch로는 progress를 알기 어려움 -> 업로드 중임만 표시
-                    await uploadToPresignedUrl(uploadUrl, current.file);
+        results.forEach((r) => {
+            if (r.status === "fulfilled") successById.set(r.value.id, r.value);
+            else errorById.set(r.reason.id, r.reason.message || "업로드 실패");
+        });
 
-                    setFiles((prev) =>
-                        prev.map((f) =>
-                            f.id === current.id
-                                ? { ...f, status: "done", progress: 100, objectKey }
-                                : f
-                        )
-                    );
+        // uploading -> done/error
+        setFiles((prev) =>
+            prev.map((f) => {
+                const s = successById.get(f.id);
+                if (s) return { ...f, status: "done", progress: 100, objectKey: s.objectKey };
+                const em = errorById.get(f.id);
+                if (em) return { ...f, status: "error", progress: 0, errorMessage: em };
+                return f;
+            })
+        );
 
-                } catch (err: any) {
-                    setFiles((prev) =>
-                        prev.map((f) =>
-                            f.id === current.id
-                                ? {
-                                    ...f,
-                                    status: "error",
-                                    progress: 0,
-                                    errorMessage: err?.message || "업로드 실패",
-                                }
-                                : f
-                        )
-                    );
-                }
-            }
-        };
-        // 워커 여러 개 실행
-        await Promise.all(Array.from({ length: Math.min(CONCURRENCY, targets.length) }, worker));
+        if (errorById.size > 0) {
+            throw new Error("일부 파일 업로드에 실패했어요.");
+        }
+
+        return Array.from(successById.values()).map((s) => ({
+            objectKey: s.objectKey,
+            originalName: s.originalName,
+            contentType: s.contentType,
+            size: s.size,
+        }));
     };
 
     const handleSubmit = async () => {
@@ -207,38 +215,28 @@ export function FeedInput({ client, connected }: FeedInputProps) {
         setFileError(null);
 
         try {
-            // 1) 파일 업로드 먼저
-            if (files.length > 0) {
-                await uploadAllFiles("FEED");
-            }
-            // 업로드 실패한 파일이 있으면 막을지/통과시킬지 정책 결정
-            const failed = files.filter((f) => f.status === "error");
-            // 정책: 실패가 하나라도 있으면 등록 막기
-            if (failed.length > 0) {
-                setFileError("일부 파일 업로드에 실패했어요. 실패한 파일을 제거하거나 다시 시도해주세요.");
-                setSubmitting(false);
-                return;
-            }
-            console.log(filesRef)
-            // 2) 업로드 성공 objectKey만 추려서 publish
-            const objectKeys = filesRef.current
-                .filter((f) => f.status === "done" && f.objectKey)
-                .map((f) => f.objectKey!);
+            const attachments =
+                filesRef.current.some((f) => f.status === "queued")
+                    ? await uploadAllFiles("FEED")
+                    : filesRef.current
+                        .filter((f) => f.status === "done" && f.objectKey)
+                        .map((f) => ({
+                            objectKey: f.objectKey!,
+                            originalName: f.name,
+                            contentType: f.type,
+                            size: f.size,
+                        }));
 
             client.current.publish({
                 destination: "/app/feed",
                 headers: { "content-type": "application/json" },
-                body: JSON.stringify({
-                    content: text,
-                    authorId: userId,
-                    // 서버는 objectKey로 파일 참조 (DB 저장/응답 등)
-                    attachments: objectKeys.map((objectKey) => ({ objectKey })),
-                }),
+                body: JSON.stringify({ content: text, authorId: userId, attachments }),
             });
 
-            // 3) 초기화
             setContent("");
             clearFiles();
+        } catch (e: any) {
+            setFileError(e?.message || "등록 실패");
         } finally {
             setSubmitting(false);
         }
@@ -275,31 +273,49 @@ export function FeedInput({ client, connected }: FeedInputProps) {
 
             {files.length > 0 && (
                 <div className="mb-2 space-y-2">
-                    {files.map((f) => (
-                        <div key={f.id} className="flex items-center gap-3">
-                            <div className="flex-1 min-w-0">
-                                <p className="text-xs text-gray-700 truncate">{f.name}</p>
-                                <p className="text-[11px] text-gray-500">
-                                    {f.type || "unknown"} · {formatBytes(f.size)}
-                                    {f.status === "uploading" && " · 업로드 중"}
-                                    {f.status === "done" && " · 완료"}
-                                    {f.status === "error" && " · 실패"}
-                                </p>
-                                {f.status === "error" && (
-                                    <p className="text-[11px] text-red-600 mt-0.5">{f.errorMessage}</p>
-                                )}
-                            </div>
+                    {files.map((f) => {
+                        const isImage = (f.type || "").startsWith("image/");
+                        const ext = f.name.split(".").pop()?.toUpperCase() ?? "FILE";
 
-                            <button
-                                type="button"
-                                onClick={() => removeFile(f.id)}
-                                disabled={submitting || f.status === "uploading"}
-                                className="text-xs text-red-600 hover:underline disabled:opacity-40"
-                            >
-                                제거
-                            </button>
-                        </div>
-                    ))}
+                        return (
+                            <div key={f.id} className="flex items-center gap-3">
+                                <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded-md border bg-white">
+                                    {isImage && f.previewUrl ? (
+                                        <img
+                                            src={f.previewUrl}
+                                            alt={f.name}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="h-full w-full flex items-center justify-center text-[10px] text-gray-600">
+                                            {ext}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-gray-700 truncate">{f.name}</p>
+                                    <p className="text-[11px] text-gray-500">
+                                        {f.type || "unknown"} · {formatBytes(f.size)}
+                                        {f.status === "uploading" && " · 업로드 중"}
+                                        {f.status === "done" && " · 완료"}
+                                        {f.status === "error" && " · 실패"}
+                                    </p>
+                                    {f.status === "error" && (
+                                        <p className="text-[11px] text-red-600 mt-0.5">{f.errorMessage}</p>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => removeFile(f.id)}
+                                        disabled={submitting || f.status === "uploading"}
+                                        className="text-xs text-red-600 hover:underline disabled:opacity-40"
+                                    >
+                                        제거
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
 
                     <div className="flex items-center justify-between">
                         <p className="text-[11px] text-gray-500">
@@ -317,14 +333,14 @@ export function FeedInput({ client, connected }: FeedInputProps) {
                                     실패한 파일 재시도
                                 </button>
                             )}
-                            <button
-                                type="button"
-                                onClick={clearFiles}
-                                disabled={submitting || uploadingCount > 0}
-                                className="text-xs text-gray-600 hover:underline disabled:opacity-40"
-                            >
-                                모두 제거
-                            </button>
+                            {/*<button*/}
+                            {/*    type="button"*/}
+                            {/*    onClick={clearFiles}*/}
+                            {/*    disabled={submitting || uploadingCount > 0}*/}
+                            {/*    className="text-xs text-gray-600 hover:underline disabled:opacity-40"*/}
+                            {/*>*/}
+                            {/*    모두 제거*/}
+                            {/*</button>*/}
                         </div>
                     </div>
                 </div>
