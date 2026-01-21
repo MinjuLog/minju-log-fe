@@ -4,11 +4,18 @@ export default interface FeedType {
     authorName: string;
     timestamp: string;
     content: string;
-    likes: number;
     attachments: {
         objectKey: string;
         originalName: string;
         contentType: string;
         size: number;
+    }[];
+    reactions: {
+        key: string;
+        renderType: "UNICODE" | "IMAGE" | null;
+        imageUrl?: string | null;
+        unicode?: string | null;
+        count: number;
+        isPressed: boolean;
     }[]
 }

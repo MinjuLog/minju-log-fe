@@ -6,9 +6,15 @@ import {api} from "./api.ts";
 import type GetPreSignedUrlResponse from "./GetPreSignedUrlResponse.ts";
 
 export const getFeedList = async (
+    userId: number
 ): Promise<GetFeedListResponse | ErrorResponse> => {
     try {
-        const res = await api.get(`/api/feeds`);
+        const res = await api.get(`/api/feeds`,
+            {
+                headers: {
+                    'X-User-Id': userId
+                }
+            });
         return {
             ok: true,
             result: res.data,

@@ -261,7 +261,7 @@ export function FeedInput({ client, connected }: FeedInputProps) {
     const uploadingCount = files.filter((f) => f.status === "uploading").length;
 
     return (
-        <div className="relative rounded-lg border mr-12 p-3">
+        <div className="relative rounded-lg border p-3">
             <input
                 ref={fileRef}
                 type="file"
