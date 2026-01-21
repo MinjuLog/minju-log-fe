@@ -157,6 +157,7 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                                     bg-white
                                     transition
                                     hover:bg-gray-50
+                                    cursor-pointer
                                     ${
                                                         reaction.isPressed
                                                             ? "border-blue-400 bg-blue-50 text-blue-600"
