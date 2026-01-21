@@ -15,8 +15,19 @@ const WS_URL = import.meta.env.VITE_FEED_WS_HOST;
 const ROOM_ID = "1";
 
 const TOPIC_FEED = `/topic/room.${ROOM_ID}`;
-const TOPIC_LIKE = `/topic/room.${ROOM_ID}/like`;
+const TOPIC_REACTION = `/topic/room.${ROOM_ID}/reaction`;
 const TOPIC_PRESENCE = `/topic/room.${ROOM_ID}/connect`;
+
+type ReactionEvent = {
+    actorId: number;
+    pressedByMe: boolean;
+    feedId: number;
+    key: string;
+    count: number;
+    renderType?: "UNICODE" | "IMAGE" | null;
+    imageUrl?: string | null;
+    unicode?: string | null;
+};
 
 function uniqByName(users: OnlineUser[]): OnlineUser[] {
     const seen = new Set<string>();
@@ -68,7 +79,7 @@ export default function Feeds() {
         const bootstrap = async () => {
             try {
                 setLoading(true);
-                const feedList = await getFeedList();
+                const feedList = await getFeedList(Number(userId));
                 if (!feedList.ok) {
                     alert(feedList.message);
                     return;
@@ -138,16 +149,45 @@ export default function Feeds() {
                 })
             );
 
-            // 좋아요 구독
+            // 감정표현 구독
             subsRef.current.push(
-                client.subscribe(TOPIC_LIKE, (msg: IMessage) => {
-                    const { actorId, feedId } = JSON.parse(msg.body);
-                    if (actorId === Number(userId)) return;
+                client.subscribe(TOPIC_REACTION, (msg: IMessage) => {
+                    const ev: ReactionEvent = JSON.parse(msg.body);
+                    if (ev.actorId === Number(userId)) return;
 
                     setFeeds((prev) =>
-                        prev.map((feed) =>
-                            feed.id === feedId ? { ...feed, likes: feed.likes + 1 } : feed
-                        )
+                        prev.map((feed) => {
+                            if (feed.id !== ev.feedId) return feed;
+
+                            const exists = feed.reactions.some((r) => r.key === ev.key);
+
+                            const nextReactions = exists
+                                ? feed.reactions.map((r) =>
+                                    r.key === ev.key
+                                        ? {
+                                            ...r,
+                                            count: ev.count,                 // ✅ 서버 값으로 덮어쓰기
+                                            // 다른 유저 이벤트이므로 isPressed는 건드리지 않음(내 상태 유지)
+                                            renderType: ev.renderType ?? r.renderType,
+                                            imageUrl: ev.imageUrl ?? r.imageUrl,
+                                            unicode: ev.unicode ?? r.unicode,
+                                        }
+                                        : r
+                                )
+                                : [
+                                    ...feed.reactions,
+                                    {
+                                        key: ev.key,
+                                        count: ev.count,
+                                        isPressed: false,                 // ✅ 다른 유저가 눌렀으니 나는 false
+                                        renderType: ev.renderType ?? null,
+                                        imageUrl: ev.imageUrl ?? null,
+                                        unicode: ev.unicode ?? null,
+                                    },
+                                ];
+
+                            return { ...feed, reactions: nextReactions };
+                        })
                     );
                 })
             );
