@@ -4,6 +4,7 @@ import type GetFeedListResponse from "./GetFeedListResponse.ts";
 import type GetOnlineUserList from "./GetOnlineUserList.ts";
 import {api} from "./api.ts";
 import type GetPreSignedUrlResponse from "./GetPreSignedUrlResponse.ts";
+import type GetReactionPressedUsersResponse from "./GetReactionPressedUsersResponse.ts";
 
 export const getFeedList = async (
     userId: number
@@ -94,6 +95,39 @@ export const uploadToPreSignedUrl = async (
             {
                 headers: {
                     "Content-Type": file.type,
+                },
+            }
+        );
+        return {
+            ok: true,
+            result: res.data,
+        }
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            return {
+                ok: false,
+                message: error.response?.data?.message ?? "알 수 없는 오류",
+            };
+        }
+
+        return {
+            ok: false,
+            message: "네트워크 오류 발생",
+        };
+    }
+};
+
+export const getReactionPressedUsers = async (
+    userId: number,
+    feedId: number,
+    reactionKey: string,
+): Promise<GetReactionPressedUsersResponse | ErrorResponse> => {
+    try {
+        const res = await api.get(
+            `/api/feeds/${feedId}/reactions/${reactionKey}/users`,
+            {
+                headers: {
+                    "X-User-Id": userId,
                 },
             }
         );

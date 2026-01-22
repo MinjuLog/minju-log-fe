@@ -12,9 +12,9 @@ export default interface FeedType {
     }[];
     reactions: {
         key: string;
-        renderType: "UNICODE" | "IMAGE" | null;
+        emojiType: "DEFAULT" | "CUSTOM" | null;
         imageUrl?: string | null;
-        unicode?: string | null;
+        emoji?: string | null;
         count: number;
         isPressed: boolean;
     }[]
