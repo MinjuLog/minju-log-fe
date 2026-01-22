@@ -24,9 +24,9 @@ type ReactionEvent = {
     feedId: number;
     key: string;
     count: number;
-    renderType?: "UNICODE" | "IMAGE" | null;
+    emojiType?: "DEFAULT" | "CUSTOM" | null;
     imageUrl?: string | null;
-    unicode?: string | null;
+    emoji?: string | null;
 };
 
 function uniqByName(users: OnlineUser[]): OnlineUser[] {
@@ -162,29 +162,36 @@ export default function Feeds() {
                             const exists = feed.reactions.some((r) => r.key === ev.key);
 
                             const nextReactions = exists
-                                ? feed.reactions.map((r) =>
-                                    r.key === ev.key
-                                        ? {
-                                            ...r,
-                                            count: ev.count,                 // ✅ 서버 값으로 덮어쓰기
-                                            // 다른 유저 이벤트이므로 isPressed는 건드리지 않음(내 상태 유지)
-                                            renderType: ev.renderType ?? r.renderType,
-                                            imageUrl: ev.imageUrl ?? r.imageUrl,
-                                            unicode: ev.unicode ?? r.unicode,
-                                        }
-                                        : r
-                                )
-                                : [
-                                    ...feed.reactions,
-                                    {
-                                        key: ev.key,
-                                        count: ev.count,
-                                        isPressed: false,                 // ✅ 다른 유저가 눌렀으니 나는 false
-                                        renderType: ev.renderType ?? null,
-                                        imageUrl: ev.imageUrl ?? null,
-                                        unicode: ev.unicode ?? null,
-                                    },
-                                ];
+                                ? ev.count === 0
+                                    // ✅ count가 0이면 제거
+                                    ? feed.reactions.filter((r) => r.key !== ev.key)
+                                    // ✅ 아니면 서버 값으로 갱신
+                                    : feed.reactions.map((r) =>
+                                        r.key === ev.key
+                                            ? {
+                                                ...r,
+                                                count: ev.count,
+                                                // 다른 유저 이벤트 → 내 isPressed는 유지
+                                                emojiType: ev.emojiType ?? r.emojiType,
+                                                imageUrl: ev.imageUrl ?? r.imageUrl,
+                                                emoji: ev.emoji ?? r.emoji,
+                                            }
+                                            : r
+                                    )
+                                : ev.count > 0
+                                    // ✅ 새 reaction인데 count > 0일 때만 추가
+                                    ? [
+                                        ...feed.reactions,
+                                        {
+                                            key: ev.key,
+                                            count: ev.count,
+                                            isPressed: false,
+                                            emojiType: ev.emojiType ?? null,
+                                            imageUrl: ev.imageUrl ?? null,
+                                            emoji: ev.emoji ?? null,
+                                        },
+                                    ]
+                                    : feed.reactions; // count === 0이면 아무 것도 안 함
 
                             return { ...feed, reactions: nextReactions };
                         })

@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import type FeedType from "../types/FeedType";
 import { formatKoreanDate } from "../../../utils/formatKoreanDate";
 import {getReactionPressedUsers} from "../api/feed.ts";
+import EmojiPicker, {type EmojiClickData} from "emoji-picker-react";
 
 interface Props {
     feed: FeedType;
@@ -11,41 +12,59 @@ interface Props {
 
 const STATIC_HOST = import.meta.env.VITE_STATIC_HOST;
 
+const PRIORITY_KEY = "1f44d"; // 너 프로젝트에서 쓰는 key로 맞춰
+
+function movePriorityFirst(reactions: any[]) {
+    console.log(reactions)
+    const a = reactions.filter(r => r.key === PRIORITY_KEY);
+    const b = reactions.filter(r => r.key !== PRIORITY_KEY);
+    return [...a, ...b];
+}
+
+
 function applyOptimisticReaction(
     f: FeedType,
     feedId: number,
     reactionKey: string,
-    renderType: "UNICODE" | "IMAGE"
+    emojiType: "DEFAULT" | "CUSTOM",
+    emoji: string
 ): FeedType {
     if (f.id !== feedId) return f;
 
     const reactions = f.reactions ?? [];
     const idx = reactions.findIndex((r) => r.key === reactionKey);
 
+    let nextReactions: typeof reactions;
+
     if (idx === -1) {
-        return {
-            ...f,
-            reactions: [
-                ...reactions,
-                {
-                    key: reactionKey,
-                    renderType,
-                    imageUrl: null,
-                    unicode: reactionKey === "like" ? "👍" : null,
-                    count: 1,
-                    isPressed: true,
-                },
-            ],
-        };
+        nextReactions = [
+            ...reactions,
+            {
+                key: reactionKey,
+                emojiType,
+                imageUrl: null,
+                emoji,
+                count: 1,
+                isPressed: true,
+            },
+        ];
+    } else {
+        const target = reactions[idx];
+        const nextPressed = !target.isPressed;
+        const nextCount = nextPressed ? target.count + 1 : Math.max(0, target.count - 1);
+
+        // ✅ count 0이면 삭제
+        if (nextCount === 0) {
+            nextReactions = reactions.filter((r) => r.key !== reactionKey);
+        } else {
+            nextReactions = reactions.map((r) =>
+                r.key === reactionKey ? { ...r, isPressed: nextPressed, count: nextCount } : r
+            );
+        }
     }
 
-    const target = reactions[idx];
-    const nextPressed = !target.isPressed;
-    const nextCount = nextPressed ? target.count + 1 : Math.max(0, target.count - 1);
-
-    const nextReactions = reactions.map((r) =>
-        r.key === reactionKey ? { ...r, isPressed: nextPressed, count: nextCount } : r
-    );
+    // ✅ 무조건 LIKE를 앞으로
+    nextReactions = movePriorityFirst(nextReactions);
 
     return { ...f, reactions: nextReactions };
 }
@@ -64,15 +83,27 @@ export default function Feed({ feed, setFeeds, client }: Props) {
     const userId = Number(localStorage.getItem("userId"));
     const isMine = userId === feed.authorId;
 
-    const handleReactionSubmit = (renderType: "UNICODE" | "IMAGE", reactionKey: string) => {
+    const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+
+    const handleReactionSubmit = (
+        reactionKey: string,
+        emoji: string
+    ) => {
         client.current.publish({
             destination: "/app/feed/reaction",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ feedId: feed.id, key: reactionKey }),
+            body: JSON.stringify({ feedId: feed.id, key: reactionKey, emoji }),
         });
 
-        setFeeds((prev) => prev.map((f) => applyOptimisticReaction(f, feed.id, reactionKey, renderType)));
+        setFeeds((prev) =>
+            prev.map((f) => applyOptimisticReaction(f, feed.id, reactionKey, "DEFAULT", emoji)));
     };
+
+    const handleEmojiSelect = (emojiData: EmojiClickData) => {
+        handleReactionSubmit(emojiData.unified, emojiData.emoji);
+        setEmojiPickerOpen(false);
+    };
+
 
     // ---- tooltip state ----
     const [tooltip, setTooltip] = useState<TooltipState>({
@@ -141,7 +172,6 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                 }
 
                 const usernames: string[] = res.result.usernames;
-                console.log(usernames);
 
                 setTooltip((t) => ({
                     ...t,
@@ -233,31 +263,53 @@ export default function Feed({ feed, setFeeds, client }: Props) {
             )}
 
             <div className="flex items-center gap-2 flex-wrap relative">
+                {!feed.reactions.some((r) => r.key === "1f44d") && (
+                    <button
+                        onClick={() => handleReactionSubmit(PRIORITY_KEY, "👍" )}
+                        onMouseEnter={(e) => openTooltipWithFetch(e, PRIORITY_KEY, 0, "👍")}
+                        onMouseLeave={closeTooltip}
+                        className="
+                                  flex items-center gap-1
+                                  px-2 py-1
+                                  rounded-full
+                                  border border-gray-200
+                                  bg-white
+                                  text-xs text-gray-500
+                                  hover:bg-gray-50
+                                  transition
+                                  cursor-pointer
+                                "
+                    >
+                        <span>👍</span>
+                        <span className="ml-0.5 font-medium">0</span>
+                    </button>
+                )}
+
                 {feed.reactions.map((reaction) => {
-                    const emojiLabel = reaction.unicode ? reaction.unicode : "reaction";
+                    const emojiLabel = reaction.emoji ? reaction.emoji : "reaction";
 
                     return (
                         <button
                             key={reaction.key}
-                            onClick={() => handleReactionSubmit("UNICODE", reaction.key)}
+                            onClick={() => handleReactionSubmit(reaction.key, emojiLabel)}
                             onMouseEnter={(e) => openTooltipWithFetch(e, reaction.key, reaction.count, emojiLabel)}
                             onMouseLeave={closeTooltip}
                             className={`
-                flex items-center gap-1
-                px-2 py-1
-                rounded-full
-                border
-                text-xs
-                bg-white
-                transition
-                hover:bg-gray-50
-                cursor-pointer
-                ${reaction.isPressed ? "border-blue-400 bg-blue-50 text-blue-600" : "border-gray-200 text-gray-600"}
-              `}
+                                        flex items-center gap-1
+                                        px-2 py-1
+                                        rounded-full
+                                        border
+                                        text-xs
+                                        bg-white
+                                        transition
+                                        hover:bg-gray-50
+                                        cursor-pointer
+                                        ${reaction.isPressed ? "border-blue-400 bg-blue-50 text-blue-600" : "border-gray-200 text-gray-600"}
+                                      `}
                         >
-                            {reaction.unicode && <span className="leading-none">{reaction.unicode}</span>}
+                            {reaction.emoji && <span className="leading-none">{reaction.emoji}</span>}
 
-                            {!reaction.unicode && reaction.imageUrl && (
+                            {!reaction.emoji && reaction.imageUrl && (
                                 <img src={STATIC_HOST + reaction.imageUrl} alt={reaction.key} className="w-4 h-4" />
                             )}
 
@@ -266,43 +318,58 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                     );
                 })}
 
-                {!feed.reactions.some((r) => r.key === "like") && (
+
+                <div className="relative">
                     <button
-                        onClick={() => handleReactionSubmit("UNICODE", "like")}
-                        onMouseEnter={(e) => openTooltipWithFetch(e, "like", 0, "👍")}
-                        onMouseLeave={closeTooltip}
+                        onClick={() => setEmojiPickerOpen((v) => !v)}
                         className="
-              flex items-center gap-1
-              px-2 py-1
-              rounded-full
-              border border-gray-200
-              bg-white
-              text-xs text-gray-500
-              hover:bg-gray-50
-              transition
-              cursor-pointer
-            "
+                                    flex items-center gap-1
+                                    px-2 py-1
+                                    rounded-full
+                                    border border-dashed border-gray-300
+                                    bg-white
+                                    text-xs text-gray-500
+                                    hover:bg-gray-50
+                                    transition
+                                    cursor-pointer
+                                "
                     >
-                        <span>👍</span>
-                        <span className="ml-0.5 font-medium">0</span>
+                        <span className="text-sm">➕</span>
                     </button>
-                )}
+
+                    {/* 이모지 피커 */}
+                    {emojiPickerOpen && (
+                        <div className="absolute z-50 bottom-full mb-2">
+                            <EmojiPicker
+                                onEmojiClick={handleEmojiSelect}
+                                theme="light"
+                                skinTonesDisabled={false}
+                                searchDisabled={false}
+                                width={320}
+                            />
+                        </div>
+                    )}
+                </div>
+
+
+
+
 
                 {/* ---- 검은 툴팁 ---- */}
                 {tooltip.open && (
                     <div
                         className="
-              fixed z-50
-              -translate-x-1/2 -translate-y-2
-              rounded-md
-              bg-black text-white
-              px-3 py-2
-              text-xs
-              shadow-lg
-              max-w-xs
-              pointer-events-none
-              whitespace-pre-line
-            "
+                                  fixed z-50
+                                  -translate-x-1/2 -translate-y-2
+                                  rounded-md
+                                  bg-black text-white
+                                  px-3 py-2
+                                  text-xs
+                                  shadow-lg
+                                  max-w-xs
+                                  pointer-events-none
+                                  whitespace-pre-line
+                                "
                         style={{ left: tooltip.x, top: tooltip.y }}
                     >
                         <div className="font-semibold mb-1">{tooltip.title}</div>
