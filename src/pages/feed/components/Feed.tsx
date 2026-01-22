@@ -15,7 +15,6 @@ const STATIC_HOST = import.meta.env.VITE_STATIC_HOST;
 const PRIORITY_KEY = "1f44d"; // 너 프로젝트에서 쓰는 key로 맞춰
 
 function movePriorityFirst(reactions: any[]) {
-    console.log(reactions)
     const a = reactions.filter(r => r.key === PRIORITY_KEY);
     const b = reactions.filter(r => r.key !== PRIORITY_KEY);
     return [...a, ...b];
