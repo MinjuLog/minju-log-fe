@@ -341,7 +341,7 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                         <div className="absolute z-50 bottom-full mb-2">
                             <EmojiPicker
                                 onEmojiClick={handleEmojiSelect}
-                                theme="light"
+                                // theme="light"
                                 skinTonesDisabled={false}
                                 searchDisabled={false}
                                 width={320}
