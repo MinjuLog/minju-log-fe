@@ -1,5 +1,7 @@
+import { useRef, useState } from "react";
 import type FeedType from "../types/FeedType";
 import { formatKoreanDate } from "../../../utils/formatKoreanDate";
+import {getReactionPressedUsers} from "../api/feed.ts";
 
 interface Props {
     feed: FeedType;
@@ -20,7 +22,6 @@ function applyOptimisticReaction(
     const reactions = f.reactions ?? [];
     const idx = reactions.findIndex((r) => r.key === reactionKey);
 
-    // 아직 reaction이 없는 경우: 새로 추가 (첫 누름)
     if (idx === -1) {
         return {
             ...f,
@@ -38,7 +39,6 @@ function applyOptimisticReaction(
         };
     }
 
-    // 기존 reaction 토글
     const target = reactions[idx];
     const nextPressed = !target.isPressed;
     const nextCount = nextPressed ? target.count + 1 : Math.max(0, target.count - 1);
@@ -50,31 +50,122 @@ function applyOptimisticReaction(
     return { ...f, reactions: nextReactions };
 }
 
+// ---- 여기부터 추가: hover tooltip fetch ----
+type TooltipState = {
+    open: boolean;
+    x: number;
+    y: number;
+    title: string; // 예: 👍 3
+    content: string; // usernames
+    loading: boolean;
+};
 
 export default function Feed({ feed, setFeeds, client }: Props) {
     const userId = Number(localStorage.getItem("userId"));
     const isMine = userId === feed.authorId;
 
     const handleReactionSubmit = (renderType: "UNICODE" | "IMAGE", reactionKey: string) => {
-        // 1. 서버로 전송
         client.current.publish({
             destination: "/app/feed/reaction",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ feedId: feed.id, key: reactionKey }),
         });
 
-        // 2. 낙관적 업데이트
-        setFeeds((prev) =>
-            prev.map((f) => applyOptimisticReaction(f, feed.id, reactionKey, renderType))
-        );
+        setFeeds((prev) => prev.map((f) => applyOptimisticReaction(f, feed.id, reactionKey, renderType)));
+    };
+
+    // ---- tooltip state ----
+    const [tooltip, setTooltip] = useState<TooltipState>({
+        open: false,
+        x: 0,
+        y: 0,
+        title: "",
+        content: "",
+        loading: false,
+    });
+
+    const hoverTimerRef = useRef<number | null>(null);
+    const abortRef = useRef<AbortController | null>(null);
+
+    const closeTooltip = () => {
+        if (hoverTimerRef.current) {
+            window.clearTimeout(hoverTimerRef.current);
+            hoverTimerRef.current = null;
+        }
+        abortRef.current?.abort();
+        abortRef.current = null;
+
+        setTooltip((t) => ({ ...t, open: false, loading: false }));
+    };
+
+    const openTooltipWithFetch = (
+        e: React.MouseEvent<HTMLButtonElement>,
+        reactionKey: string,
+        count: number,
+        emojiLabel: string
+    ) => {
+        if (hoverTimerRef.current) {
+            clearTimeout(hoverTimerRef.current);
+        }
+        const TOOLTIP_OFFSET_Y = 50;
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top - TOOLTIP_OFFSET_Y;
+
+        setTooltip({
+            open: true,
+            x,
+            y,
+            title: `${emojiLabel} ${count}`,
+            content: "",
+            loading: true,
+        });
+
+        hoverTimerRef.current = window.setTimeout(async () => {
+            try {
+                // 이전 요청 취소
+                abortRef.current?.abort();
+
+                const ac = new AbortController();
+                abortRef.current = ac;
+
+                const res = await getReactionPressedUsers(
+                    userId,
+                    feed.id,
+                    reactionKey,
+                    // ac.signal
+                );
+
+                if (!res.ok) {
+                    throw new Error("Failed to fetch reaction pressed");
+                }
+
+                const usernames: string[] = res.result.usernames;
+                console.log(usernames);
+
+                setTooltip((t) => ({
+                    ...t,
+                    loading: false,
+                    content: usernames.length
+                        ? usernames.join(", ")
+                        : "아직 아무도 없어요",
+                }));
+            } catch (err: any) {
+                if (err.name === "AbortError") return; // 정상적인 취소
+
+                setTooltip((t) => ({
+                    ...t,
+                    loading: false,
+                    content: "불러오지 못했어요",
+                }));
+            }
+        }, 180);
     };
 
     return (
         <div
             key={feed.id}
-            className={`rounded-lg border p-4 bg-gray-100 ${
-                isMine ? "border-gray-600" : "border-gray-200"
-            }`}
+            className={`rounded-lg border p-4 bg-gray-100 ${isMine ? "border-gray-600" : "border-gray-200"}`}
         >
             <div className="mb-3 flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -87,9 +178,7 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                 </span>
                             )}
                         </div>
-                        <div className="text-xs text-gray-500">
-                            {formatKoreanDate(feed.timestamp)}
-                        </div>
+                        <div className="text-xs text-gray-500">{formatKoreanDate(feed.timestamp)}</div>
                     </div>
                 </div>
             </div>
@@ -143,66 +232,86 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                 </div>
             )}
 
-            <div className="flex items-center gap-2 flex-wrap">
-                {feed.reactions.map((reaction) => (
-                    <button
-                        key={reaction.key}
-                        onClick={() => handleReactionSubmit("UNICODE", reaction.key)}
-                        className={`
-                                    flex items-center gap-1
-                                    px-2 py-1
-                                    rounded-full
-                                    border
-                                    text-xs
-                                    bg-white
-                                    transition
-                                    hover:bg-gray-50
-                                    cursor-pointer
-                                    ${
-                                                        reaction.isPressed
-                                                            ? "border-blue-400 bg-blue-50 text-blue-600"
-                                                            : "border-gray-200 text-gray-600"
-                                                    }
-                                  `}
-                    >
-                        {/* 유니코드 이모지 */}
-                        {reaction.unicode && <span className="leading-none">{reaction.unicode}</span>}
+            <div className="flex items-center gap-2 flex-wrap relative">
+                {feed.reactions.map((reaction) => {
+                    const emojiLabel = reaction.unicode ? reaction.unicode : "reaction";
 
-                        {/* 이미지 이모지 */}
-                        {!reaction.unicode && reaction.imageUrl && (
-                            <img
-                                src={STATIC_HOST + reaction.imageUrl}
-                                alt={reaction.key}
-                                className="w-4 h-4"
-                            />
-                        )}
+                    return (
+                        <button
+                            key={reaction.key}
+                            onClick={() => handleReactionSubmit("UNICODE", reaction.key)}
+                            onMouseEnter={(e) => openTooltipWithFetch(e, reaction.key, reaction.count, emojiLabel)}
+                            onMouseLeave={closeTooltip}
+                            className={`
+                flex items-center gap-1
+                px-2 py-1
+                rounded-full
+                border
+                text-xs
+                bg-white
+                transition
+                hover:bg-gray-50
+                cursor-pointer
+                ${reaction.isPressed ? "border-blue-400 bg-blue-50 text-blue-600" : "border-gray-200 text-gray-600"}
+              `}
+                        >
+                            {reaction.unicode && <span className="leading-none">{reaction.unicode}</span>}
 
-                        <span className="ml-0.5 font-medium">{reaction.count}</span>
-                    </button>
-                ))}
+                            {!reaction.unicode && reaction.imageUrl && (
+                                <img src={STATIC_HOST + reaction.imageUrl} alt={reaction.key} className="w-4 h-4" />
+                            )}
 
-                {/* like가 아직 없는 경우 */}
+                            <span className="ml-0.5 font-medium">{reaction.count}</span>
+                        </button>
+                    );
+                })}
+
                 {!feed.reactions.some((r) => r.key === "like") && (
                     <button
                         onClick={() => handleReactionSubmit("UNICODE", "like")}
+                        onMouseEnter={(e) => openTooltipWithFetch(e, "like", 0, "👍")}
+                        onMouseLeave={closeTooltip}
                         className="
-                                    flex items-center gap-1
-                                    px-2 py-1
-                                    rounded-full
-                                    border border-gray-200
-                                    bg-white
-                                    text-xs text-gray-500
-                                    hover:bg-gray-50
-                                    transition
-                                  "
+              flex items-center gap-1
+              px-2 py-1
+              rounded-full
+              border border-gray-200
+              bg-white
+              text-xs text-gray-500
+              hover:bg-gray-50
+              transition
+              cursor-pointer
+            "
                     >
                         <span>👍</span>
                         <span className="ml-0.5 font-medium">0</span>
                     </button>
                 )}
+
+                {/* ---- 검은 툴팁 ---- */}
+                {tooltip.open && (
+                    <div
+                        className="
+              fixed z-50
+              -translate-x-1/2 -translate-y-2
+              rounded-md
+              bg-black text-white
+              px-3 py-2
+              text-xs
+              shadow-lg
+              max-w-xs
+              pointer-events-none
+              whitespace-pre-line
+            "
+                        style={{ left: tooltip.x, top: tooltip.y }}
+                    >
+                        <div className="font-semibold mb-1">{tooltip.title}</div>
+                        <div className="opacity-90">
+                            {tooltip.loading ? "불러오는 중..." : (tooltip.content || "아직 아무도 없어요")}
+                        </div>
+                    </div>
+                )}
             </div>
-
-
         </div>
     );
 }
