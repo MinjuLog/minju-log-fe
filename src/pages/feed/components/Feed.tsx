@@ -31,7 +31,7 @@ function applyOptimisticReaction(
     if (f.id !== feedId) return f;
 
     const reactions = f.reactions ?? [];
-    const idx = reactions.findIndex((r) => r.key === reactionKey);
+    const idx = reactions.findIndex((r) => r.reactionKey === reactionKey);
 
     let nextReactions: typeof reactions;
 
@@ -39,25 +39,25 @@ function applyOptimisticReaction(
         nextReactions = [
             ...reactions,
             {
-                key: reactionKey,
+                reactionKey,
                 emojiType,
                 imageUrl: null,
                 emoji,
                 count: 1,
-                isPressed: true,
+                pressedByMe: true,
             },
         ];
     } else {
         const target = reactions[idx];
-        const nextPressed = !target.isPressed;
+        const nextPressed = !target.pressedByMe;
         const nextCount = nextPressed ? target.count + 1 : Math.max(0, target.count - 1);
 
         // ✅ count 0이면 삭제
         if (nextCount === 0) {
-            nextReactions = reactions.filter((r) => r.key !== reactionKey);
+            nextReactions = reactions.filter((r) => r.reactionKey !== reactionKey);
         } else {
             nextReactions = reactions.map((r) =>
-                r.key === reactionKey ? { ...r, isPressed: nextPressed, count: nextCount } : r
+                r.reactionKey === reactionKey ? { ...r, isPressed: nextPressed, count: nextCount } : r
             );
         }
     }
@@ -262,7 +262,7 @@ export default function Feed({ feed, setFeeds, client }: Props) {
             )}
 
             <div className="flex items-center gap-2 flex-wrap relative">
-                {!feed.reactions.some((r) => r.key === "1f44d") && (
+                {!feed.reactions.some((r) => r.reactionKey === "1f44d") && (
                     <button
                         onClick={() => handleReactionSubmit(PRIORITY_KEY, "👍" )}
                         onMouseEnter={(e) => openTooltipWithFetch(e, PRIORITY_KEY, 0, "👍")}
@@ -289,9 +289,9 @@ export default function Feed({ feed, setFeeds, client }: Props) {
 
                     return (
                         <button
-                            key={reaction.key}
-                            onClick={() => handleReactionSubmit(reaction.key, emojiLabel)}
-                            onMouseEnter={(e) => openTooltipWithFetch(e, reaction.key, reaction.count, emojiLabel)}
+                            key={reaction.reactionKey}
+                            onClick={() => handleReactionSubmit(reaction.reactionKey, emojiLabel)}
+                            onMouseEnter={(e) => openTooltipWithFetch(e, reaction.reactionKey, reaction.count, emojiLabel)}
                             onMouseLeave={closeTooltip}
                             className={`
                                         flex items-center gap-1
@@ -303,13 +303,13 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                                         transition
                                         hover:bg-gray-50
                                         cursor-pointer
-                                        ${reaction.isPressed ? "border-blue-400 bg-blue-50 text-blue-600" : "border-gray-200 text-gray-600"}
+                                        ${reaction.pressedByMe ? "border-blue-400 bg-blue-50 text-blue-600" : "border-gray-200 text-gray-600"}
                                       `}
                         >
                             {reaction.emoji && <span className="leading-none">{reaction.emoji}</span>}
 
                             {!reaction.emoji && reaction.imageUrl && (
-                                <img src={STATIC_HOST + reaction.imageUrl} alt={reaction.key} className="w-4 h-4" />
+                                <img src={STATIC_HOST + reaction.imageUrl} alt={reaction.reactionKey} className="w-4 h-4" />
                             )}
 
                             <span className="ml-0.5 font-medium">{reaction.count}</span>

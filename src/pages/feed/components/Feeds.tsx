@@ -155,19 +155,19 @@ export default function Feeds() {
                     const ev: ReactionEvent = JSON.parse(msg.body);
                     if (ev.actorId === Number(userId)) return;
 
-                    setFeeds((prev) =>
+                    setFeeds((prev: FeedType[]) =>
                         prev.map((feed) => {
                             if (feed.id !== ev.feedId) return feed;
 
-                            const exists = feed.reactions.some((r) => r.key === ev.key);
+                            const exists = feed.reactions.some((r) => r.reactionKey === ev.key);
 
                             const nextReactions = exists
                                 ? ev.count === 0
                                     // ✅ count가 0이면 제거
-                                    ? feed.reactions.filter((r) => r.key !== ev.key)
+                                    ? feed.reactions.filter((r) => r.reactionKey !== ev.key)
                                     // ✅ 아니면 서버 값으로 갱신
                                     : feed.reactions.map((r) =>
-                                        r.key === ev.key
+                                        r.reactionKey === ev.key
                                             ? {
                                                 ...r,
                                                 count: ev.count,
@@ -183,9 +183,9 @@ export default function Feeds() {
                                     ? [
                                         ...feed.reactions,
                                         {
-                                            key: ev.key,
+                                            reactionKey: ev.key,
                                             count: ev.count,
-                                            isPressed: false,
+                                            pressedByMe: false,
                                             emojiType: ev.emojiType ?? null,
                                             imageUrl: ev.imageUrl ?? null,
                                             emoji: ev.emoji ?? null,
