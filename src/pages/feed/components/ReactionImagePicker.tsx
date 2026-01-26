@@ -49,8 +49,9 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
     };
 
     useEffect(() => {
+        if (!open) return;
         void fetchCustomEmojis();
-    }, []);
+    }, [open]);
 
     const openFileDialog = () => inputRef.current?.click();
     const close = () => setOpen(false);
@@ -186,7 +187,7 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
                 aria-label="커스텀 이모지 피커 열기"
                 title="커스텀 이미지 피커"
             >
-                <span className="text-sm">🖼️</span>
+                <span className="text-sm">📸</span>
             </button>
 
             {open && (

@@ -192,8 +192,6 @@ export default function Feeds() {
                             return { ...feed, reactions: nextReactions };
                         })
                     );
-
-                    console.log(feeds)
                 })
             );
 
