@@ -183,7 +183,7 @@ export default function Feeds() {
                                             count: ev.count,
                                             pressedByMe: false,
                                             emojiType: ev.emojiType ?? null,
-                                            imageUrl: ev.objectKey ?? null,
+                                            objectKey: ev.objectKey ?? null,
                                             emoji: ev.emoji ?? null,
                                         },
                                     ]
@@ -192,6 +192,8 @@ export default function Feeds() {
                             return { ...feed, reactions: nextReactions };
                         })
                     );
+
+                    console.log(feeds)
                 })
             );
 

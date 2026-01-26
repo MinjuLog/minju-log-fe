@@ -16,8 +16,8 @@ const STATIC_HOST = import.meta.env.VITE_STATIC_HOST;
 const PRIORITY_KEY = "1f44d";
 
 function movePriorityFirst(reactions: any[]) {
-    const a = reactions.filter(r => r.key === PRIORITY_KEY);
-    const b = reactions.filter(r => r.key !== PRIORITY_KEY);
+    const a = reactions.filter(r => r.reactionKey === PRIORITY_KEY);
+    const b = reactions.filter(r => r.reactionKey !== PRIORITY_KEY);
     return [...a, ...b];
 }
 
@@ -34,7 +34,6 @@ function applyOptimisticReaction(
 
     const reactions = f.reactions ?? [];
     const idx = reactions.findIndex((r) => r.reactionKey === reactionKey);
-
     let nextReactions: typeof reactions;
 
     if (idx === -1) {
@@ -59,7 +58,7 @@ function applyOptimisticReaction(
             nextReactions = reactions.filter((r) => r.reactionKey !== reactionKey);
         } else {
             nextReactions = reactions.map((r) =>
-                r.reactionKey === reactionKey ? { ...r, isPressed: nextPressed, count: nextCount } : r
+                r.reactionKey === reactionKey ? { ...r, pressedByMe: nextPressed, count: nextCount } : r
             );
         }
     }
@@ -92,12 +91,12 @@ export default function Feed({ feed, setFeeds, client }: Props) {
         reactionKey,
         emoji,
         objectKey,
-        reactionType,
+        emojiType,
     }: {
         reactionKey: string,
         emoji?: string | undefined,
         objectKey?: string | undefined
-        reactionType: "DEFAULT" | "CUSTOM",
+        emojiType: "DEFAULT" | "CUSTOM",
     }) => {
         client.current.publish({
             destination: "/app/feed/reaction",
@@ -107,11 +106,11 @@ export default function Feed({ feed, setFeeds, client }: Props) {
 
         setFeeds((prev) =>
             prev.map((f) =>
-                applyOptimisticReaction(f, feed.id, reactionKey, reactionType, emoji, objectKey)));
+                applyOptimisticReaction(f, feed.id, reactionKey, emojiType, emoji, objectKey)));
     };
 
     const handleEmojiSelect = (emojiData: EmojiClickData) => {
-        handleReactionSubmit({ reactionKey: emojiData.unified, emoji: emojiData.emoji, reactionType: "DEFAULT" });
+        handleReactionSubmit({ reactionKey: emojiData.unified, emoji: emojiData.emoji, emojiType: "DEFAULT" });
         setEmojiPickerOpen(false);
     };
 
@@ -280,7 +279,7 @@ export default function Feed({ feed, setFeeds, client }: Props) {
             <div className="flex items-center gap-2 flex-wrap relative">
                 {!feed.reactions.some((r) => r.reactionKey === "1f44d") && (
                     <button
-                        onClick={() => handleReactionSubmit({ reactionKey:PRIORITY_KEY, emoji: "👍", reactionType: "DEFAULT" })}
+                        onClick={() => handleReactionSubmit({ reactionKey:PRIORITY_KEY, emoji: "👍", emojiType: "DEFAULT" })}
                         onMouseEnter={(e) =>
                             openTooltipWithFetch(e, PRIORITY_KEY, 0, "👍", "DEFAULT")}
                         onMouseLeave={closeTooltip}
@@ -301,19 +300,29 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                     </button>
                 )}
 
-                {feed.reactions.map((reaction) => {
-                    const emojiLabel = reaction.emoji ? reaction.emoji : reaction.objectKey;
+                {movePriorityFirst(feed.reactions ?? []).map((reaction) => {
 
                     return (
                         <button
                             key={reaction.reactionKey}
-                            onClick={() => handleReactionSubmit({
-                                reactionKey: reaction.reactionKey,
-                                emoji: emojiLabel ?? '알 수 없음',
-                                reactionType: "DEFAULT",
-                            })}
+                            onClick={() =>
+                                handleReactionSubmit({
+                                    reactionKey: reaction.reactionKey,
+                                    emoji: reaction.emoji,
+                                    objectKey: reaction.objectKey,
+                                    emojiType: reaction.emojiType ?? "DEFAULT",
+                                })
+                            }
                             onMouseEnter={(e) =>
-                                openTooltipWithFetch(e, reaction.reactionKey, reaction.count, emojiLabel ?? '알 수 없음', reaction.emojiType ?? 'DEFAULT', reaction.objectKey ?? '')}
+                                openTooltipWithFetch(
+                                    e,
+                                    reaction.reactionKey,
+                                    reaction.count,
+                                    reaction.emoji ?? "커스텀",
+                                    reaction.emojiType ?? "DEFAULT",
+                                    reaction.objectKey
+                                )
+                            }
                             onMouseLeave={closeTooltip}
                             className={`
                                         flex items-center gap-1
@@ -327,17 +336,17 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                                         cursor-pointer
                                         ${reaction.pressedByMe ? "border-blue-400 bg-blue-50 text-blue-600" : "border-gray-200 text-gray-600"}
                                       `}
+                            title={reaction.reactionKey}
                         >
                             {reaction.emoji && <span className="leading-none">{reaction.emoji}</span>}
-
                             {!reaction.emoji && reaction.objectKey && (
                                 <img src={STATIC_HOST + reaction.objectKey} alt={reaction.reactionKey} className="w-4 h-4" />
                             )}
-
                             <span className="ml-0.5 font-medium">{reaction.count}</span>
                         </button>
                     );
                 })}
+
 
 
                 <div className="relative">

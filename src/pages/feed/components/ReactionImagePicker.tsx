@@ -11,7 +11,7 @@ const STATIC_HOST = import.meta.env.VITE_STATIC_HOST;
 type Props = {
     title?: string;
     onSelect?: (emoji: CustomEmoji) => void;
-    handleReactionSubmit: ({ reactionKey, objectKey, reactionType }: { reactionKey: string, objectKey: string, reactionType: "DEFAULT" | "CUSTOM" }) => void;
+    handleReactionSubmit: ({ reactionKey, objectKey, emojiType }: { reactionKey: string, objectKey: string, emojiType: "DEFAULT" | "CUSTOM" }) => void;
 };
 
 type PendingUpload = {
@@ -246,6 +246,7 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
                                             onClick={() => {
                                                 onSelect?.(e);
                                                 setOpen(false);
+                                                handleReactionSubmit({ reactionKey: e.reactionKey, objectKey: e.objectKey, emojiType: "CUSTOM" });
                                             }}
                                             className="
                                                 group relative aspect-square overflow-hidden rounded-lg
@@ -260,7 +261,6 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
                                                 alt={e.reactionKey}
                                                 className="h-full w-full object-contain p-2"
                                                 loading="lazy"
-                                                onClick={() => handleReactionSubmit({ reactionKey: e.reactionKey, objectKey: e.objectKey, reactionType: "CUSTOM" })}
                                                 onError={(ev) => {
                                                     (ev.currentTarget as HTMLImageElement).style.display = "none";
                                                 }}
