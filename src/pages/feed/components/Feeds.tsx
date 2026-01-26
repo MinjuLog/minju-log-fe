@@ -25,7 +25,7 @@ type ReactionEvent = {
     key: string;
     count: number;
     emojiType?: "DEFAULT" | "CUSTOM" | null;
-    imageUrl?: string | null;
+    objectKey?: string | null;
     emoji?: string | null;
 };
 
@@ -51,16 +51,12 @@ export default function Feeds() {
     const subsRef = useRef<StompSubscription[]>([]);
 
     const [connected, setConnected] = useState(false);
-
     const [feeds, setFeeds] = useState<FeedType[]>([]);
     const [totalElements, setTotalElements] = useState(0);
-
     const [onlineUserList, setOnlineUserList] = useState<OnlineUser[]>([]);
     const [myName, setMyName] = useState<string>("unknown");
-
     const [loading, setLoading] = useState(true);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-
     const userId = localStorage.getItem("userId") ?? "";
 
     const client = useMemo(() => {
@@ -173,7 +169,7 @@ export default function Feeds() {
                                                 count: ev.count,
                                                 // 다른 유저 이벤트 → 내 isPressed는 유지
                                                 emojiType: ev.emojiType ?? r.emojiType,
-                                                imageUrl: ev.imageUrl ?? r.imageUrl,
+                                                objectKey: ev.objectKey ?? r.objectKey,
                                                 emoji: ev.emoji ?? r.emoji,
                                             }
                                             : r
@@ -187,7 +183,7 @@ export default function Feeds() {
                                             count: ev.count,
                                             pressedByMe: false,
                                             emojiType: ev.emojiType ?? null,
-                                            imageUrl: ev.imageUrl ?? null,
+                                            objectKey: ev.objectKey ?? null,
                                             emoji: ev.emoji ?? null,
                                         },
                                     ]
@@ -196,6 +192,8 @@ export default function Feeds() {
                             return { ...feed, reactions: nextReactions };
                         })
                     );
+
+                    console.log(feeds)
                 })
             );
 

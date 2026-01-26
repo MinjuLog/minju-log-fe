@@ -1,8 +1,9 @@
-import { useRef, useState } from "react";
+import React, {useRef, useState} from "react";
 import type FeedType from "../types/FeedType";
-import { formatKoreanDate } from "../../../utils/formatKoreanDate";
+import {formatKoreanDate} from "../../../utils/formatKoreanDate";
 import {getReactionPressedUsers} from "../api/feed.ts";
 import EmojiPicker, {type EmojiClickData} from "emoji-picker-react";
+import {ReactionImagePicker} from "./ReactionImagePicker.tsx";
 
 interface Props {
     feed: FeedType;
@@ -15,8 +16,8 @@ const STATIC_HOST = import.meta.env.VITE_STATIC_HOST;
 const PRIORITY_KEY = "1f44d";
 
 function movePriorityFirst(reactions: any[]) {
-    const a = reactions.filter(r => r.key === PRIORITY_KEY);
-    const b = reactions.filter(r => r.key !== PRIORITY_KEY);
+    const a = reactions.filter(r => r.reactionKey === PRIORITY_KEY);
+    const b = reactions.filter(r => r.reactionKey !== PRIORITY_KEY);
     return [...a, ...b];
 }
 
@@ -26,13 +27,13 @@ function applyOptimisticReaction(
     feedId: number,
     reactionKey: string,
     emojiType: "DEFAULT" | "CUSTOM",
-    emoji: string
+    emoji?: string,
+    objectKey?: string
 ): FeedType {
     if (f.id !== feedId) return f;
 
     const reactions = f.reactions ?? [];
     const idx = reactions.findIndex((r) => r.reactionKey === reactionKey);
-
     let nextReactions: typeof reactions;
 
     if (idx === -1) {
@@ -41,7 +42,7 @@ function applyOptimisticReaction(
             {
                 reactionKey,
                 emojiType,
-                imageUrl: null,
+                objectKey,
                 emoji,
                 count: 1,
                 pressedByMe: true,
@@ -57,7 +58,7 @@ function applyOptimisticReaction(
             nextReactions = reactions.filter((r) => r.reactionKey !== reactionKey);
         } else {
             nextReactions = reactions.map((r) =>
-                r.reactionKey === reactionKey ? { ...r, isPressed: nextPressed, count: nextCount } : r
+                r.reactionKey === reactionKey ? { ...r, pressedByMe: nextPressed, count: nextCount } : r
             );
         }
     }
@@ -76,6 +77,8 @@ type TooltipState = {
     title: string; // 예: 👍 3
     content: string; // usernames
     loading: boolean;
+    reactionType: "DEFAULT" | "CUSTOM",
+    objectKey?: string
 };
 
 export default function Feed({ feed, setFeeds, client }: Props) {
@@ -84,22 +87,30 @@ export default function Feed({ feed, setFeeds, client }: Props) {
 
     const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
 
-    const handleReactionSubmit = (
+    const handleReactionSubmit = ({
+        reactionKey,
+        emoji,
+        objectKey,
+        emojiType,
+    }: {
         reactionKey: string,
-        emoji: string
-    ) => {
+        emoji?: string | undefined,
+        objectKey?: string | undefined
+        emojiType: "DEFAULT" | "CUSTOM",
+    }) => {
         client.current.publish({
             destination: "/app/feed/reaction",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ feedId: feed.id, key: reactionKey, emoji }),
+            body: JSON.stringify({ feedId: feed.id, key: reactionKey, emoji, objectKey }),
         });
 
         setFeeds((prev) =>
-            prev.map((f) => applyOptimisticReaction(f, feed.id, reactionKey, "DEFAULT", emoji)));
+            prev.map((f) =>
+                applyOptimisticReaction(f, feed.id, reactionKey, emojiType, emoji, objectKey)));
     };
 
     const handleEmojiSelect = (emojiData: EmojiClickData) => {
-        handleReactionSubmit(emojiData.unified, emojiData.emoji);
+        handleReactionSubmit({ reactionKey: emojiData.unified, emoji: emojiData.emoji, emojiType: "DEFAULT" });
         setEmojiPickerOpen(false);
     };
 
@@ -112,6 +123,7 @@ export default function Feed({ feed, setFeeds, client }: Props) {
         title: "",
         content: "",
         loading: false,
+        reactionType: "DEFAULT",
     });
 
     const hoverTimerRef = useRef<number | null>(null);
@@ -132,7 +144,9 @@ export default function Feed({ feed, setFeeds, client }: Props) {
         e: React.MouseEvent<HTMLButtonElement>,
         reactionKey: string,
         count: number,
-        emojiLabel: string
+        emojiLabel: string,
+        reactionType: "DEFAULT" | "CUSTOM",
+        objectKey?: string,
     ) => {
         if (hoverTimerRef.current) {
             clearTimeout(hoverTimerRef.current);
@@ -149,6 +163,8 @@ export default function Feed({ feed, setFeeds, client }: Props) {
             title: `${emojiLabel} ${count}`,
             content: "",
             loading: true,
+            reactionType,
+            objectKey
         });
 
         hoverTimerRef.current = window.setTimeout(async () => {
@@ -156,8 +172,7 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                 // 이전 요청 취소
                 abortRef.current?.abort();
 
-                const ac = new AbortController();
-                abortRef.current = ac;
+                abortRef.current = new AbortController();
 
                 const res = await getReactionPressedUsers(
                     userId,
@@ -264,8 +279,9 @@ export default function Feed({ feed, setFeeds, client }: Props) {
             <div className="flex items-center gap-2 flex-wrap relative">
                 {!feed.reactions.some((r) => r.reactionKey === "1f44d") && (
                     <button
-                        onClick={() => handleReactionSubmit(PRIORITY_KEY, "👍" )}
-                        onMouseEnter={(e) => openTooltipWithFetch(e, PRIORITY_KEY, 0, "👍")}
+                        onClick={() => handleReactionSubmit({ reactionKey:PRIORITY_KEY, emoji: "👍", emojiType: "DEFAULT" })}
+                        onMouseEnter={(e) =>
+                            openTooltipWithFetch(e, PRIORITY_KEY, 0, "👍", "DEFAULT")}
                         onMouseLeave={closeTooltip}
                         className="
                                   flex items-center gap-1
@@ -284,14 +300,29 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                     </button>
                 )}
 
-                {feed.reactions.map((reaction) => {
-                    const emojiLabel = reaction.emoji ? reaction.emoji : "reaction";
+                {movePriorityFirst(feed.reactions ?? []).map((reaction) => {
 
                     return (
                         <button
                             key={reaction.reactionKey}
-                            onClick={() => handleReactionSubmit(reaction.reactionKey, emojiLabel)}
-                            onMouseEnter={(e) => openTooltipWithFetch(e, reaction.reactionKey, reaction.count, emojiLabel)}
+                            onClick={() =>
+                                handleReactionSubmit({
+                                    reactionKey: reaction.reactionKey,
+                                    emoji: reaction.emoji,
+                                    objectKey: reaction.objectKey,
+                                    emojiType: reaction.emojiType ?? "DEFAULT",
+                                })
+                            }
+                            onMouseEnter={(e) =>
+                                openTooltipWithFetch(
+                                    e,
+                                    reaction.reactionKey,
+                                    reaction.count,
+                                    reaction.emoji ?? "커스텀",
+                                    reaction.emojiType ?? "DEFAULT",
+                                    reaction.objectKey
+                                )
+                            }
                             onMouseLeave={closeTooltip}
                             className={`
                                         flex items-center gap-1
@@ -305,17 +336,17 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                                         cursor-pointer
                                         ${reaction.pressedByMe ? "border-blue-400 bg-blue-50 text-blue-600" : "border-gray-200 text-gray-600"}
                                       `}
+                            title={reaction.reactionKey}
                         >
                             {reaction.emoji && <span className="leading-none">{reaction.emoji}</span>}
-
-                            {!reaction.emoji && reaction.imageUrl && (
-                                <img src={STATIC_HOST + reaction.imageUrl} alt={reaction.reactionKey} className="w-4 h-4" />
+                            {!reaction.emoji && reaction.objectKey && (
+                                <img src={STATIC_HOST + reaction.objectKey} alt={reaction.reactionKey} className="w-4 h-4" />
                             )}
-
                             <span className="ml-0.5 font-medium">{reaction.count}</span>
                         </button>
                     );
                 })}
+
 
 
                 <div className="relative">
@@ -350,8 +381,7 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                     )}
                 </div>
 
-
-
+                <ReactionImagePicker handleReactionSubmit = {handleReactionSubmit}/>
 
 
                 {/* ---- 검은 툴팁 ---- */}
@@ -371,7 +401,11 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                                 "
                         style={{ left: tooltip.x, top: tooltip.y }}
                     >
-                        <div className="font-semibold mb-1">{tooltip.title}</div>
+                        { tooltip.reactionType === 'DEFAULT' ?
+                            (<div className="font-semibold mb-1">{tooltip.title}</div> )
+                            :
+                            (<img src={STATIC_HOST + tooltip.objectKey} alt={tooltip.title} className="w-4 h-4" />)
+                        }
                         <div className="opacity-90">
                             {tooltip.loading ? "불러오는 중..." : (tooltip.content || "아직 아무도 없어요")}
                         </div>

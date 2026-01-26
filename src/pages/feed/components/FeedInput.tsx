@@ -187,7 +187,7 @@ export function FeedInput({ client, connected }: FeedInputProps) {
         setFiles((prev) =>
             prev.map((f) => {
                 const s = successById.get(f.id);
-                if (s) return { ...f, status: "done", progress: 100, objectKey: s.objectKey };
+                if (s) return { ...f, status: "done", progress: 100, objectKey: s.objectKey, size: s.size };
                 const em = errorById.get(f.id);
                 if (em) return { ...f, status: "error", progress: 0, errorMessage: em };
                 return f;
