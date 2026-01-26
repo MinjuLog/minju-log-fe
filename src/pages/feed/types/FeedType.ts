@@ -13,7 +13,7 @@ export default interface FeedType {
     reactions: {
         reactionKey: string;
         emojiType: "DEFAULT" | "CUSTOM" | null;
-        imageUrl?: string | null;
+        objectKey?: string | null;
         emoji?: string | null;
         count: number;
         pressedByMe: boolean;

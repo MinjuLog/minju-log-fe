@@ -25,7 +25,7 @@ type ReactionEvent = {
     key: string;
     count: number;
     emojiType?: "DEFAULT" | "CUSTOM" | null;
-    imageUrl?: string | null;
+    objectKey?: string | null;
     emoji?: string | null;
 };
 
@@ -169,7 +169,7 @@ export default function Feeds() {
                                                 count: ev.count,
                                                 // 다른 유저 이벤트 → 내 isPressed는 유지
                                                 emojiType: ev.emojiType ?? r.emojiType,
-                                                imageUrl: ev.imageUrl ?? r.imageUrl,
+                                                objectKey: ev.objectKey ?? r.objectKey,
                                                 emoji: ev.emoji ?? r.emoji,
                                             }
                                             : r
@@ -183,7 +183,7 @@ export default function Feeds() {
                                             count: ev.count,
                                             pressedByMe: false,
                                             emojiType: ev.emojiType ?? null,
-                                            imageUrl: ev.imageUrl ?? null,
+                                            imageUrl: ev.objectKey ?? null,
                                             emoji: ev.emoji ?? null,
                                         },
                                     ]

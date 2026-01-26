@@ -11,6 +11,7 @@ const STATIC_HOST = import.meta.env.VITE_STATIC_HOST;
 type Props = {
     title?: string;
     onSelect?: (emoji: CustomEmoji) => void;
+    handleReactionSubmit: ({ reactionKey, objectKey, reactionType }: { reactionKey: string, objectKey: string, reactionType: "DEFAULT" | "CUSTOM" }) => void;
 };
 
 type PendingUpload = {
@@ -32,7 +33,7 @@ const makeDefaultReactionKey = (fileName: string) => {
 };
 
 
-export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSelect }: Props) {
+export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSelect, handleReactionSubmit }: Props) {
     const inputRef = useRef<HTMLInputElement | null>(null);
 
     const [open, setOpen] = useState(false);
@@ -235,7 +236,7 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
                             >
                                 {customEmojis.length === 0 ? (
                                     <div className="col-span-4 py-8 text-center text-xs text-gray-400">
-                                        커스텀 이모지가 없어. +로 추가해줘.
+                                        커스텀 이모지가 없습니다.
                                     </div>
                                 ) : (
                                     customEmojis.map((e) => (
@@ -247,11 +248,11 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
                                                 setOpen(false);
                                             }}
                                             className="
-                        group relative aspect-square overflow-hidden rounded-lg
-                        border border-gray-100 bg-white
-                        hover:ring-2 hover:ring-gray-300
-                        transition
-                      "
+                                                group relative aspect-square overflow-hidden rounded-lg
+                                                border border-gray-100 bg-white
+                                                hover:ring-2 hover:ring-gray-300
+                                                transition
+                                              "
                                             title={e.reactionKey}
                                         >
                                             <img
@@ -259,6 +260,7 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
                                                 alt={e.reactionKey}
                                                 className="h-full w-full object-contain p-2"
                                                 loading="lazy"
+                                                onClick={() => handleReactionSubmit({ reactionKey: e.reactionKey, objectKey: e.objectKey, reactionType: "CUSTOM" })}
                                                 onError={(ev) => {
                                                     (ev.currentTarget as HTMLImageElement).style.display = "none";
                                                 }}
