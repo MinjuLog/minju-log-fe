@@ -51,16 +51,12 @@ export default function Feeds() {
     const subsRef = useRef<StompSubscription[]>([]);
 
     const [connected, setConnected] = useState(false);
-
     const [feeds, setFeeds] = useState<FeedType[]>([]);
     const [totalElements, setTotalElements] = useState(0);
-
     const [onlineUserList, setOnlineUserList] = useState<OnlineUser[]>([]);
     const [myName, setMyName] = useState<string>("unknown");
-
     const [loading, setLoading] = useState(true);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-
     const userId = localStorage.getItem("userId") ?? "";
 
     const client = useMemo(() => {

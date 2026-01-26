@@ -3,6 +3,7 @@ import type FeedType from "../types/FeedType";
 import { formatKoreanDate } from "../../../utils/formatKoreanDate";
 import {getReactionPressedUsers} from "../api/feed.ts";
 import EmojiPicker, {type EmojiClickData} from "emoji-picker-react";
+import {ReactionImagePicker} from "./ReactionImagePicker.tsx";
 
 interface Props {
     feed: FeedType;
@@ -349,6 +350,8 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                         </div>
                     )}
                 </div>
+
+                <ReactionImagePicker/>
 
 
 

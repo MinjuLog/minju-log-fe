@@ -5,6 +5,7 @@ import type GetOnlineUserList from "./GetOnlineUserList.ts";
 import {api} from "./api.ts";
 import type GetPreSignedUrlResponse from "./GetPreSignedUrlResponse.ts";
 import type GetReactionPressedUsersResponse from "./GetReactionPressedUsersResponse.ts";
+import type GetCustomEmojiResponse from "./GetCustomEmojiResponse.ts";
 
 export const getFeedList = async (
     userId: number
@@ -59,7 +60,7 @@ export const getOnlineUserList = async (
 };
 
 export const getPreSignedUrl = async (
-    uploadType: "FEED" | "PROFILE", fileName: string
+    uploadType: "FEED" | "PROFILE" | "CUSTOM_EMOJI", fileName: string
 ): Promise<GetPreSignedUrlResponse | ErrorResponse> => {
     try {
         const res = await api.get(
@@ -149,3 +150,59 @@ export const getReactionPressedUsers = async (
         };
     }
 };
+
+export const getCustomEmojis = async (
+
+): Promise<GetCustomEmojiResponse | ErrorResponse> => {
+    try {
+        const res = await api.get(
+            `/api/custom-emojis`,
+        );
+        return {
+            ok: true,
+            result: res.data.customEmojis,
+        }
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            return {
+                ok: false,
+                message: error.response?.data?.message ?? "알 수 없는 오류",
+            };
+        }
+
+        return {
+            ok: false,
+            message: "네트워크 오류 발생",
+        };
+    }
+}
+
+export const createCustomEmoji = async (
+    { reactionKey,  objectKey }: { reactionKey: string; objectKey: string },
+): Promise<GetCustomEmojiResponse | ErrorResponse> => {
+    try {
+        const res = await api.post(
+            `/api/custom-emojis`,
+            {
+                objectKey,
+                reactionKey,
+            }
+        );
+        return {
+            ok: true,
+            result: res.data.customEmoji,
+        }
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            return {
+                ok: false,
+                message: error.response?.data?.message ?? "알 수 없는 오류",
+            };
+        }
+
+        return {
+            ok: false,
+            message: "네트워크 오류 발생",
+        };
+    }
+}
