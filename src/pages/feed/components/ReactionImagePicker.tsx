@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {createCustomEmoji, getCustomEmojis, getPreSignedUrl, uploadToPreSignedUrl} from "../api/feed";
 
 type CustomEmoji = {
@@ -48,9 +48,6 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
         setCustomEmojis(res.result ?? []);
     };
 
-    useEffect(() => {
-        void fetchCustomEmojis();
-    }, []);
 
     const openFileDialog = () => inputRef.current?.click();
     const close = () => setOpen(false);
@@ -124,6 +121,7 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
         try {
             await uploadToPreSignedUrl(uploadUrl, pending.file);
         } catch (err) {
+            console.error(err);
             setPending((p) =>
                 p
                     ? {
@@ -171,7 +169,10 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
 
             <button
                 type="button"
-                onClick={() => setOpen((v) => !v)}
+                onClick={async() => {
+                    setOpen((v) => !v);
+                    await fetchCustomEmojis()
+                }}
                 className="
           flex items-center gap-1
           px-2 py-1
@@ -196,7 +197,7 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
                         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                             <div className="flex flex-col">
                                 <span className="text-sm font-medium text-gray-900">{title}</span>
-                                <span className="text-xs text-gray-500">이미 업로드된 이모지를 선택하거나 +로 추가해</span>
+                                <span className="text-xs text-gray-500">이미 업로드된 이모지를 선택하거나 +로 추가</span>
                             </div>
 
                             <button type="button" onClick={close} className="text-xs text-gray-500 hover:text-gray-800">
@@ -277,7 +278,7 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
 
                     {/* 업로드 전 미리보기/확인 오버레이 */}
                     {pending && (
-                        <div className="absolute inset-0 z-[60] flex items-center justify-center">
+                        <div className="absolute inset-0 z-60 flex items-center justify-center">
                             <div className="absolute inset-0 bg-black/30 rounded-2xl" onClick={pending.uploading ? undefined : cancelPending} />
                             <div className="relative w-[320px] rounded-2xl bg-white shadow-xl border border-gray-200 p-3">
                                 <div className="flex items-center justify-between">

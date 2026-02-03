@@ -1,11 +1,11 @@
 import type ErrorResponse from "../../../api/type/ErrorResponse.ts";
 import axios from "axios";
-import type GetFeedListResponse from "./GetFeedListResponse.ts";
-import type GetOnlineUserList from "./GetOnlineUserList.ts";
+import type GetFeedListResponse from "./dto/GetFeedListResponse.ts";
+import type GetOnlineUserList from "./dto/GetOnlineUserList.ts";
 import {api} from "./api.ts";
-import type GetPreSignedUrlResponse from "./GetPreSignedUrlResponse.ts";
-import type GetReactionPressedUsersResponse from "./GetReactionPressedUsersResponse.ts";
-import type GetCustomEmojiResponse from "./GetCustomEmojiResponse.ts";
+import type GetPreSignedUrlResponse from "./dto/GetPreSignedUrlResponse.ts";
+import type GetReactionPressedUsersResponse from "./dto/GetReactionPressedUsersResponse.ts";
+import type GetCustomEmojiResponse from "./dto/GetCustomEmojiResponse.ts";
 
 export const getFeedList = async (
     userId: number
