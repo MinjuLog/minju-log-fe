@@ -123,3 +123,23 @@
         @apply bg-background text-foreground;
     }
 }
+
+@keyframes heart-float {
+    0% { transform: translateY(0) scale(1); }
+    40% { transform: translateY(-6px) scale(1.08); }
+    100% { transform: translateY(0) scale(1); }
+}
+
+@keyframes count-pop {
+    0% { transform: translateY(2px) scale(1); opacity: 0.9; }
+    50% { transform: translateY(-2px) scale(1.08); opacity: 1; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.animate-heart-float {
+    animation: heart-float 220ms ease-out;
+}
+
+.animate-count-pop {
+    animation: count-pop 220ms ease-out;
+}

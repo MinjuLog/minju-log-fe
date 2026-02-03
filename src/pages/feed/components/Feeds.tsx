@@ -9,6 +9,8 @@ import { getFeedList, getOnlineUserList } from "../api/feed";
 import FeedSkeleton from "./FeedSkeleton";
 import OnlineUsersPanel, { type OnlineUser } from "./OnlineUserPanel";
 import ConnectionStatus from "./ConnectionStatus";
+import WorkspaceLikePanel from "./LikePanel.tsx";
+import {getWorkspaceInfo} from "../api/workspace.ts";
 
 const PAGE_SIZE = 30;
 const WS_URL = import.meta.env.VITE_FEED_WS_HOST;
@@ -54,6 +56,7 @@ export default function Feeds() {
     const [feeds, setFeeds] = useState<FeedType[]>([]);
     const [totalElements, setTotalElements] = useState(0);
     const [onlineUserList, setOnlineUserList] = useState<OnlineUser[]>([]);
+    const [likeCount, setLikeCount] = useState(0);
     const [myName, setMyName] = useState<string>("unknown");
     const [loading, setLoading] = useState(true);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -82,6 +85,14 @@ export default function Feeds() {
                 }
                 setFeeds(feedList.result);
                 setTotalElements(feedList.result.length);
+
+                const res = await getWorkspaceInfo(1);
+                if (!res.ok) {
+                    alert(res.message);
+                    return;
+                }
+                setLikeCount(res.result.likeCount);
+
             } finally {
                 setLoading(false);
             }
@@ -300,6 +311,7 @@ export default function Feeds() {
                 <div className="lg:col-span-4">
                     <div className="sticky top-6 space-y-4">
                         <OnlineUsersPanel onlineUserList={onlineUserList} connected={connected} />
+                        <WorkspaceLikePanel connected={connected} clientRef={clientRef} likeCount={likeCount} setLikeCount={setLikeCount} />
                     </div>
                 </div>
             </div>
