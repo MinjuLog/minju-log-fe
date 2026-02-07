@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {createCustomEmoji, getCustomEmojis, getPreSignedUrl, uploadToPreSignedUrl} from "../api/feed";
 
 type CustomEmoji = {
