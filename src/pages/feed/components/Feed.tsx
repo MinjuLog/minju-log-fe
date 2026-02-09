@@ -1,7 +1,7 @@
 import React, {useRef, useState} from "react";
 import type FeedType from "../types/FeedType";
 import {formatKoreanDate} from "../../../utils/formatKoreanDate";
-import {getReactionPressedUsers} from "../api/feed.ts";
+import {deleteFeed, getReactionPressedUsers} from "../api/feed.ts";
 import EmojiPicker, {type EmojiClickData} from "emoji-picker-react";
 import {ReactionImagePicker} from "./ReactionImagePicker.tsx";
 
@@ -86,6 +86,8 @@ export default function Feed({ feed, setFeeds, client }: Props) {
     const isMine = userId === feed.authorId;
 
     const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [toast, setToast] = useState("");
 
     const handleReactionSubmit = ({
         reactionKey,
@@ -107,6 +109,23 @@ export default function Feed({ feed, setFeeds, client }: Props) {
         setFeeds((prev) =>
             prev.map((f) =>
                 applyOptimisticReaction(f, feed.id, reactionKey, emojiType, emoji, objectKey)));
+    };
+
+    const handleDeleteFeed = async () => {
+        if (isDeleting) return;
+        const confirmed = window.confirm("삭제하시겠습니까?");
+        if (!confirmed) return;
+        setIsDeleting(true);
+        const res = await deleteFeed(userId, feed.id);
+        if (!res.ok) {
+            setIsDeleting(false);
+            alert(res.message);
+            return;
+        }
+        setFeeds((prev) => prev.filter((f) => f.id !== feed.id));
+        setIsDeleting(false);
+        setToast("ok");
+        window.setTimeout(() => setToast(""), 2000);
     };
 
     const handleEmojiSelect = (emojiData: EmojiClickData) => {
@@ -209,8 +228,13 @@ export default function Feed({ feed, setFeeds, client }: Props) {
     return (
         <div
             key={feed.id}
-            className={`rounded-lg border p-4 bg-gray-100 ${isMine ? "border-gray-600" : "border-gray-200"}`}
+            className={`group rounded-lg border p-4 bg-gray-100 ${isMine ? "border-gray-600" : "border-gray-200"}`}
         >
+            {toast && (
+                <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-black text-white px-4 py-2 rounded-lg shadow-lg z-50 opacity-90">
+                    {toast}
+                </div>
+            )}
             <div className="mb-3 flex items-start justify-between">
                 <div className="flex items-center gap-3">
                     <div>
@@ -225,6 +249,25 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                         <div className="text-xs text-gray-500">{formatKoreanDate(feed.timestamp)}</div>
                     </div>
                 </div>
+                {isMine && (
+                    <button
+                        type="button"
+                        onClick={handleDeleteFeed}
+                        disabled={isDeleting}
+                        className="
+                            opacity-0 group-hover:opacity-100
+                            transition
+                            text-gray-400 hover:text-red-500
+                            text-sm
+                            px-2 py-1
+                            disabled:opacity-50 disabled:cursor-not-allowed
+                        "
+                        aria-label="Delete feed"
+                        title="삭제"
+                    >
+                        {isDeleting ? "..." : "X"}
+                    </button>
+                )}
             </div>
 
             <div className="mb-3 whitespace-pre-line text-[12px] leading-relaxed text-gray-800">
