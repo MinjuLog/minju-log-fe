@@ -19,6 +19,7 @@ const ROOM_ID = "1";
 const TOPIC_FEED = `/topic/room.${ROOM_ID}`;
 const TOPIC_REACTION = `/topic/room.${ROOM_ID}/reaction`;
 const TOPIC_PRESENCE = `/topic/room.${ROOM_ID}/connect`;
+const TOPIC_DELETE = `/topic/room.${ROOM_ID}/delete`;
 
 type ReactionEvent = {
     actorId: number;
@@ -29,6 +30,10 @@ type ReactionEvent = {
     emojiType?: "DEFAULT" | "CUSTOM" | null;
     objectKey?: string | null;
     emoji?: string | null;
+};
+
+type DeleteEvent = {
+    feedId: number;
 };
 
 function uniqByName(users: OnlineUser[]): OnlineUser[] {
@@ -207,6 +212,18 @@ export default function Feeds() {
             );
 
             // 접속/해제 구독 (delta)
+            // 삭제 구독
+            subsRef.current.push(
+                client.subscribe(TOPIC_DELETE, (msg: IMessage) => {
+                    const ev: DeleteEvent = JSON.parse(msg.body);
+                    setFeeds((prev) => {
+                        const next = prev.filter((f) => f.id !== ev.feedId);
+                        setTotalElements(next.length);
+                        return next;
+                    });
+                })
+            );
+
             subsRef.current.push(
                 client.subscribe(TOPIC_PRESENCE, (msg: IMessage) => {
                     const { type, userId: name } = JSON.parse(msg.body) as { type: "JOIN" | "LEAVE"; userId: string };

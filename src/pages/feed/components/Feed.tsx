@@ -122,6 +122,11 @@ export default function Feed({ feed, setFeeds, client }: Props) {
             alert(res.message);
             return;
         }
+        client.current?.publish({
+            destination: "/topic/room.1/delete",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ feedId: feed.id }),
+        });
         setFeeds((prev) => prev.filter((f) => f.id !== feed.id));
         setIsDeleting(false);
         setToast("ok");
