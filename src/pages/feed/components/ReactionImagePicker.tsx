@@ -38,14 +38,26 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
 
     const [open, setOpen] = useState(false);
     const [customEmojis, setCustomEmojis] = useState<CustomEmoji[]>([]);
+    const [isLoadingCustomEmojis, setIsLoadingCustomEmojis] = useState(false);
+    const [emojiLoadingMap, setEmojiLoadingMap] = useState<Record<string, boolean>>({});
 
     // 업로드 전 확인 모달 상태
     const [pending, setPending] = useState<PendingUpload | null>(null);
 
     const fetchCustomEmojis = async () => {
+        setIsLoadingCustomEmojis(true);
         const res = await getCustomEmojis();
-        if (!res?.ok) return;
+        if (!res?.ok) {
+            setIsLoadingCustomEmojis(false);
+            return;
+        }
         setCustomEmojis(res.result ?? []);
+        const nextLoading: Record<string, boolean> = {};
+        for (const e of res.result ?? []) {
+            nextLoading[e.reactionKey] = true;
+        }
+        setEmojiLoadingMap(nextLoading);
+        setIsLoadingCustomEmojis(false);
     };
 
     useEffect(() => {
@@ -173,10 +185,7 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
 
             <button
                 type="button"
-                onClick={async() => {
-                    setOpen((v) => !v);
-                    await fetchCustomEmojis()
-                }}
+                onClick={() => setOpen((v) => !v)}
                 className="
           flex items-center gap-1
           px-2 py-1
@@ -239,7 +248,18 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
                   max-h-48 overflow-auto
                 "
                             >
-                                {customEmojis.length === 0 ? (
+                                {isLoadingCustomEmojis ? (
+                                    <>
+                                        {Array.from({ length: 8 }).map((_, idx) => (
+                                            <div
+                                                key={`skeleton-${idx}`}
+                                                className="aspect-square rounded-lg border border-gray-100 bg-white animate-pulse"
+                                            >
+                                                <div className="h-full w-full bg-gray-200/70 rounded-lg" />
+                                            </div>
+                                        ))}
+                                    </>
+                                ) : customEmojis.length === 0 ? (
                                     <div className="col-span-4 py-8 text-center text-xs text-gray-400">
                                         커스텀 이모지가 없습니다.
                                     </div>
@@ -266,10 +286,19 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
                                                 alt={e.reactionKey}
                                                 className="h-full w-full object-contain p-2"
                                                 loading="lazy"
+                                                onLoad={() =>
+                                                    setEmojiLoadingMap((prev) => ({ ...prev, [e.reactionKey]: false }))
+                                                }
                                                 onError={(ev) => {
+                                                    setEmojiLoadingMap((prev) => ({ ...prev, [e.reactionKey]: false }));
                                                     (ev.currentTarget as HTMLImageElement).style.display = "none";
                                                 }}
                                             />
+                                            {emojiLoadingMap[e.reactionKey] && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+                                                    <div className="h-6 w-6 rounded-full bg-gray-300 animate-pulse" />
+                                                </div>
+                                            )}
                                             <div className="absolute bottom-0 left-0 right-0 bg-black/40 px-1 py-0.5 text-[10px] text-white truncate opacity-0 group-hover:opacity-100 transition">
                                                 {e.reactionKey}
                                             </div>
