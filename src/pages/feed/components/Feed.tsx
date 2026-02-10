@@ -1,17 +1,15 @@
-import React, {useRef, useState} from "react";
+import React, { useState } from "react";
 import type FeedType from "../types/FeedType";
-import {formatKoreanDate} from "../../../utils/formatKoreanDate";
-import {deleteFeed, getReactionPressedUsers} from "../api/feed.ts";
-import EmojiPicker, {type EmojiClickData} from "emoji-picker-react";
-import {ReactionImagePicker} from "./ReactionImagePicker.tsx";
+import { deleteFeed } from "../api/feed.ts";
+import FeedAttachments from "./FeedAttachments";
+import FeedCardHeader from "./FeedCardHeader";
+import FeedReactions from "./FeedReactions";
 
 interface Props {
     feed: FeedType;
     setFeeds: React.Dispatch<React.SetStateAction<FeedType[]>>;
     client: any;
 }
-
-const STATIC_HOST = import.meta.env.VITE_STATIC_HOST;
 
 const PRIORITY_KEY = "1f44d";
 
@@ -69,23 +67,10 @@ function applyOptimisticReaction(
     return { ...f, reactions: nextReactions };
 }
 
-// ---- 여기부터 추가: hover tooltip fetch ----
-type TooltipState = {
-    open: boolean;
-    x: number;
-    y: number;
-    title: string; // 예: 👍 3
-    content: string; // usernames
-    loading: boolean;
-    reactionType: "DEFAULT" | "CUSTOM",
-    objectKey?: string
-};
-
 export default function Feed({ feed, setFeeds, client }: Props) {
     const userId = Number(localStorage.getItem("userId"));
     const isMine = userId === feed.authorId;
 
-    const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [toast, setToast] = useState("");
 
@@ -133,103 +118,6 @@ export default function Feed({ feed, setFeeds, client }: Props) {
         window.setTimeout(() => setToast(""), 2000);
     };
 
-    const handleEmojiSelect = (emojiData: EmojiClickData) => {
-        handleReactionSubmit({ reactionKey: emojiData.unified, emoji: emojiData.emoji, emojiType: "DEFAULT" });
-        setEmojiPickerOpen(false);
-    };
-
-
-    // ---- tooltip state ----
-    const [tooltip, setTooltip] = useState<TooltipState>({
-        open: false,
-        x: 0,
-        y: 0,
-        title: "",
-        content: "",
-        loading: false,
-        reactionType: "DEFAULT",
-    });
-
-    const hoverTimerRef = useRef<number | null>(null);
-    const abortRef = useRef<AbortController | null>(null);
-
-    const closeTooltip = () => {
-        if (hoverTimerRef.current) {
-            window.clearTimeout(hoverTimerRef.current);
-            hoverTimerRef.current = null;
-        }
-        abortRef.current?.abort();
-        abortRef.current = null;
-
-        setTooltip((t) => ({ ...t, open: false, loading: false }));
-    };
-
-    const openTooltipWithFetch = (
-        e: React.MouseEvent<HTMLButtonElement>,
-        reactionKey: string,
-        count: number,
-        emojiLabel: string,
-        reactionType: "DEFAULT" | "CUSTOM",
-        objectKey?: string,
-    ) => {
-        if (hoverTimerRef.current) {
-            clearTimeout(hoverTimerRef.current);
-        }
-        const TOOLTIP_OFFSET_Y = 50;
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = rect.left + rect.width / 2;
-        const y = rect.top - TOOLTIP_OFFSET_Y;
-
-        setTooltip({
-            open: true,
-            x,
-            y,
-            title: `${emojiLabel} ${count}`,
-            content: "",
-            loading: true,
-            reactionType,
-            objectKey
-        });
-
-        hoverTimerRef.current = window.setTimeout(async () => {
-            try {
-                // 이전 요청 취소
-                abortRef.current?.abort();
-
-                abortRef.current = new AbortController();
-
-                const res = await getReactionPressedUsers(
-                    userId,
-                    feed.id,
-                    reactionKey,
-                    // ac.signal
-                );
-
-                if (!res.ok) {
-                    throw new Error("Failed to fetch reaction pressed");
-                }
-
-                const usernames: string[] = res.result.usernames;
-
-                setTooltip((t) => ({
-                    ...t,
-                    loading: false,
-                    content: usernames.length
-                        ? usernames.join(", ")
-                        : "아직 아무도 없어요",
-                }));
-            } catch (err: any) {
-                if (err.name === "AbortError") return; // 정상적인 취소
-
-                setTooltip((t) => ({
-                    ...t,
-                    loading: false,
-                    content: "불러오지 못했어요",
-                }));
-            }
-        }, 180);
-    };
-
     return (
         <div
             key={feed.id}
@@ -240,226 +128,25 @@ export default function Feed({ feed, setFeeds, client }: Props) {
                     {toast}
                 </div>
             )}
-            <div className="mb-3 flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                    <div>
-                        <div className="font-medium text-gray-900 flex items-center gap-2">
-                            {feed.authorName}
-                            {isMine && (
-                                <span className="text-xs text-blue-600 font-semibold bg-blue-50 px-2 py-0.5 rounded">
-                  내 피드
-                </span>
-                            )}
-                        </div>
-                        <div className="text-xs text-gray-500">{formatKoreanDate(feed.timestamp)}</div>
-                    </div>
-                </div>
-                {isMine && (
-                    <button
-                        type="button"
-                        onClick={handleDeleteFeed}
-                        disabled={isDeleting}
-                        className="
-                            opacity-0 group-hover:opacity-100
-                            transition
-                            text-gray-400 hover:text-red-500
-                            text-sm
-                            px-2 py-1
-                            disabled:opacity-50 disabled:cursor-not-allowed
-                        "
-                        aria-label="Delete feed"
-                        title="삭제"
-                    >
-                        {isDeleting ? "..." : "X"}
-                    </button>
-                )}
-            </div>
+            <FeedCardHeader
+                authorName={feed.authorName}
+                timestamp={feed.timestamp}
+                isMine={isMine}
+                isDeleting={isDeleting}
+                onDelete={handleDeleteFeed}
+            />
 
             <div className="mb-3 whitespace-pre-line text-[12px] leading-relaxed text-gray-800">
                 {feed.content}
             </div>
 
-            {feed.attachments.length > 0 && (
-                <div className="mb-4 grid grid-cols-2 gap-2">
-                    {feed.attachments.map((att) => {
-                        const url = STATIC_HOST + att.objectKey;
-                        const isImage = att.contentType?.startsWith("image/");
-                        const isVideo = att.contentType?.startsWith("video/");
+            <FeedAttachments attachments={feed.attachments} />
 
-                        return (
-                            <a
-                                key={att.objectKey}
-                                href={url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="block"
-                            >
-                                {isImage && (
-                                    <img
-                                        src={url}
-                                        alt={att.originalName ?? "attachment"}
-                                        className="w-full h-40 object-cover rounded-md border"
-                                        loading="lazy"
-                                    />
-                                )}
-
-                                {isVideo && (
-                                    <video
-                                        src={url}
-                                        controls
-                                        className="w-full h-40 rounded-md border object-cover"
-                                    />
-                                )}
-
-                                {!isImage && !isVideo && (
-                                    <div className="flex items-center h-10 rounded-md border bg-gray-50 hover:bg-gray-100">
-                    <span className="text-sm text-gray-600 truncate px-2">
-                      📎 {att.originalName ?? "파일 다운로드"}
-                    </span>
-                                    </div>
-                                )}
-                            </a>
-                        );
-                    })}
-                </div>
-            )}
-
-            <div className="flex items-center gap-2 flex-wrap relative">
-                {!feed.reactions.some((r) => r.reactionKey === "1f44d") && (
-                    <button
-                        onClick={() => handleReactionSubmit({ reactionKey:PRIORITY_KEY, emoji: "👍", emojiType: "DEFAULT" })}
-                        onMouseEnter={(e) =>
-                            openTooltipWithFetch(e, PRIORITY_KEY, 0, "👍", "DEFAULT")}
-                        onMouseLeave={closeTooltip}
-                        className="
-                                  flex items-center gap-1
-                                  px-2 py-1
-                                  rounded-full
-                                  border border-gray-200
-                                  bg-white
-                                  text-xs text-gray-500
-                                  hover:bg-gray-50
-                                  transition
-                                  cursor-pointer
-                                "
-                    >
-                        <span>👍</span>
-                        <span className="ml-0.5 font-medium">0</span>
-                    </button>
-                )}
-
-                {movePriorityFirst(feed.reactions ?? []).map((reaction) => {
-
-                    return (
-                        <button
-                            key={reaction.reactionKey}
-                            onClick={() =>
-                                handleReactionSubmit({
-                                    reactionKey: reaction.reactionKey,
-                                    emoji: reaction.emoji,
-                                    objectKey: reaction.objectKey,
-                                    emojiType: reaction.emojiType ?? "DEFAULT",
-                                })
-                            }
-                            onMouseEnter={(e) =>
-                                openTooltipWithFetch(
-                                    e,
-                                    reaction.reactionKey,
-                                    reaction.count,
-                                    reaction.emoji ?? "커스텀",
-                                    reaction.emojiType ?? "DEFAULT",
-                                    reaction.objectKey
-                                )
-                            }
-                            onMouseLeave={closeTooltip}
-                            className={`
-                                        flex items-center gap-1
-                                        px-2 py-1
-                                        rounded-full
-                                        border
-                                        text-xs
-                                        bg-white
-                                        transition
-                                        hover:bg-gray-50
-                                        cursor-pointer
-                                        ${reaction.pressedByMe ? "border-blue-400 bg-blue-50 text-blue-600" : "border-gray-200 text-gray-600"}
-                                      `}
-                            title={reaction.reactionKey}
-                        >
-                            {reaction.emoji && <span className="leading-none">{reaction.emoji}</span>}
-                            {!reaction.emoji && reaction.objectKey && (
-                                <img src={STATIC_HOST + reaction.objectKey} alt={reaction.reactionKey} className="w-4 h-4" />
-                            )}
-                            <span className="ml-0.5 font-medium">{reaction.count}</span>
-                        </button>
-                    );
-                })}
-
-
-
-                <div className="relative">
-                    <button
-                        onClick={() => setEmojiPickerOpen((v) => !v)}
-                        className="
-                                    flex items-center gap-1
-                                    px-2 py-1
-                                    rounded-full
-                                    border border-dashed border-gray-300
-                                    bg-white
-                                    text-xs text-gray-500
-                                    hover:bg-gray-50
-                                    transition
-                                    cursor-pointer
-                                "
-                    >
-                        <span className="text-sm">➕</span>
-                    </button>
-
-                    {/* 이모지 피커 */}
-                    {emojiPickerOpen && (
-                        <div className="absolute z-50 bottom-full mb-2">
-                            <EmojiPicker
-                                onEmojiClick={handleEmojiSelect}
-                                // theme="light"
-                                skinTonesDisabled={false}
-                                searchDisabled={false}
-                                width={320}
-                            />
-                        </div>
-                    )}
-                </div>
-
-                <ReactionImagePicker handleReactionSubmit = {handleReactionSubmit}/>
-
-
-                {/* ---- 검은 툴팁 ---- */}
-                {tooltip.open && (
-                    <div
-                        className="
-                                  fixed z-50
-                                  -translate-x-1/2 -translate-y-2
-                                  rounded-md
-                                  bg-black text-white
-                                  px-3 py-2
-                                  text-xs
-                                  shadow-lg
-                                  max-w-xs
-                                  pointer-events-none
-                                  whitespace-pre-line
-                                "
-                        style={{ left: tooltip.x, top: tooltip.y }}
-                    >
-                        { tooltip.reactionType === 'DEFAULT' ?
-                            (<div className="font-semibold mb-1">{tooltip.title}</div> )
-                            :
-                            (<img src={STATIC_HOST + tooltip.objectKey} alt={tooltip.title} className="w-4 h-4" />)
-                        }
-                        <div className="opacity-90">
-                            {tooltip.loading ? "불러오는 중..." : (tooltip.content || "아직 아무도 없어요")}
-                        </div>
-                    </div>
-                )}
-            </div>
+            <FeedReactions
+                feedId={feed.id}
+                reactions={feed.reactions ?? []}
+                onReact={handleReactionSubmit}
+            />
         </div>
     );
 }

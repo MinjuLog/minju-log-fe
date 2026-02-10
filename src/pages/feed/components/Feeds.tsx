@@ -2,15 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { Client, type IFrame, type IMessage, type StompSubscription } from "@stomp/stompjs";
-import Feed from "./Feed";
-import { FeedInput } from "./FeedInput";
 import type FeedType from "../types/FeedType";
 import { getFeedList, getOnlineUserList } from "../api/feed";
 import FeedSkeleton from "./FeedSkeleton";
-import OnlineUsersPanel, { type OnlineUser } from "./OnlineUserPanel";
-import ConnectionStatus from "./ConnectionStatus";
-import WorkspaceLikePanel from "./LikePanel.tsx";
-import {getWorkspaceInfo} from "../api/workspace.ts";
+import { type OnlineUser } from "./OnlineUserPanel";
+import { getWorkspaceInfo } from "../api/workspace.ts";
+import FeedList from "./FeedList";
+import FeedPageHeader from "./FeedPageHeader";
+import FeedSidebar from "./FeedSidebar";
 
 const PAGE_SIZE = 30;
 const WS_URL = import.meta.env.VITE_FEED_WS_HOST;
@@ -276,7 +275,6 @@ export default function Feeds() {
         };
     }, [client, userId, myName]);
 
-    const canLoadMore = visibleCount < totalElements;
     const handleLoadMore = () => {
         setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, totalElements));
     };
@@ -285,52 +283,26 @@ export default function Feeds() {
 
     return (
         <div className="flex-1">
-            <div className="mb-6 flex items-start justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">전체 {totalElements}</h1>
-                    <p className="mt-1 text-sm text-gray-500">실시간 피드와 좋아요 업데이트를 수신합니다.</p>
-                </div>
-                <ConnectionStatus connected={connected} />
-            </div>
+            <FeedPageHeader totalElements={totalElements} connected={connected} />
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                <div className="lg:col-span-8 space-y-4">
-                    <FeedInput client={clientRef} connected={connected} />
+                <FeedList
+                    feeds={feeds}
+                    setFeeds={setFeeds}
+                    clientRef={clientRef}
+                    connected={connected}
+                    visibleCount={visibleCount}
+                    totalElements={totalElements}
+                    onLoadMore={handleLoadMore}
+                />
 
-                    {feeds.slice(0, visibleCount).map((message) => (
-                        <Feed
-                            key={message.id}
-                            feed={message}
-                            setFeeds={setFeeds}
-                            client={clientRef}
-                        />
-                    ))}
-
-                    {totalElements === 0 && !loading && (
-                        <div className="text-center text-gray-500 text-sm py-8 border border-dashed border-gray-200 rounded-lg">
-                            아직 등록된 피드가 없습니다.
-                        </div>
-                    )}
-
-                    {canLoadMore && (
-                        <div className="flex justify-center mt-6">
-                            <button
-                                type="button"
-                                onClick={handleLoadMore}
-                                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400"
-                            >
-                                더 불러오기 <span className="text-gray-400">({visibleCount}/{totalElements})</span>
-                            </button>
-                        </div>
-                    )}
-                </div>
-
-                <div className="lg:col-span-4">
-                    <div className="sticky top-6 space-y-4">
-                        <OnlineUsersPanel onlineUserList={onlineUserList} connected={connected} />
-                        <WorkspaceLikePanel connected={connected} clientRef={clientRef} likeCount={likeCount} setLikeCount={setLikeCount} />
-                    </div>
-                </div>
+                <FeedSidebar
+                    onlineUserList={onlineUserList}
+                    connected={connected}
+                    likeCount={likeCount}
+                    setLikeCount={setLikeCount}
+                    clientRef={clientRef}
+                />
             </div>
         </div>
     );
