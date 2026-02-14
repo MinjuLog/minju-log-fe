@@ -33,7 +33,7 @@ export default function WorkspaceLikePanel({
         if (!connected) return;
         if (!clientRef.current) return;
 
-        const sub = clientRef.current.subscribe(`/topic/room.1/like`, (msg: any) => {
+        const sub = clientRef.current.subscribe(`/topic/workspace.1/like`, (msg: any) => {
             const payload = JSON.parse(msg.body);
             const nextCount = payload.likeCount ?? payload.count ?? payload;
 
@@ -86,7 +86,7 @@ export default function WorkspaceLikePanel({
                 // 지금처럼 클라이언트가 /topic에 publish 하는 건 서버 설정에서 막힐 수 있음.
                 // 가능하면 서버에서 broadcast 하도록 바꾸는 걸 권장.
                 clientRef.current.publish({
-                    destination: "/topic/room.1/like",
+                    destination: "/topic/workspace.1/like",
                     headers: { "content-type": "application/json" },
                     body: JSON.stringify({ actorId: userId, likeCount: res.result.likeCount }),
                 });

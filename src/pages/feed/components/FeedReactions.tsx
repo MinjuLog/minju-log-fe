@@ -8,9 +8,9 @@ const STATIC_HOST = import.meta.env.VITE_STATIC_HOST;
 const PRIORITY_KEY = "1f44d";
 
 type ReactionPayload = {
-    reactionKey: string;
+    emojiKey: string;
     emojiType: "DEFAULT" | "CUSTOM";
-    emoji?: string;
+    unicode?: string;
     objectKey?: string;
 };
 
@@ -32,8 +32,8 @@ type Props = {
 };
 
 function movePriorityFirst(reactions: FeedType["reactions"]) {
-    const a = reactions.filter((r) => r.reactionKey === PRIORITY_KEY);
-    const b = reactions.filter((r) => r.reactionKey !== PRIORITY_KEY);
+    const a = reactions.filter((r) => r.emojiKey === PRIORITY_KEY);
+    const b = reactions.filter((r) => r.emojiKey !== PRIORITY_KEY);
     return [...a, ...b];
 }
 
@@ -67,8 +67,8 @@ export default function FeedReactions({ feedId, reactions, onReact }: Props) {
 
     const openTooltipWithFetch = (
         e: React.MouseEvent<HTMLButtonElement>,
-        reactionKey: string,
-        count: number,
+        emojiKey: string,
+        emojiCount: number,
         emojiLabel: string,
         reactionType: "DEFAULT" | "CUSTOM",
         objectKey?: string
@@ -85,7 +85,7 @@ export default function FeedReactions({ feedId, reactions, onReact }: Props) {
             open: true,
             x,
             y,
-            title: `${emojiLabel} ${count}`,
+            title: `${emojiLabel} ${emojiCount}`,
             content: "",
             loading: true,
             reactionType,
@@ -101,7 +101,7 @@ export default function FeedReactions({ feedId, reactions, onReact }: Props) {
                 const res = await getReactionPressedUsers(
                     userId,
                     feedId,
-                    reactionKey
+                    emojiKey
                 );
 
                 if (!res.ok) {
@@ -128,18 +128,18 @@ export default function FeedReactions({ feedId, reactions, onReact }: Props) {
     };
 
     const handleEmojiSelect = (emojiData: EmojiClickData) => {
-        onReact({ reactionKey: emojiData.unified, emoji: emojiData.emoji, emojiType: "DEFAULT" });
+        onReact({ emojiKey: emojiData.unified, unicode: emojiData.emoji, emojiType: "DEFAULT" });
         setEmojiPickerOpen(false);
     };
 
     const orderedReactions = movePriorityFirst(reactions ?? []);
-    const hasPriority = reactions.some((r) => r.reactionKey === PRIORITY_KEY);
+    const hasPriority = reactions.some((r) => r.emojiKey === PRIORITY_KEY);
 
     return (
         <div className="flex items-center gap-2 flex-wrap relative">
             {!hasPriority && (
                 <button
-                    onClick={() => onReact({ reactionKey: PRIORITY_KEY, emoji: "👍", emojiType: "DEFAULT" })}
+                    onClick={() => onReact({ emojiKey: PRIORITY_KEY, unicode: "👍", emojiType: "DEFAULT" })}
                     onMouseEnter={(e) => openTooltipWithFetch(e, PRIORITY_KEY, 0, "👍", "DEFAULT")}
                     onMouseLeave={closeTooltip}
                     className="
@@ -161,11 +161,11 @@ export default function FeedReactions({ feedId, reactions, onReact }: Props) {
 
             {orderedReactions.map((reaction) => (
                 <button
-                    key={reaction.reactionKey}
+                    key={reaction.emojiKey}
                     onClick={() =>
                         onReact({
-                            reactionKey: reaction.reactionKey,
-                            emoji: reaction.emoji ?? undefined,
+                            emojiKey: reaction.emojiKey,
+                            unicode: reaction.unicode ?? undefined,
                             objectKey: reaction.objectKey ?? undefined,
                             emojiType: reaction.emojiType ?? "DEFAULT",
                         })
@@ -173,9 +173,9 @@ export default function FeedReactions({ feedId, reactions, onReact }: Props) {
                     onMouseEnter={(e) =>
                         openTooltipWithFetch(
                             e,
-                            reaction.reactionKey,
-                            reaction.count,
-                            reaction.emoji ?? "커스텀",
+                            reaction.emojiKey,
+                            reaction.emojiCount,
+                            reaction.unicode ?? "커스텀",
                             reaction.emojiType ?? "DEFAULT",
                             reaction.objectKey ?? undefined
                         )
@@ -193,13 +193,13 @@ export default function FeedReactions({ feedId, reactions, onReact }: Props) {
                         cursor-pointer
                         ${reaction.pressedByMe ? "border-blue-400 bg-blue-50 text-blue-600" : "border-gray-200 text-gray-600"}
                     `}
-                    title={reaction.reactionKey}
+                    title={reaction.emojiKey}
                 >
-                    {reaction.emoji && <span className="leading-none">{reaction.emoji}</span>}
-                    {!reaction.emoji && reaction.objectKey && (
-                        <img src={STATIC_HOST + reaction.objectKey} alt={reaction.reactionKey} className="w-4 h-4" />
+                    {reaction.unicode && <span className="leading-none">{reaction.unicode}</span>}
+                    {!reaction.unicode && reaction.objectKey && (
+                        <img src={STATIC_HOST + reaction.objectKey} alt={reaction.emojiKey} className="w-4 h-4" />
                     )}
-                    <span className="ml-0.5 font-medium">{reaction.count}</span>
+                    <span className="ml-0.5 font-medium">{reaction.emojiCount}</span>
                 </button>
             ))}
 
@@ -234,7 +234,11 @@ export default function FeedReactions({ feedId, reactions, onReact }: Props) {
                 )}
             </div>
 
-            <ReactionImagePicker handleReactionSubmit={onReact} />
+            <ReactionImagePicker
+                handleReactionSubmit={({ emojiKey, objectKey, emojiType }) =>
+                    onReact({ emojiKey, objectKey, emojiType })
+                }
+            />
 
             {/* ---- 검은 툴팁 ---- */}
             {tooltip.open && (

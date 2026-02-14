@@ -122,11 +122,11 @@ export const uploadToPreSignedUrl = async (
 export const getReactionPressedUsers = async (
     userId: number,
     feedId: number,
-    reactionKey: string,
+    emojiKey: string,
 ): Promise<GetReactionPressedUsersResponse | ErrorResponse> => {
     try {
         const res = await api.get(
-            `/api/feeds/${feedId}/reactions/${reactionKey}/users`,
+            `/api/feeds/${feedId}/reactions/${emojiKey}/users`,
             {
                 headers: {
                     "X-User-Id": userId,
@@ -159,9 +159,18 @@ export const getCustomEmojis = async (
         const res = await api.get(
             `/api/custom-emojis`,
         );
+        const rawList = Array.isArray(res.data?.customEmojis)
+            ? res.data.customEmojis
+            : Array.isArray(res.data)
+                ? res.data
+                : [];
+        const mapped = rawList.map((item: { emojiKey?: string; reactionKey?: string; objectKey: string }) => ({
+            emojiKey: item.emojiKey ?? item.reactionKey ?? "",
+            objectKey: item.objectKey,
+        }));
         return {
             ok: true,
-            result: res.data.customEmojis,
+            result: mapped,
         }
     } catch (error) {
         if (axios.isAxiosError(error)) {
@@ -179,19 +188,31 @@ export const getCustomEmojis = async (
 }
 
 export const createCustomEmoji = async (
-    { reactionKey,  objectKey }: { reactionKey: string; objectKey: string },
+    { emojiKey, objectKey }: { emojiKey: string; objectKey: string },
 ): Promise<GetCustomEmojiResponse | ErrorResponse> => {
     try {
         const res = await api.post(
             `/api/custom-emojis`,
             {
                 objectKey,
-                reactionKey,
+                emojiKey,
             }
         );
+        const created = res.data?.customEmoji ?? res.data;
+        const parsedEmojiKey = created?.emojiKey ?? created?.reactionKey;
+        const parsedObjectKey = created?.objectKey;
+        if (!parsedEmojiKey || !parsedObjectKey) {
+            return {
+                ok: false,
+                message: "커스텀 이모지 응답 형식이 올바르지 않습니다.",
+            };
+        }
         return {
             ok: true,
-            result: res.data.customEmoji,
+            result: [{
+                emojiKey: parsedEmojiKey,
+                objectKey: parsedObjectKey,
+            }],
         }
     } catch (error) {
         if (axios.isAxiosError(error)) {

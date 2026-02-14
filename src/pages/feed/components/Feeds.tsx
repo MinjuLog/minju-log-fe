@@ -10,25 +10,28 @@ import { getWorkspaceInfo } from "../api/workspace.ts";
 import FeedList from "./FeedList";
 import FeedPageHeader from "./FeedPageHeader";
 import FeedSidebar from "./FeedSidebar";
+import { normalizeFeed } from "../utils/feedNormalizer";
 
 const PAGE_SIZE = 30;
 const WS_URL = import.meta.env.VITE_FEED_WS_HOST;
-const ROOM_ID = "1";
+const workspace_ID = "1";
 
-const TOPIC_FEED = `/topic/room.${ROOM_ID}`;
-const TOPIC_REACTION = `/topic/room.${ROOM_ID}/reaction`;
-const TOPIC_PRESENCE = `/topic/room.${ROOM_ID}/connect`;
-const TOPIC_DELETE = `/topic/room.${ROOM_ID}/delete`;
+const TOPIC_FEED = `/topic/workspace.${workspace_ID}`;
+const TOPIC_REACTION = `/topic/workspace.${workspace_ID}/reaction`;
+const TOPIC_PRESENCE = `/topic/workspace.${workspace_ID}/connect`;
+const TOPIC_DELETE = `/topic/workspace.${workspace_ID}/delete`;
 
 type ReactionEvent = {
     actorId: number;
     pressedByMe: boolean;
     feedId: number;
-    key: string;
-    count: number;
+    emojiKey?: string | null;
+    key?: string | null;
+    emojiCount?: number | null;
+    count?: number | null;
     emojiType?: "DEFAULT" | "CUSTOM" | null;
     objectKey?: string | null;
-    emoji?: string | null;
+    unicode?: string | null;
 };
 
 type DeleteEvent = {
@@ -87,8 +90,9 @@ export default function Feeds() {
                     alert(feedList.message);
                     return;
                 }
-                setFeeds(feedList.result);
-                setTotalElements(feedList.result.length);
+                const normalized = feedList.result.map(normalizeFeed);
+                setFeeds(normalized);
+                setTotalElements(normalized.length);
 
                 const res = await getWorkspaceInfo(1);
                 if (!res.ok) {
@@ -153,7 +157,7 @@ export default function Feeds() {
                 client.subscribe(TOPIC_FEED, (msg: IMessage) => {
                     const payload = JSON.parse(msg.body);
                     setFeeds((prev) => {
-                        const next = [payload, ...prev];
+                        const next = [normalizeFeed(payload), ...prev];
                         setTotalElements(next.length);
                         return next;
                     });
@@ -165,41 +169,42 @@ export default function Feeds() {
                 client.subscribe(TOPIC_REACTION, (msg: IMessage) => {
                     const ev: ReactionEvent = JSON.parse(msg.body);
                     if (ev.actorId === Number(userId)) return;
+                    const eventEmojiKey = ev.emojiKey ?? ev.key;
+                    if (!eventEmojiKey) return;
+                    const eventEmojiCount = ev.emojiCount ?? ev.count ?? 0;
 
                     setFeeds((prev: FeedType[]) =>
                         prev.map((feed) => {
                             if (feed.id !== ev.feedId) return feed;
 
-                            const exists = feed.reactions.some((r) => r.reactionKey === ev.key);
+                            const exists = feed.reactions.some((r) => r.emojiKey === eventEmojiKey);
 
                             const nextReactions = exists
-                                ? ev.count === 0
-                                    // ✅ count가 0이면 제거
-                                    ? feed.reactions.filter((r) => r.reactionKey !== ev.key)
+                                ? eventEmojiCount === 0
+                                    ? feed.reactions.filter((r) => r.emojiKey !== eventEmojiKey)
                                     // ✅ 아니면 서버 값으로 갱신
                                     : feed.reactions.map((r) =>
-                                        r.reactionKey === ev.key
+                                        r.emojiKey === eventEmojiKey
                                             ? {
                                                 ...r,
-                                                count: ev.count,
+                                                emojiCount: eventEmojiCount,
                                                 // 다른 유저 이벤트 → 내 isPressed는 유지
                                                 emojiType: ev.emojiType ?? r.emojiType,
                                                 objectKey: ev.objectKey ?? r.objectKey,
-                                                emoji: ev.emoji ?? r.emoji,
+                                                unicode: ev.unicode ?? r.unicode,
                                             }
                                             : r
                                     )
-                                : ev.count > 0
-                                    // ✅ 새 reaction인데 count > 0일 때만 추가
+                                : eventEmojiCount > 0
                                     ? [
                                         ...feed.reactions,
                                         {
-                                            reactionKey: ev.key,
-                                            count: ev.count,
+                                            emojiKey: eventEmojiKey,
+                                            emojiCount: eventEmojiCount,
                                             pressedByMe: false,
-                                            emojiType: ev.emojiType ?? null,
+                                            emojiType: ev.emojiType ?? "DEFAULT",
                                             objectKey: ev.objectKey ?? null,
-                                            emoji: ev.emoji ?? null,
+                                            unicode: ev.unicode ?? null,
                                         },
                                     ]
                                     : feed.reactions; // count === 0이면 아무 것도 안 함
