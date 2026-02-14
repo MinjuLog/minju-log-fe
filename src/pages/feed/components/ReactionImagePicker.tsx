@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {createCustomEmoji, getCustomEmojis, getPreSignedUrl, uploadToPreSignedUrl} from "../api/feed";
 
 type CustomEmoji = {
-    reactionKey: string;
+    emojiKey: string;
     objectKey: string;
 };
 
@@ -11,18 +11,18 @@ const STATIC_HOST = import.meta.env.VITE_STATIC_HOST;
 type Props = {
     title?: string;
     onSelect?: (emoji: CustomEmoji) => void;
-    handleReactionSubmit: ({ reactionKey, objectKey, emojiType }: { reactionKey: string, objectKey: string, emojiType: "DEFAULT" | "CUSTOM" }) => void;
+    handleReactionSubmit: ({ emojiKey, objectKey, emojiType }: { emojiKey: string, objectKey: string, emojiType: "DEFAULT" | "CUSTOM" }) => void;
 };
 
 type PendingUpload = {
     file: File;
     previewUrl: string;
     uploading: boolean;
-    reactionKey: string;
+    emojiKey: string;
     error?: string;
 };
 
-const makeDefaultReactionKey = (fileName: string) => {
+const makeDefaultEmojiKey = (fileName: string) => {
     const base = fileName.replace(/\.[^/.]+$/, ""); // 확장자 제거
     return base
         .trim()
@@ -54,7 +54,7 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
         setCustomEmojis(res.result ?? []);
         const nextLoading: Record<string, boolean> = {};
         for (const e of res.result ?? []) {
-            nextLoading[e.reactionKey] = true;
+            nextLoading[e.emojiKey] = true;
         }
         setEmojiLoadingMap(nextLoading);
         setIsLoadingCustomEmojis(false);
@@ -83,7 +83,7 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
             file,
             previewUrl,
             uploading: false,
-            reactionKey: makeDefaultReactionKey(file.name),
+            emojiKey: makeDefaultEmojiKey(file.name),
         });
 
         e.target.value = "";
@@ -98,7 +98,7 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
     const confirmUpload = async () => {
         if (!pending) return;
 
-        const rk = pending.reactionKey.trim();
+        const rk = pending.emojiKey.trim();
 
         // 규칙 위반 → "다시 시도" 안내
         if (!rk || !/^[a-z0-9_]{1,64}$/i.test(rk)) {
@@ -114,7 +114,7 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
             return;
         }
 
-        setPending((p) => (p ? { ...p, uploading: true, error: undefined, reactionKey: rk } : p));
+        setPending((p) => (p ? { ...p, uploading: true, error: undefined, emojiKey: rk } : p));
 
         // 1) presigned 받기
         const presigned = await getPreSignedUrl("CUSTOM_EMOJI", pending.file.name);
@@ -151,14 +151,14 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
         }
 
         // 3) 서버에 커스텀 이모지 등록
-        const created = await createCustomEmoji({ objectKey, reactionKey: rk });
+        const created = await createCustomEmoji({ objectKey, emojiKey: rk });
         if (!created.ok) {
             setPending((p) =>
                 p
                     ? {
                         ...p,
                         uploading: false,
-                        error: "이모지 ID가 중복입니다.",
+                        error: created.message || "이모지 등록에 실패했습니다.",
                     }
                     : p
             );
@@ -266,12 +266,12 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
                                 ) : (
                                     customEmojis.map((e) => (
                                         <button
-                                            key={e.reactionKey}
+                                            key={e.emojiKey}
                                             type="button"
                                             onClick={() => {
                                                 onSelect?.(e);
                                                 setOpen(false);
-                                                handleReactionSubmit({ reactionKey: e.reactionKey, objectKey: e.objectKey, emojiType: "CUSTOM" });
+                                                handleReactionSubmit({ emojiKey: e.emojiKey, objectKey: e.objectKey, emojiType: "CUSTOM" });
                                             }}
                                             className="
                                                 group relative aspect-square overflow-hidden rounded-lg
@@ -279,28 +279,28 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
                                                 hover:ring-2 hover:ring-gray-300
                                                 transition
                                               "
-                                            title={e.reactionKey}
+                                            title={e.emojiKey}
                                         >
                                             <img
                                                 src={toUrl(e.objectKey)}
-                                                alt={e.reactionKey}
+                                                alt={e.emojiKey}
                                                 className="h-full w-full object-contain p-2"
                                                 loading="lazy"
                                                 onLoad={() =>
-                                                    setEmojiLoadingMap((prev) => ({ ...prev, [e.reactionKey]: false }))
+                                                    setEmojiLoadingMap((prev) => ({ ...prev, [e.emojiKey]: false }))
                                                 }
                                                 onError={(ev) => {
-                                                    setEmojiLoadingMap((prev) => ({ ...prev, [e.reactionKey]: false }));
+                                                    setEmojiLoadingMap((prev) => ({ ...prev, [e.emojiKey]: false }));
                                                     (ev.currentTarget as HTMLImageElement).style.display = "none";
                                                 }}
                                             />
-                                            {emojiLoadingMap[e.reactionKey] && (
+                                            {emojiLoadingMap[e.emojiKey] && (
                                                 <div className="absolute inset-0 flex items-center justify-center bg-white/70">
                                                     <div className="h-6 w-6 rounded-full bg-gray-300 animate-pulse" />
                                                 </div>
                                             )}
                                             <div className="absolute bottom-0 left-0 right-0 bg-black/40 px-1 py-0.5 text-[10px] text-white truncate opacity-0 group-hover:opacity-100 transition">
-                                                {e.reactionKey}
+                                                {e.emojiKey}
                                             </div>
                                         </button>
                                     ))
@@ -341,20 +341,20 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
                                 <div className="mt-3">
                                     <label className="block text-xs text-gray-700 mb-1">이모지 ID</label>
                                     <input
-                                        value={pending.reactionKey}
+                                        value={pending.emojiKey}
                                         disabled={pending.uploading}
                                         onChange={(e) => {
                                             const v = e.target.value;
-                                            setPending((p) => (p ? { ...p, reactionKey: v } : p));
+                                            setPending((p) => (p ? { ...p, emojiKey: v } : p));
                                         }}
                                         onBlur={() => {
                                             // blur 시 안전하게 정규화(선택)
                                             setPending((p) => {
                                                 if (!p) return p;
-                                                const normalized = p.reactionKey
+                                                const normalized = p.emojiKey
                                                     .trim()
                                                     .slice(0, 64);
-                                                return { ...p, reactionKey: normalized };
+                                                return { ...p, emojiKey: normalized };
                                             });
                                         }}
                                         placeholder="예: party_parrot"
@@ -383,7 +383,7 @@ export function ReactionImagePicker({ title = "커스텀 이모지 선택", onSe
                                     <button
                                         type="button"
                                         onClick={confirmUpload}
-                                        disabled={pending.uploading || !pending.reactionKey.trim()}
+                                        disabled={pending.uploading || !pending.emojiKey.trim()}
                                         className="flex-1 rounded-xl bg-gray-900 px-3 py-2 text-xs text-white hover:bg-black disabled:bg-gray-300 disabled:hover:bg-gray-300"
                                     >
                                         {pending.uploading ? "업로드 중..." : "확인"}

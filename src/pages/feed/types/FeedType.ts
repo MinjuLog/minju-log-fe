@@ -11,11 +11,11 @@ export default interface FeedType {
         size: number;
     }[];
     reactions: {
-        reactionKey: string;
+        emojiKey: string;
         emojiType: "DEFAULT" | "CUSTOM" | null;
         objectKey?: string | null;
-        emoji?: string | null;
-        count: number;
+        unicode?: string | null;
+        emojiCount: number;
         pressedByMe: boolean;
     }[]
 }

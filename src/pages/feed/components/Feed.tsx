@@ -14,8 +14,8 @@ interface Props {
 const PRIORITY_KEY = "1f44d";
 
 function movePriorityFirst(reactions: any[]) {
-    const a = reactions.filter(r => r.reactionKey === PRIORITY_KEY);
-    const b = reactions.filter(r => r.reactionKey !== PRIORITY_KEY);
+    const a = reactions.filter(r => r.emojiKey === PRIORITY_KEY);
+    const b = reactions.filter(r => r.emojiKey !== PRIORITY_KEY);
     return [...a, ...b];
 }
 
@@ -23,40 +23,40 @@ function movePriorityFirst(reactions: any[]) {
 function applyOptimisticReaction(
     f: FeedType,
     feedId: number,
-    reactionKey: string,
+    emojiKey: string,
     emojiType: "DEFAULT" | "CUSTOM",
-    emoji?: string,
+    unicode?: string,
     objectKey?: string
 ): FeedType {
     if (f.id !== feedId) return f;
 
     const reactions = f.reactions ?? [];
-    const idx = reactions.findIndex((r) => r.reactionKey === reactionKey);
+    const idx = reactions.findIndex((r) => r.emojiKey === emojiKey);
     let nextReactions: typeof reactions;
 
     if (idx === -1) {
         nextReactions = [
             ...reactions,
             {
-                reactionKey,
+                emojiKey,
                 emojiType,
                 objectKey,
-                emoji,
-                count: 1,
+                unicode,
+                emojiCount: 1,
                 pressedByMe: true,
             },
         ];
     } else {
         const target = reactions[idx];
         const nextPressed = !target.pressedByMe;
-        const nextCount = nextPressed ? target.count + 1 : Math.max(0, target.count - 1);
+        const nextCount = nextPressed ? target.emojiCount + 1 : Math.max(0, target.emojiCount - 1);
 
         // ✅ count 0이면 삭제
         if (nextCount === 0) {
-            nextReactions = reactions.filter((r) => r.reactionKey !== reactionKey);
+            nextReactions = reactions.filter((r) => r.emojiKey !== emojiKey);
         } else {
             nextReactions = reactions.map((r) =>
-                r.reactionKey === reactionKey ? { ...r, pressedByMe: nextPressed, count: nextCount } : r
+                r.emojiKey === emojiKey ? { ...r, pressedByMe: nextPressed, emojiCount: nextCount } : r
             );
         }
     }
@@ -75,25 +75,25 @@ export default function Feed({ feed, setFeeds, client }: Props) {
     const [toast, setToast] = useState("");
 
     const handleReactionSubmit = ({
-        reactionKey,
-        emoji,
+        emojiKey,
+        unicode,
         objectKey,
         emojiType,
     }: {
-        reactionKey: string,
-        emoji?: string | undefined,
+        emojiKey: string,
+        unicode?: string | undefined,
         objectKey?: string | undefined
         emojiType: "DEFAULT" | "CUSTOM",
     }) => {
         client.current.publish({
             destination: "/app/feed/reaction",
             headers: { "content-type": "application/json" },
-            body: JSON.stringify({ feedId: feed.id, key: reactionKey, emoji, objectKey }),
+            body: JSON.stringify({ feedId: feed.id, emojiKey, unicode, objectKey }),
         });
 
         setFeeds((prev) =>
             prev.map((f) =>
-                applyOptimisticReaction(f, feed.id, reactionKey, emojiType, emoji, objectKey)));
+                applyOptimisticReaction(f, feed.id, emojiKey, emojiType, unicode, objectKey)));
     };
 
     const handleDeleteFeed = async () => {
@@ -108,7 +108,7 @@ export default function Feed({ feed, setFeeds, client }: Props) {
             return;
         }
         client.current?.publish({
-            destination: "/topic/room.1/delete",
+            destination: "/topic/workspace.1/delete",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({ feedId: feed.id }),
         });
