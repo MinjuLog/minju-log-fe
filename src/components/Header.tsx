@@ -1,9 +1,9 @@
-import {Link, useLocation} from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const tabs: {
-    href: string,
-    text: string,
-    isHighlighted?: boolean,
+    href: string;
+    text: string;
+    isHighlighted?: boolean;
 }[] = [
     // { href: "/", text: "홈", },
     { href: "/guide", text: "이용 방법", isHighlighted: true },
@@ -11,25 +11,29 @@ const tabs: {
     { href: "/around", text: "다른 지역은?", isHighlighted: true },
     { href: "/dashboard", text: "진행로그", isHighlighted: true },
     { href: "/feed", text: "실시간 피드", isHighlighted: true },
+    { href: "/voice", text: "음성 채팅방", isHighlighted: true },
 ]
 
 export function Header() {
     const location = useLocation();
+
     return (
         <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
             <div className="container mx-auto px-4 max-w-7xl">
                 <div className="flex items-center justify-between h-16">
-                    {/* Logo and Navigation */}
                     <div className="flex items-center gap-8">
                         <Link
                             to="/"
                             className="text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-red-600 to-pink-500 bg-clip-text text-transparent select-none hover:opacity-90 transition-opacity"
                         >
-                            민주로그
+                            MINJU LOG
                         </Link>
+
                         <nav className="hidden md:flex items-center gap-6">
                             {tabs.map((tab) => {
-                                const isActive = location.pathname.startsWith(tab.href) || (tab.href === '/around' && location.pathname.startsWith('/columns'));
+                                const isActive =
+                                    location.pathname.startsWith(tab.href) ||
+                                    (tab.href === "/around" && location.pathname.startsWith("/columns"));
 
                                 return (
                                     <Link
@@ -42,10 +46,9 @@ export function Header() {
                                         }`}
                                     >
                                         {tab.isHighlighted && (
-                                            <span
-                                                className="inline-flex items-center justify-center w-5 h-5 mr-1 rounded-full bg-red-500 text-white text-xs font-bold">
-                                            N
-                                          </span>
+                                            <span className="inline-flex items-center justify-center w-5 h-5 mr-1 rounded-full bg-red-500 text-white text-xs font-bold">
+                                                N
+                                            </span>
                                         )}
                                         {tab.text}
                                     </Link>
@@ -54,26 +57,9 @@ export function Header() {
                         </nav>
                     </div>
 
-                    {/* Right side actions */}
-                    <div className="flex items-center gap-3">
-                        {/*<button className="p-2 hover:bg-secondary rounded-lg transition-colors">*/}
-                        {/*    <Search className="w-5 h-5 text-muted-foreground" />*/}
-                        {/*</button>*/}
-                        {/*<button className="p-2 hover:bg-secondary rounded-lg transition-colors">*/}
-                        {/*    <Bell className="w-5 h-5 text-muted-foreground" />*/}
-                        {/*</button>*/}
-                        {/*<button className="p-2 hover:bg-secondary rounded-lg transition-colors">*/}
-                        {/*    <Moon className="w-5 h-5 text-muted-foreground" />*/}
-                        {/*</button>*/}
-                        {/*<button className="p-2 hover:bg-secondary rounded-lg transition-colors">*/}
-                        {/*    <LogIn className="w-5 h-5 text-muted-foreground" />*/}
-                        {/*</button>*/}
-                        {/*<Button className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium px-6">*/}
-                        {/*    나도 질문하기*/}
-                        {/*</Button>*/}
-                    </div>
+                    <div className="flex items-center gap-3" />
                 </div>
             </div>
         </header>
-    )
+    );
 }
