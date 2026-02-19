@@ -26,7 +26,7 @@ export function Header() {
                             to="/"
                             className="text-3xl font-extrabold bg-gradient-to-r from-blue-600 via-red-600 to-pink-500 bg-clip-text text-transparent select-none hover:opacity-90 transition-opacity"
                         >
-                            MINJU LOG
+                            민주로그
                         </Link>
 
                         <nav className="hidden md:flex items-center gap-6">
