@@ -50,8 +50,8 @@ function uniqByName(users: OnlineUser[]): OnlineUser[] {
 }
 
 function sortMeFirst(users: OnlineUser[]): OnlineUser[] {
-    const me = users.find(u => u.role === "me");
-    const others = users.filter(u => u.role !== "me");
+    const me = users.find((u) => u.role === "me");
+    const others = users.filter((u) => u.role !== "me");
     return me ? [me, ...others] : others;
 }
 
@@ -80,19 +80,22 @@ export default function Feeds() {
         });
     }, [userId]);
 
-    // 1) 초기 피드 스냅샷
+    const refreshFeeds = useCallback(async () => {
+        const feedList = await getFeedList(Number(userId));
+        if (!feedList.ok) {
+            alert(feedList.message);
+            return;
+        }
+        const normalized = feedList.result.map(normalizeFeed);
+        setFeeds(normalized);
+        setTotalElements(normalized.length);
+    }, [userId]);
+
     useEffect(() => {
         const bootstrap = async () => {
             try {
                 setLoading(true);
-                const feedList = await getFeedList(Number(userId));
-                if (!feedList.ok) {
-                    alert(feedList.message);
-                    return;
-                }
-                const normalized = feedList.result.map(normalizeFeed);
-                setFeeds(normalized);
-                setTotalElements(normalized.length);
+                await refreshFeeds();
 
                 const res = await getWorkspaceInfo(1);
                 if (!res.ok) {
@@ -100,15 +103,13 @@ export default function Feeds() {
                     return;
                 }
                 setLikeCount(res.result.likeCount);
-
             } finally {
                 setLoading(false);
             }
         };
         void bootstrap();
-    }, []);
+    }, [refreshFeeds]);
 
-    // 2) 온라인 유저 스냅샷 (connected + myName 준비되면)
     const refreshOnlineUsers = useCallback(async () => {
         const res = await getOnlineUserList();
         if (!res.ok) {
@@ -117,7 +118,7 @@ export default function Feeds() {
         }
 
         const mapped: OnlineUser[] = res.result.map((name) => ({
-            id: name, // key 안정화
+            id: name,
             name,
             role: myName === name ? "me" : "user",
             status: "online",
@@ -128,11 +129,10 @@ export default function Feeds() {
 
     useEffect(() => {
         if (!connected) return;
-        if (myName === "unknown") return; // myName 세팅 전에 fetch 금지
+        if (myName === "unknown") return;
         void refreshOnlineUsers();
     }, [connected, myName, refreshOnlineUsers]);
 
-    // 3) WS 연결/구독
     useEffect(() => {
         clientRef.current = client;
 
@@ -152,7 +152,6 @@ export default function Feeds() {
 
             clearSubs();
 
-            // 피드 구독
             subsRef.current.push(
                 client.subscribe(TOPIC_FEED, (msg: IMessage) => {
                     const payload = JSON.parse(msg.body);
@@ -164,7 +163,6 @@ export default function Feeds() {
                 })
             );
 
-            // 감정표현 구독
             subsRef.current.push(
                 client.subscribe(TOPIC_REACTION, (msg: IMessage) => {
                     const ev: ReactionEvent = JSON.parse(msg.body);
@@ -182,21 +180,19 @@ export default function Feeds() {
                             const nextReactions = exists
                                 ? eventEmojiCount === 0
                                     ? feed.reactions.filter((r) => r.emojiKey !== eventEmojiKey)
-                                    // ✅ 아니면 서버 값으로 갱신
                                     : feed.reactions.map((r) =>
-                                        r.emojiKey === eventEmojiKey
-                                            ? {
-                                                ...r,
-                                                emojiCount: eventEmojiCount,
-                                                // 다른 유저 이벤트 → 내 isPressed는 유지
-                                                emojiType: ev.emojiType ?? r.emojiType,
-                                                objectKey: ev.objectKey ?? r.objectKey,
-                                                unicode: ev.unicode ?? r.unicode,
-                                            }
-                                            : r
-                                    )
+                                          r.emojiKey === eventEmojiKey
+                                              ? {
+                                                    ...r,
+                                                    emojiCount: eventEmojiCount,
+                                                    emojiType: ev.emojiType ?? r.emojiType,
+                                                    objectKey: ev.objectKey ?? r.objectKey,
+                                                    unicode: ev.unicode ?? r.unicode,
+                                                }
+                                              : r
+                                      )
                                 : eventEmojiCount > 0
-                                    ? [
+                                  ? [
                                         ...feed.reactions,
                                         {
                                             emojiKey: eventEmojiKey,
@@ -207,16 +203,13 @@ export default function Feeds() {
                                             unicode: ev.unicode ?? null,
                                         },
                                     ]
-                                    : feed.reactions; // count === 0이면 아무 것도 안 함
-
+                                  : feed.reactions;
                             return { ...feed, reactions: nextReactions };
                         })
                     );
                 })
             );
 
-            // 접속/해제 구독 (delta)
-            // 삭제 구독
             subsRef.current.push(
                 client.subscribe(TOPIC_DELETE, (msg: IMessage) => {
                     const ev: DeleteEvent = JSON.parse(msg.body);
@@ -294,8 +287,8 @@ export default function Feeds() {
                 <FeedList
                     feeds={feeds}
                     setFeeds={setFeeds}
-                    clientRef={clientRef}
                     connected={connected}
+                    onFeedCreated={refreshFeeds}
                     visibleCount={visibleCount}
                     totalElements={totalElements}
                     onLoadMore={handleLoadMore}

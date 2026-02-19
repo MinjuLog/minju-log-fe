@@ -6,8 +6,8 @@ import type FeedType from "../types/FeedType";
 type Props = {
     feeds: FeedType[];
     setFeeds: React.Dispatch<React.SetStateAction<FeedType[]>>;
-    clientRef: React.MutableRefObject<any>;
     connected: boolean;
+    onFeedCreated: () => Promise<void> | void;
     visibleCount: number;
     totalElements: number;
     onLoadMore: () => void;
@@ -16,8 +16,8 @@ type Props = {
 export default function FeedList({
     feeds,
     setFeeds,
-    clientRef,
     connected,
+    onFeedCreated,
     visibleCount,
     totalElements,
     onLoadMore,
@@ -26,14 +26,13 @@ export default function FeedList({
 
     return (
         <div className="lg:col-span-8 space-y-4">
-            <FeedInput client={clientRef} connected={connected} />
+            <FeedInput connected={connected} onCreated={onFeedCreated} />
 
             {feeds.slice(0, visibleCount).map((message) => (
                 <Feed
                     key={message.id}
                     feed={message}
                     setFeeds={setFeeds}
-                    client={clientRef}
                 />
             ))}
 

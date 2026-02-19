@@ -1,9 +1,9 @@
 import {useEffect, useMemo, useRef, useState} from "react";
-import {getPreSignedUrl, uploadToPreSignedUrl} from "../api/feed.ts";
+import {createFeed, getPreSignedUrl, uploadToPreSignedUrl} from "../api/feed.ts";
 
 interface FeedInputProps {
-    client: any;
     connected: boolean;
+    onCreated?: () => Promise<void> | void;
 }
 
 type UploadType = "PROFILE" | "FEED";
@@ -37,7 +37,7 @@ function formatBytes(bytes: number) {
     return `${(mb / 1024).toFixed(1)} GB`;
 }
 
-export function FeedInput({ client, connected }: FeedInputProps) {
+export function FeedInput({ connected, onCreated }: FeedInputProps) {
     const [content, setContent] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
@@ -227,14 +227,12 @@ export function FeedInput({ client, connected }: FeedInputProps) {
                             size: f.size,
                         }));
 
-            client.current.publish({
-                destination: "/app/feed",
-                headers: { "content-type": "application/json" },
-                body: JSON.stringify({ content: text, authorId: userId, attachments }),
-            });
+            const res = await createFeed(userId, { content: text, attachments });
+            if (!res.ok) throw new Error(res.message);
 
             setContent("");
             clearFiles();
+            await onCreated?.();
         } catch (e: any) {
             setFileError(e?.message || "등록 실패");
         } finally {

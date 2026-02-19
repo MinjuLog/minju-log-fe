@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import type FeedType from "../types/FeedType";
-import { deleteFeed } from "../api/feed.ts";
+import { deleteFeed, reactFeed } from "../api/feed.ts";
 import FeedAttachments from "./FeedAttachments";
 import FeedCardHeader from "./FeedCardHeader";
 import FeedReactions from "./FeedReactions";
@@ -8,7 +8,6 @@ import FeedReactions from "./FeedReactions";
 interface Props {
     feed: FeedType;
     setFeeds: React.Dispatch<React.SetStateAction<FeedType[]>>;
-    client: any;
 }
 
 const PRIORITY_KEY = "1f44d";
@@ -67,14 +66,14 @@ function applyOptimisticReaction(
     return { ...f, reactions: nextReactions };
 }
 
-export default function Feed({ feed, setFeeds, client }: Props) {
+export default function Feed({ feed, setFeeds }: Props) {
     const userId = Number(localStorage.getItem("userId"));
     const isMine = userId === feed.authorId;
 
     const [isDeleting, setIsDeleting] = useState(false);
     const [toast, setToast] = useState("");
 
-    const handleReactionSubmit = ({
+    const handleReactionSubmit = async ({
         emojiKey,
         unicode,
         objectKey,
@@ -85,11 +84,11 @@ export default function Feed({ feed, setFeeds, client }: Props) {
         objectKey?: string | undefined
         emojiType: "DEFAULT" | "CUSTOM",
     }) => {
-        client.current.publish({
-            destination: "/app/feed/reaction",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ feedId: feed.id, emojiKey, unicode, objectKey }),
-        });
+        const res = await reactFeed(userId, { feedId: feed.id, emojiKey, unicode, objectKey });
+        if (!res.ok) {
+            alert(res.message);
+            return;
+        }
 
         setFeeds((prev) =>
             prev.map((f) =>
@@ -107,11 +106,6 @@ export default function Feed({ feed, setFeeds, client }: Props) {
             alert(res.message);
             return;
         }
-        client.current?.publish({
-            destination: "/topic/workspace.1/delete",
-            headers: { "content-type": "application/json" },
-            body: JSON.stringify({ feedId: feed.id }),
-        });
         setFeeds((prev) => prev.filter((f) => f.id !== feed.id));
         setIsDeleting(false);
         setToast("ok");
