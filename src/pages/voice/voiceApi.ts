@@ -11,7 +11,7 @@ const VOICE_ROOM_LEAVE_ENDPOINT =
 
 export const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL as string | undefined;
 export const FEED_WS_URL = import.meta.env.VITE_FEED_WS_HOST as string | undefined;
-export const VOICE_CHANNEL_ID = import.meta.env.VITE_VOICE_CHANNEL_ID as string | undefined;
+export const VOICE_CHANNEL_ID = import.meta.env.VITE_VOICE_CHANNEL_ID as string | 1;
 
 function buildRoomEndpoint(template: string, roomId: string): string {
     return template.includes("{roomId}") ? template.replace("{roomId}", roomId) : template;
