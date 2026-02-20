@@ -1,49 +1,23 @@
 ﻿import axios from "axios";
+import { Client, type IMessage, type StompSubscription } from "@stomp/stompjs";
 import { Room, RoomEvent, Track } from "livekit-client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { api } from "../feed/api/api.ts";
 import VoiceHeader from "../../components/VoiceHeader.tsx";
-
-type VoiceRoom = {
-    id: string;
-    name: string;
-    topic: "자유대화방";
-    participants: string[];
-};
-
-type ChatMessage = {
-    id: string;
-    sender: string;
-    text: string;
-    time: string;
-};
-
-type LivekitTokenResponse = {
-    token: string;
-    roomName: string;
-    identity: string;
-    participantName: string;
-};
-
-type VoiceRoomUserResponse = {
-    userId: number;
-    username: string;
-};
-
-type VoiceRoomApiResponse = {
-    id: string;
-    title: string;
-    active: boolean;
-    createdAt: string;
-    onlineUsers: VoiceRoomUserResponse[];
-};
+import VoiceChatPanel from "./VoiceChatPanel.tsx";
+import VoiceRoomsPanel from "./VoiceRoomsPanel.tsx";
+import type { ChatMessage, VoiceRoom, VoiceRoomPresencePayload, VoiceRoomUserResponse } from "./types.ts";
+import {
+    FEED_WS_URL,
+    LIVEKIT_URL,
+    callVoiceRoomPresence,
+    fetchLivekitToken,
+    fetchRoomMessages,
+    fetchVoiceRooms,
+    parseVoiceChannelId,
+    sendRoomMessage,
+} from "./voiceApi.ts";
 
 const MY_NAME = "나";
-const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL as string | undefined;
-const LIVEKIT_TOKEN_ENDPOINT =
-    (import.meta.env.VITE_LIVEKIT_TOKEN_ENDPOINT as string | undefined) ?? "/api/voice/livekit/token";
-const VOICE_CHANNEL_ID = import.meta.env.VITE_VOICE_CHANNEL_ID as string | undefined;
-
 const INITIAL_CHAT: Record<string, ChatMessage[]> = {};
 
 export default function VoicePage() {
@@ -55,12 +29,21 @@ export default function VoicePage() {
     const [livekitRoom, setLivekitRoom] = useState<Room | null>(null);
     const [isConnecting, setIsConnecting] = useState(false);
     const [connectionError, setConnectionError] = useState<string | null>(null);
+    const [isChatLoading, setIsChatLoading] = useState(false);
+    const [chatLoadError, setChatLoadError] = useState<string | null>(null);
     const [isMicEnabled, setIsMicEnabled] = useState(true);
     const [isSpeakerEnabled, setIsSpeakerEnabled] = useState(true);
     const [micStatusMessage, setMicStatusMessage] = useState<string | null>(null);
     const [chatByRoom, setChatByRoom] = useState<Record<string, ChatMessage[]>>(INITIAL_CHAT);
     const [chatInput, setChatInput] = useState("");
+
     const speakerEnabledRef = useRef(isSpeakerEnabled);
+    const suppressDisconnectLeaveRef = useRef(false);
+    const wsClientRef = useRef<Client | null>(null);
+    const channelPresenceSubRef = useRef<StompSubscription | null>(null);
+    const roomChatSubRef = useRef<StompSubscription | null>(null);
+    const currentUserIdRef = useRef<number>(Number(localStorage.getItem("userId") ?? NaN));
+    const selectedRoomIdRef = useRef<string | null>(null);
 
     const selectedRoom = useMemo(() => {
         if (!selectedRoomId) return rooms[0] ?? null;
@@ -70,9 +53,76 @@ export default function VoicePage() {
     const roomChats = selectedRoom ? (chatByRoom[selectedRoom.id] ?? []) : [];
     const isJoinedSelectedRoom = selectedRoom ? joinedRoomId === selectedRoom.id : false;
 
+    const toParticipantLabel = (user: VoiceRoomUserResponse): string => {
+        if (Number.isNaN(currentUserIdRef.current)) return user.username;
+        return user.userId === currentUserIdRef.current ? `${user.username}(나)` : user.username;
+    };
+
+    const applyRoomUsersFromBroadcast = (roomId: string, users: VoiceRoomUserResponse[]) => {
+        setRooms((prev) =>
+            prev.map((room) =>
+                room.id === roomId
+                    ? {
+                          ...room,
+                          participants: users.map(toParticipantLabel),
+                      }
+                    : room,
+            ),
+        );
+    };
+
+    const upsertRoomMessage = (roomId: string, message: ChatMessage) => {
+        setChatByRoom((prev) => {
+            const current = prev[roomId] ?? [];
+            if (current.some((item) => item.id === message.id)) return prev;
+            return {
+                ...prev,
+                [roomId]: [...current, message],
+            };
+        });
+    };
+
+    const subscribeVoiceChannelPresence = (channelId: number | null) => {
+        channelPresenceSubRef.current?.unsubscribe();
+        channelPresenceSubRef.current = null;
+
+        if (channelId === null || !wsClientRef.current?.connected) return;
+
+        channelPresenceSubRef.current = wsClientRef.current.subscribe(`/topic/voice.channel.${channelId}`, (msg: IMessage) => {
+            const payload: VoiceRoomPresencePayload = JSON.parse(msg.body);
+            applyRoomUsersFromBroadcast(String(payload.roomId), payload.onlineUsers ?? []);
+        });
+    };
+
+    const subscribeVoiceRoomChat = (roomId: string | null) => {
+        roomChatSubRef.current?.unsubscribe();
+        roomChatSubRef.current = null;
+
+        if (!roomId || !wsClientRef.current?.connected) return;
+
+        roomChatSubRef.current = wsClientRef.current.subscribe(`/topic/voice.room.${roomId}.chat`, (msg: IMessage) => {
+            const payload: ChatMessage = JSON.parse(msg.body);
+            upsertRoomMessage(roomId, payload);
+        });
+    };
+
+    const applySpeakerState = (targetRoom: Room, enabled: boolean) => {
+        targetRoom.remoteParticipants.forEach((participant) => {
+            participant.trackPublications.forEach((publication) => {
+                if (publication.kind === Track.Kind.Audio) {
+                    publication.setSubscribed(enabled);
+                }
+            });
+        });
+    };
+
     useEffect(() => {
         speakerEnabledRef.current = isSpeakerEnabled;
     }, [isSpeakerEnabled]);
+
+    useEffect(() => {
+        selectedRoomIdRef.current = selectedRoomId;
+    }, [selectedRoomId]);
 
     useEffect(() => {
         return () => {
@@ -81,37 +131,70 @@ export default function VoicePage() {
     }, [livekitRoom]);
 
     useEffect(() => {
-        const fetchVoiceRooms = async () => {
-            const parsedChannelId = Number(VOICE_CHANNEL_ID);
-            if (!VOICE_CHANNEL_ID || Number.isNaN(parsedChannelId) || !Number.isInteger(parsedChannelId)) {
+        if (!FEED_WS_URL) return;
+        const parsedChannelId = parseVoiceChannelId();
+        if (parsedChannelId === null) return;
+
+        const userId = localStorage.getItem("userId") ?? "";
+        const client = new Client({
+            brokerURL: FEED_WS_URL,
+            reconnectDelay: 2000,
+            heartbeatIncoming: 10000,
+            heartbeatOutgoing: 10000,
+            connectHeaders: { userId },
+        });
+
+        wsClientRef.current = client;
+
+        client.onConnect = () => {
+            subscribeVoiceChannelPresence(parsedChannelId);
+            subscribeVoiceRoomChat(selectedRoomIdRef.current);
+        };
+
+        client.onDisconnect = () => {
+            channelPresenceSubRef.current?.unsubscribe();
+            roomChatSubRef.current?.unsubscribe();
+            channelPresenceSubRef.current = null;
+            roomChatSubRef.current = null;
+        };
+
+        client.onStompError = () => {
+            channelPresenceSubRef.current?.unsubscribe();
+            roomChatSubRef.current?.unsubscribe();
+            channelPresenceSubRef.current = null;
+            roomChatSubRef.current = null;
+        };
+
+        client.activate();
+
+        return () => {
+            channelPresenceSubRef.current?.unsubscribe();
+            roomChatSubRef.current?.unsubscribe();
+            channelPresenceSubRef.current = null;
+            roomChatSubRef.current = null;
+            void client.deactivate();
+            wsClientRef.current = null;
+        };
+    }, []);
+
+    useEffect(() => {
+        subscribeVoiceRoomChat(selectedRoomId);
+    }, [selectedRoomId]);
+
+    useEffect(() => {
+        const loadVoiceRooms = async () => {
+            const parsedChannelId = parseVoiceChannelId();
+            if (parsedChannelId === null) {
                 setRoomLoadError("VITE_VOICE_CHANNEL_ID에 유효한 정수를 설정해주세요.");
                 return;
             }
 
-            const userId = localStorage.getItem("userId") ?? "";
             setIsRoomLoading(true);
             setRoomLoadError(null);
 
             try {
-                const res = await api.get(`/api/voice/channels/${parsedChannelId}/rooms`, {
-                    headers: {
-                        "X-User-Id": userId,
-                    },
-                });
-
-                const payload = res.data?.result ?? res.data;
-                const roomList: VoiceRoomApiResponse[] = Array.isArray(payload)
-                    ? payload
-                    : Array.isArray(payload?.rooms)
-                        ? payload.rooms
-                        : [];
-
-                const mappedRooms: VoiceRoom[] = roomList.map((room) => ({
-                    id: String(room.id),
-                    name: room.title,
-                    topic: "자유대화방",
-                    participants: (room.onlineUsers ?? []).map((user) => user.username),
-                }));
+                const userId = localStorage.getItem("userId") ?? "";
+                const mappedRooms = await fetchVoiceRooms(parsedChannelId, userId, toParticipantLabel);
 
                 setRooms(mappedRooms);
                 setSelectedRoomId((prevSelectedRoomId) => {
@@ -130,60 +213,34 @@ export default function VoicePage() {
             }
         };
 
-        void fetchVoiceRooms();
+        void loadVoiceRooms();
     }, []);
 
-    const removeMyParticipant = (targetRoomId: string | null) => {
-        if (!targetRoomId) return;
+    useEffect(() => {
+        if (!selectedRoomId) return;
 
-        setRooms((prev) =>
-            prev.map((room) =>
-                room.id === targetRoomId
-                    ? { ...room, participants: room.participants.filter((name) => name !== MY_NAME) }
-                    : room,
-            ),
-        );
-    };
+        const loadRoomMessages = async () => {
+            setIsChatLoading(true);
+            setChatLoadError(null);
 
-    const addMyParticipant = (targetRoomId: string) => {
-        setRooms((prev) =>
-            prev.map((room) => {
-                if (room.id === targetRoomId && !room.participants.includes(MY_NAME)) {
-                    return {
-                        ...room,
-                        participants: [...room.participants, MY_NAME],
-                    };
-                }
-
-                return room;
-            }),
-        );
-    };
-
-    const applySpeakerState = (targetRoom: Room, enabled: boolean) => {
-        targetRoom.remoteParticipants.forEach((participant) => {
-            participant.trackPublications.forEach((publication) => {
-                if (publication.kind === Track.Kind.Audio) {
-                    publication.setSubscribed(enabled);
-                }
-            });
-        });
-    };
-
-    const fetchLivekitToken = async (roomName: string): Promise<string> => {
-        const userId = localStorage.getItem("userId") ?? "";
-        const payload = { roomName, participantName: MY_NAME };
-        const headers = {
-            "X-User-Id": userId,
+            try {
+                const messages = await fetchRoomMessages(selectedRoomId);
+                setChatByRoom((prev) => ({
+                    ...prev,
+                    [selectedRoomId]: messages,
+                }));
+            } catch (error) {
+                const message = axios.isAxiosError(error)
+                    ? error.response?.data?.message ?? "채팅 메시지 조회에 실패했습니다."
+                    : "채팅 메시지 조회에 실패했습니다.";
+                setChatLoadError(message);
+            } finally {
+                setIsChatLoading(false);
+            }
         };
 
-        const request = LIVEKIT_TOKEN_ENDPOINT.startsWith("http")
-            ? axios.post<LivekitTokenResponse>(LIVEKIT_TOKEN_ENDPOINT, payload, { headers })
-            : api.post<LivekitTokenResponse>(LIVEKIT_TOKEN_ENDPOINT, payload, { headers });
-
-        const res = await request;
-        return res.data.token;
-    };
+        void loadRoomMessages();
+    }, [selectedRoomId]);
 
     const handleJoinRoom = async (nextRoomId: string) => {
         if (isConnecting) return;
@@ -197,11 +254,12 @@ export default function VoicePage() {
         setConnectionError(null);
         setMicStatusMessage(null);
 
+        const userId = localStorage.getItem("userId") ?? "";
         const previousJoinedRoomId = joinedRoomId;
         let nextLivekitRoom: Room | null = null;
 
         try {
-            const token = await fetchLivekitToken(nextRoomId);
+            const token = await fetchLivekitToken(nextRoomId, MY_NAME, userId);
 
             if (livekitRoom) {
                 livekitRoom.disconnect();
@@ -224,15 +282,18 @@ export default function VoicePage() {
             }
 
             nextLivekitRoom.on(RoomEvent.Disconnected, () => {
-                setJoinedRoomId((currentJoinedRoomId) => {
-                    if (currentJoinedRoomId === nextRoomId) {
-                        removeMyParticipant(nextRoomId);
-                        return null;
-                    }
+                const shouldCallLeaveApi = !suppressDisconnectLeaveRef.current;
+                suppressDisconnectLeaveRef.current = false;
 
-                    return currentJoinedRoomId;
-                });
+                if (shouldCallLeaveApi) {
+                    void callVoiceRoomPresence(nextRoomId, "leave", userId).catch(() => {
+                        setConnectionError("연결이 끊겨 방 나가기 처리에 실패했습니다.");
+                    });
+                }
+
+                setJoinedRoomId((currentJoinedRoomId) => (currentJoinedRoomId === nextRoomId ? null : currentJoinedRoomId));
                 setLivekitRoom((currentRoom) => (currentRoom === nextLivekitRoom ? null : currentRoom));
+                setMicStatusMessage(null);
             });
 
             nextLivekitRoom.on(RoomEvent.TrackPublished, (publication) => {
@@ -242,20 +303,22 @@ export default function VoicePage() {
             });
 
             if (previousJoinedRoomId && previousJoinedRoomId !== nextRoomId) {
-                removeMyParticipant(previousJoinedRoomId);
+                await callVoiceRoomPresence(previousJoinedRoomId, "leave", userId);
+                setJoinedRoomId(null);
+                suppressDisconnectLeaveRef.current = true;
             }
 
-            addMyParticipant(nextRoomId);
+            await callVoiceRoomPresence(nextRoomId, "join", userId);
             setJoinedRoomId(nextRoomId);
             setLivekitRoom(nextLivekitRoom);
         } catch (error) {
             nextLivekitRoom?.disconnect();
 
             const message = axios.isAxiosError(error)
-                ? error.response?.data?.message ?? "LiveKit 토큰 발급에 실패했습니다."
+                ? error.response?.data?.message ?? "LiveKit 연결 또는 음성방 참여 처리에 실패했습니다."
                 : error instanceof Error
-                    ? error.message
-                    : "LiveKit 연결에 실패했습니다.";
+                  ? error.message
+                  : "LiveKit 연결 또는 음성방 참여 처리에 실패했습니다.";
 
             setConnectionError(message);
             alert(message);
@@ -264,11 +327,22 @@ export default function VoicePage() {
         }
     };
 
-    const handleLeaveRoom = () => {
+    const handleLeaveRoom = async () => {
         if (!joinedRoomId) return;
 
+        const userId = localStorage.getItem("userId") ?? "";
+
+        try {
+            await callVoiceRoomPresence(joinedRoomId, "leave", userId);
+        } catch (error) {
+            const message = axios.isAxiosError(error)
+                ? error.response?.data?.message ?? "방 나가기 처리에 실패했습니다."
+                : "방 나가기 처리에 실패했습니다.";
+            setConnectionError(message);
+        }
+
+        suppressDisconnectLeaveRef.current = true;
         livekitRoom?.disconnect();
-        removeMyParticipant(joinedRoomId);
         setJoinedRoomId(null);
         setLivekitRoom(null);
         setMicStatusMessage(null);
@@ -302,7 +376,7 @@ export default function VoicePage() {
         }
     };
 
-    const handleSendChat = () => {
+    const handleSendChat = async () => {
         if (!selectedRoom) return;
 
         const text = chatInput.trim();
@@ -312,21 +386,16 @@ export default function VoicePage() {
             return;
         }
 
-        const now = new Date();
-        const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-
-        const nextMessage: ChatMessage = {
-            id: `${selectedRoom.id}-${now.getTime()}`,
-            sender: MY_NAME,
-            text,
-            time,
-        };
-
-        setChatByRoom((prev) => ({
-            ...prev,
-            [selectedRoom.id]: [...(prev[selectedRoom.id] ?? []), nextMessage],
-        }));
-        setChatInput("");
+        try {
+            const userId = localStorage.getItem("userId") ?? "";
+            await sendRoomMessage(selectedRoom.id, text, userId);
+            setChatInput("");
+        } catch (error) {
+            const message = axios.isAxiosError(error)
+                ? error.response?.data?.message ?? "메시지 전송에 실패했습니다."
+                : "메시지 전송에 실패했습니다.";
+            setChatLoadError(message);
+        }
     };
 
     return (
@@ -334,182 +403,44 @@ export default function VoicePage() {
             <VoiceHeader />
 
             <div className="grid gap-6 lg:grid-cols-12 min-h-[calc(100vh-18rem)]">
-                <aside className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm lg:col-span-4">
-                    <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">Voice Channels</p>
+                <VoiceRoomsPanel
+                    rooms={rooms}
+                    selectedRoomId={selectedRoom?.id ?? null}
+                    joinedRoomId={joinedRoomId}
+                    isConnecting={isConnecting}
+                    isRoomLoading={isRoomLoading}
+                    roomLoadError={roomLoadError}
+                    onSelectRoom={setSelectedRoomId}
+                    onJoinRoom={(roomId) => {
+                        void handleJoinRoom(roomId);
+                    }}
+                />
 
-                    {isRoomLoading && <p className="text-sm text-gray-500">방 목록 불러오는 중...</p>}
-                    {roomLoadError && <p className="text-sm text-red-500">{roomLoadError}</p>}
-
-                    {!isRoomLoading && !roomLoadError && rooms.length === 0 && (
-                        <p className="text-sm text-gray-500">생성된 음성 채팅방이 없습니다.</p>
-                    )}
-
-                    <div className="space-y-2 max-h-[calc(100vh-22rem)] overflow-y-auto pr-1">
-                        {rooms.map((room) => {
-                            const isSelected = room.id === selectedRoom?.id;
-                            const isJoined = room.id === joinedRoomId;
-
-                            return (
-                                <div
-                                    key={room.id}
-                                    className={`group relative w-full rounded-xl border px-4 py-3 text-left transition ${
-                                        isSelected
-                                            ? "border-blue-500 bg-blue-50/40"
-                                            : "border-gray-200 hover:border-gray-300"
-                                    }`}
-                                >
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedRoomId(room.id)}
-                                        className="w-full text-left"
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <p className="text-sm font-semibold text-gray-900">🔊 {room.name}</p>
-                                            <span
-                                                className={`h-2.5 w-2.5 rounded-full ${
-                                                    isJoined ? "bg-green-500" : "bg-gray-300"
-                                                }`}
-                                            />
-                                        </div>
-                                        <p className="mt-1 text-xs text-gray-500">참가자 {room.participants.length}명</p>
-                                        <div className="mt-2 flex flex-wrap gap-1.5">
-                                            {room.participants.map((name) => (
-                                                <span
-                                                    key={`${room.id}-chip-${name}`}
-                                                    className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600"
-                                                >
-                                                    {name}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            void handleJoinRoom(room.id);
-                                        }}
-                                        disabled={isConnecting}
-                                        className={`absolute right-3 top-3 rounded-md px-3 py-1 text-xs font-semibold text-white transition ${
-                                            isJoined ? "bg-emerald-600" : "bg-blue-600 hover:bg-blue-700"
-                                        } ${
-                                            isConnecting
-                                                ? "cursor-not-allowed opacity-60"
-                                                : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
-                                        }`}
-                                    >
-                                        {isJoined ? "접속 중" : "입장"}
-                                    </button>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </aside>
-
-                <main className="lg:col-span-8 flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-center justify-between gap-3 border-b border-gray-200 pb-3">
-                        <h2 className="text-sm font-semibold text-gray-900">방 채팅</h2>
-                        {isJoinedSelectedRoom ? (
-                            <button
-                                type="button"
-                                onClick={handleLeaveRoom}
-                                disabled={isConnecting}
-                                className="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white hover:bg-red-600"
-                            >
-                                방 나가기
-                            </button>
-                        ) : (
-                            <span className="text-xs text-gray-500">방 카드에 마우스를 올리면 입장 버튼이 나타납니다</span>
-                        )}
-                    </div>
-
-                    {connectionError && <p className="mt-3 text-xs text-red-500">{connectionError}</p>}
-
-                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <span
-                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                                joinedRoomId ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
-                            }`}
-                        >
-                            {joinedRoomId ? `연결됨: ${joinedRoomId}` : "연결 안됨"}
-                        </span>
-                        <span
-                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                                isMicEnabled ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"
-                            }`}
-                        >
-                            {isMicEnabled ? "마이크 ON (전송중)" : "마이크 OFF"}
-                        </span>
-                        <span
-                            className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                                isSpeakerEnabled ? "bg-violet-100 text-violet-700" : "bg-gray-100 text-gray-600"
-                            }`}
-                        >
-                            {isSpeakerEnabled ? "스피커 ON" : "스피커 OFF"}
-                        </span>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                void handleToggleMicrophone();
-                            }}
-                            disabled={!joinedRoomId || isConnecting}
-                            className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {isMicEnabled ? "마이크 끄기" : "마이크 켜기"}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleToggleSpeaker}
-                            disabled={!joinedRoomId || isConnecting}
-                            className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {isSpeakerEnabled ? "스피커 끄기" : "스피커 켜기"}
-                        </button>
-                    </div>
-
-                    {micStatusMessage && <p className="mt-2 text-xs text-amber-700">{micStatusMessage}</p>}
-
-                    <div className="mt-4 flex-1 min-h-[24rem] max-h-[calc(100vh-22rem)] overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-3">
-                        {!selectedRoom ? (
-                            <p className="text-sm text-gray-500">선택된 채팅방이 없습니다.</p>
-                        ) : roomChats.length === 0 ? (
-                            <p className="text-sm text-gray-500">아직 채팅이 없습니다.</p>
-                        ) : (
-                            <div className="space-y-3">
-                                {roomChats.map((message) => (
-                                    <div key={message.id} className="rounded-md bg-white p-2.5">
-                                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                                            <span className="font-semibold text-gray-700">{message.sender}</span>
-                                            <span>{message.time}</span>
-                                        </div>
-                                        <p className="mt-1 text-sm text-gray-800">{message.text}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="mt-3 flex gap-2">
-                        <input
-                            value={chatInput}
-                            onChange={(e) => setChatInput(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") handleSendChat();
-                            }}
-                            placeholder="메시지를 입력하세요"
-                            className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            disabled={!selectedRoom}
-                        />
-                        <button
-                            type="button"
-                            onClick={handleSendChat}
-                            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                            disabled={!selectedRoom}
-                        >
-                            전송
-                        </button>
-                    </div>
-                </main>
+                <VoiceChatPanel
+                    selectedRoomId={selectedRoom?.id ?? null}
+                    joinedRoomId={joinedRoomId}
+                    isJoinedSelectedRoom={isJoinedSelectedRoom}
+                    isConnecting={isConnecting}
+                    connectionError={connectionError}
+                    isChatLoading={isChatLoading}
+                    chatLoadError={chatLoadError}
+                    isMicEnabled={isMicEnabled}
+                    isSpeakerEnabled={isSpeakerEnabled}
+                    micStatusMessage={micStatusMessage}
+                    roomChats={roomChats}
+                    chatInput={chatInput}
+                    onLeaveRoom={() => {
+                        void handleLeaveRoom();
+                    }}
+                    onToggleMicrophone={() => {
+                        void handleToggleMicrophone();
+                    }}
+                    onToggleSpeaker={handleToggleSpeaker}
+                    onChatInputChange={setChatInput}
+                    onSendChat={() => {
+                        void handleSendChat();
+                    }}
+                />
             </div>
         </section>
     );
