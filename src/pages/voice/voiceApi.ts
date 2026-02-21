@@ -50,7 +50,11 @@ export function mapVoiceRooms(
         id: String(room.id),
         name: room.title,
         topic: "자유대화방",
-        participants: (room.onlineUsers ?? []).map(toParticipantLabel),
+        participants: (room.onlineUsers ?? []).map((user) => ({
+            userId: user.userId,
+            name: user.username,
+            label: toParticipantLabel(user),
+        })),
     }));
 }
 

@@ -51,12 +51,12 @@ export default function VoiceRoomsPanel({
                                 </div>
                                 <p className="mt-1 text-xs text-gray-500">참가자 {room.participants.length}명</p>
                                 <div className="mt-2 flex flex-wrap gap-1.5">
-                                    {room.participants.map((name) => (
+                                    {room.participants.map((participant) => (
                                         <span
-                                            key={`${room.id}-chip-${name}`}
+                                            key={`${room.id}-chip-${participant.userId}`}
                                             className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600"
                                         >
-                                            {name}
+                                            {participant.label}
                                         </span>
                                     ))}
                                 </div>

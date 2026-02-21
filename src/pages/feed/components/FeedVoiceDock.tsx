@@ -31,7 +31,11 @@ function getInitial(name: string): string {
 type Props = {
     className?: string;
     preselectedRoomId?: string | null;
-    onSpeakerLevelsChange?: (payload: { myLevel: number; remoteLevelByName: Record<string, number> }) => void;
+    onSpeakerLevelsChange?: (payload: {
+        myLevel: number;
+        remoteLevelByName: Record<string, number>;
+        remoteLevelByIdentity: Record<string, number>;
+    }) => void;
     wsClientRef: { current: Client | null };
     wsConnected: boolean;
 };
@@ -52,6 +56,7 @@ export default function FeedVoiceDock({
     const [chatByRoom, setChatByRoom] = useState<Record<string, ChatMessage[]>>(INITIAL_CHAT);
     const [chatInput, setChatInput] = useState("");
     const [isRoomSwitching, setIsRoomSwitching] = useState(false);
+    const [isMicDeviceMenuOpen, setIsMicDeviceMenuOpen] = useState(false);
 
     const channelPresenceSubRef = useRef<StompSubscription | null>(null);
     const roomChatSubRef = useRef<StompSubscription | null>(null);
@@ -74,11 +79,15 @@ export default function FeedVoiceDock({
         isMicEnabled,
         isSpeakerEnabled,
         micStatusMessage,
+        micDeviceLabel,
+        micDevices,
+        selectedMicDeviceId,
         mySpeakerLevel,
         remoteSpeakerLevels,
         joinRoom,
         leaveRoom,
         toggleMicrophone,
+        selectMicrophoneDevice,
         toggleSpeaker,
     } = useLivekitVoiceConnection({
         livekitUrl: LIVEKIT_URL,
@@ -141,12 +150,15 @@ export default function FeedVoiceDock({
     useEffect(() => {
         if (!onSpeakerLevelsChange) return;
         const remoteLevelByName: Record<string, number> = {};
+        const remoteLevelByIdentity: Record<string, number> = {};
         remoteSpeakerLevels.forEach((speaker) => {
             remoteLevelByName[speaker.name] = speaker.level;
+            remoteLevelByIdentity[speaker.participantId] = speaker.level;
         });
         onSpeakerLevelsChange({
             myLevel: mySpeakerLevel,
             remoteLevelByName,
+            remoteLevelByIdentity,
         });
     }, [mySpeakerLevel, onSpeakerLevelsChange, remoteSpeakerLevels]);
 
@@ -161,7 +173,11 @@ export default function FeedVoiceDock({
                 room.id === roomId
                     ? {
                           ...room,
-                          participants: users.map(toParticipantLabel),
+                          participants: users.map((user) => ({
+                              userId: user.userId,
+                              name: user.username,
+                              label: toParticipantLabel(user),
+                          })),
                       }
                     : room,
             ),
@@ -363,18 +379,54 @@ export default function FeedVoiceDock({
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                void toggleMicrophone();
-                            }}
-                            disabled={!joinedRoomId || isConnecting || isRoomSwitching}
-                            className={`rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${
-                                isMicEnabled ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"
-                            }`}
-                        >
-                            {isMicEnabled ? "Mic ON" : "Mic OFF"}
-                        </button>
+                        <div className="relative">
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    const target = e.target as HTMLElement;
+                                    if (target.closest("[data-mic-menu]")) {
+                                        setIsMicDeviceMenuOpen((prev) => !prev);
+                                        return;
+                                    }
+                                    void toggleMicrophone();
+                                }}
+                                disabled={!joinedRoomId || isConnecting || isRoomSwitching}
+                                className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${
+                                    isMicEnabled ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"
+                                }`}
+                            >
+                                <span>{isMicEnabled ? `Mic ON (${micDeviceLabel})` : `Mic OFF (${micDeviceLabel})`}</span>
+                                <span data-mic-menu className="rounded px-1 text-[11px] hover:bg-black/10">
+                                    ▾
+                                </span>
+                            </button>
+
+                            {isMicDeviceMenuOpen && (
+                                <div className="absolute right-0 z-20 mt-1 w-56 rounded-md border border-gray-200 bg-white p-1 shadow-md">
+                                    {micDevices.length === 0 ? (
+                                        <p className="px-2 py-2 text-xs text-gray-500">사용 가능한 마이크 없음</p>
+                                    ) : (
+                                        micDevices.map((device) => (
+                                            <button
+                                                key={device.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    void selectMicrophoneDevice(device.id);
+                                                    setIsMicDeviceMenuOpen(false);
+                                                }}
+                                                className={`block w-full rounded px-2 py-1.5 text-left text-xs ${
+                                                    selectedMicDeviceId === device.id
+                                                        ? "bg-blue-50 font-semibold text-blue-700"
+                                                        : "text-gray-700 hover:bg-gray-50"
+                                                }`}
+                                            >
+                                                {device.label}
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            )}
+                        </div>
                         <button
                             type="button"
                             onClick={toggleSpeaker}

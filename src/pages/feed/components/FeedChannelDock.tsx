@@ -5,13 +5,14 @@ type Props = {
     onSelectFeedChannel: () => void;
     isVoiceChannelExpanded: boolean;
     onToggleVoiceChannel: () => void;
-    voiceRooms: { id: string; name: string; participants: string[] }[];
+    voiceRooms: { id: string; name: string; participants: { userId: number; name: string; label: string }[] }[];
     isVoiceRoomLoading: boolean;
     voiceRoomLoadError: string | null;
     selectedVoiceRoomId: string | null;
     onSelectVoiceRoom: (roomId: string) => void;
     mySpeakerLevel: number;
     remoteLevelByName: Record<string, number>;
+    remoteLevelByIdentity: Record<string, number>;
 };
 
 const AVATAR_THEMES = [
@@ -44,6 +45,7 @@ export default function FeedChannelDock({
     onSelectVoiceRoom,
     mySpeakerLevel,
     remoteLevelByName,
+    remoteLevelByIdentity,
 }: Props) {
     return (
         <aside className="xl:col-span-2">
@@ -103,24 +105,27 @@ export default function FeedChannelDock({
                                                 {room.participants.length === 0 ? (
                                                     <p className="text-[10px] text-gray-400">참여자 없음</p>
                                                 ) : (
-                                                    room.participants.map((name) => (
-                                                        <div key={`${room.id}-${name}`} className="flex items-center justify-between gap-2 pl-1">
+                                                    room.participants.map((participant) => (
+                                                        <div key={`${room.id}-${participant.userId}`} className="flex items-center justify-between gap-2 pl-1">
                                                             <span className="min-w-0 flex items-center gap-1.5">
                                                                 <span className="text-[10px] text-gray-400">└</span>
                                                                 <span
                                                                     className={`inline-flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-semibold ${getAvatarTheme(
-                                                                        name,
+                                                                        participant.label,
                                                                     )}`}
                                                                 >
-                                                                    {getInitial(name)}
+                                                                    {getInitial(participant.label)}
                                                                 </span>
-                                                                <span className="truncate text-[10px] text-gray-600">{name}</span>
+                                                                <span className="truncate text-[10px] text-gray-600">{participant.label}</span>
                                                             </span>
                                                             {(() => {
                                                                 const level =
-                                                                    name.includes("(나)")
+                                                                    participant.label.includes("(나)")
                                                                         ? mySpeakerLevel
-                                                                        : (remoteLevelByName[name] ?? 0);
+                                                                        : (remoteLevelByIdentity[String(participant.userId)] ??
+                                                                            remoteLevelByName[participant.label] ??
+                                                                            remoteLevelByName[participant.name] ??
+                                                                            0);
                                                                 const percent = Math.max(0, Math.min(100, Math.round(level * 100)));
                                                                 return (
                                                                     <span className="inline-flex flex-none items-center justify-end gap-1">

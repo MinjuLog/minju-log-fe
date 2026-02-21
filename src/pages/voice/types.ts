@@ -2,7 +2,13 @@
     id: string;
     name: string;
     topic: "자유대화방";
-    participants: string[];
+    participants: VoiceParticipant[];
+};
+
+export type VoiceParticipant = {
+    userId: number;
+    name: string;
+    label: string;
 };
 
 export type ChatMessage = {

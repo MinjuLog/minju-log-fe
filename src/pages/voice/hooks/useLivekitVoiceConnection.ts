@@ -20,12 +20,15 @@ type UseLivekitVoiceConnectionResult = {
     isSpeakerEnabled: boolean;
     micStatusMessage: string | null;
     micDeviceLabel: string;
+    micDevices: { id: string; label: string }[];
+    selectedMicDeviceId: string | null;
     speakerDeviceLabel: string;
     mySpeakerLevel: number;
     remoteSpeakerLevels: RemoteSpeakerLevel[];
     joinRoom: (roomId: string) => Promise<void>;
     leaveRoom: () => Promise<void>;
     toggleMicrophone: () => Promise<void>;
+    selectMicrophoneDevice: (deviceId: string) => Promise<void>;
     toggleSpeaker: () => void;
 };
 
@@ -57,6 +60,8 @@ export default function useLivekitVoiceConnection({
     const [isSpeakerEnabled, setIsSpeakerEnabled] = useState(true);
     const [micStatusMessage, setMicStatusMessage] = useState<string | null>(null);
     const [micDeviceLabel, setMicDeviceLabel] = useState("기본 마이크");
+    const [micDevices, setMicDevices] = useState<{ id: string; label: string }[]>([]);
+    const [selectedMicDeviceId, setSelectedMicDeviceId] = useState<string | null>(null);
     const [speakerDeviceLabel, setSpeakerDeviceLabel] = useState("기본 스피커");
     const [mySpeakerLevel, setMySpeakerLevel] = useState(0);
     const [remoteSpeakerLevels, setRemoteSpeakerLevels] = useState<RemoteSpeakerLevel[]>([]);
@@ -128,6 +133,11 @@ export default function useLivekitVoiceConnection({
             const devices = await navigator.mediaDevices.enumerateDevices();
             const audioInputs = devices.filter((device) => device.kind === "audioinput");
             const audioOutputs = devices.filter((device) => device.kind === "audiooutput");
+            const mappedInputs = audioInputs.map((device, index) => ({
+                id: device.deviceId,
+                label: device.label || `마이크 ${index + 1}`,
+            }));
+            setMicDevices(mappedInputs);
 
             let micName = "기본 마이크";
             let micDeviceId: string | undefined;
@@ -153,6 +163,8 @@ export default function useLivekitVoiceConnection({
                 micName = labeledInput?.label ?? audioInputs[0]?.label ?? "기본 마이크";
             }
 
+            const resolvedMicId = micDeviceId ?? audioInputs[0]?.deviceId ?? null;
+
             let speakerName = "기본 스피커";
             const preferredOutput = audioOutputs.find((device) => device.deviceId === "default" && Boolean(device.label));
             if (preferredOutput?.label) {
@@ -163,9 +175,12 @@ export default function useLivekitVoiceConnection({
             }
 
             setMicDeviceLabel(micName);
+            setSelectedMicDeviceId(resolvedMicId);
             setSpeakerDeviceLabel(speakerName);
         } catch {
             setMicDeviceLabel("기본 마이크");
+            setMicDevices([]);
+            setSelectedMicDeviceId(null);
             setSpeakerDeviceLabel("기본 스피커");
         }
     };
@@ -390,6 +405,24 @@ export default function useLivekitVoiceConnection({
         }
     };
 
+    const selectMicrophoneDevice = async (deviceId: string) => {
+        const room = livekitRoomRef.current;
+        if (!room || !joinedRoomIdRef.current) return;
+
+        try {
+            await room.switchActiveDevice("audioinput", deviceId);
+            setSelectedMicDeviceId(deviceId);
+            await syncDeviceLabels(room);
+            setMicStatusMessage(isMicEnabled ? "마이크 전송 중" : "마이크 꺼짐");
+        } catch (error) {
+            const message =
+                error instanceof Error
+                    ? `마이크 장치 변경 실패: ${error.message}`
+                    : "마이크 장치 변경에 실패했습니다.";
+            setMicStatusMessage(message);
+        }
+    };
+
     const toggleSpeaker = () => {
         const nextSpeakerEnabled = !speakerEnabledRef.current;
         setIsSpeakerEnabled(nextSpeakerEnabled);
@@ -439,12 +472,15 @@ export default function useLivekitVoiceConnection({
         isSpeakerEnabled,
         micStatusMessage,
         micDeviceLabel,
+        micDevices,
+        selectedMicDeviceId,
         speakerDeviceLabel,
         mySpeakerLevel,
         remoteSpeakerLevels,
         joinRoom,
         leaveRoom,
         toggleMicrophone,
+        selectMicrophoneDevice,
         toggleSpeaker,
     };
 }

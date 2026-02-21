@@ -92,6 +92,7 @@ export default function Feeds() {
     const [voiceRoomLoadError, setVoiceRoomLoadError] = useState<string | null>(null);
     const [mySpeakerLevel, setMySpeakerLevel] = useState(0);
     const [remoteLevelByName, setRemoteLevelByName] = useState<Record<string, number>>({});
+    const [remoteLevelByIdentity, setRemoteLevelByIdentity] = useState<Record<string, number>>({});
     const userId = localStorage.getItem("userId") ?? "";
 
     const client = useMemo(() => {
@@ -306,7 +307,11 @@ export default function Feeds() {
                     client.subscribe(`/topic/voice.channel.${voiceChannelId}`, (msg: IMessage) => {
                         const payload: VoiceRoomPresencePayload = JSON.parse(msg.body);
                         const roomId = String(payload.roomId);
-                        const participants = (payload.onlineUsers ?? []).map(toParticipantLabel);
+                        const participants = (payload.onlineUsers ?? []).map((user) => ({
+                            userId: user.userId,
+                            name: user.username,
+                            label: toParticipantLabel(user),
+                        }));
 
                         setVoiceRooms((prev) =>
                             prev.map((room) => (room.id === roomId ? { ...room, participants } : room)),
@@ -363,7 +368,10 @@ export default function Feeds() {
             try {
                 const rooms = await fetchVoiceRooms(channelId, userId, toParticipantLabel);
                 setVoiceRooms(rooms);
-                setSelectedVoiceRoomId((prev) => prev ?? rooms[0]?.id ?? null);
+                setSelectedVoiceRoomId((prev) => {
+                    if (!prev) return null;
+                    return rooms.some((room) => room.id === prev) ? prev : null;
+                });
             } catch {
                 setVoiceRoomLoadError("음성 채팅방 목록을 불러오지 못했습니다.");
             } finally {
@@ -385,9 +393,18 @@ export default function Feeds() {
     }, [myName, refreshVoiceRooms]);
 
     const handleSpeakerLevelsChange = useCallback(
-        ({ myLevel, remoteLevelByName: levels }: { myLevel: number; remoteLevelByName: Record<string, number> }) => {
+        ({
+            myLevel,
+            remoteLevelByName: levelsByName,
+            remoteLevelByIdentity: levelsByIdentity,
+        }: {
+            myLevel: number;
+            remoteLevelByName: Record<string, number>;
+            remoteLevelByIdentity: Record<string, number>;
+        }) => {
             setMySpeakerLevel((prev) => (Math.abs(prev - myLevel) > 0.0001 ? myLevel : prev));
-            setRemoteLevelByName((prev) => (sameLevelMap(prev, levels) ? prev : levels));
+            setRemoteLevelByName((prev) => (sameLevelMap(prev, levelsByName) ? prev : levelsByName));
+            setRemoteLevelByIdentity((prev) => (sameLevelMap(prev, levelsByIdentity) ? prev : levelsByIdentity));
         },
         [],
     );
@@ -410,13 +427,14 @@ export default function Feeds() {
                     selectedVoiceRoomId={selectedVoiceRoomId}
                     mySpeakerLevel={mySpeakerLevel}
                     remoteLevelByName={remoteLevelByName}
+                    remoteLevelByIdentity={remoteLevelByIdentity}
                     onSelectVoiceRoom={(roomId) => {
                         setSelectedVoiceRoomId(roomId);
                         setActiveChannel("voice");
                     }}
                 />
 
-                {activeChannel === "feed" ? (
+                {activeChannel === "feed" && (
                     <FeedList
                         feeds={feeds}
                         setFeeds={setFeeds}
@@ -426,15 +444,15 @@ export default function Feeds() {
                         totalElements={totalElements}
                         onLoadMore={handleLoadMore}
                     />
-                ) : (
-                    <FeedVoiceDock
-                        className="xl:col-span-7"
-                        preselectedRoomId={selectedVoiceRoomId}
-                        onSpeakerLevelsChange={handleSpeakerLevelsChange}
-                        wsClientRef={clientRef}
-                        wsConnected={connected}
-                    />
                 )}
+
+                <FeedVoiceDock
+                    className={activeChannel === "voice" ? "xl:col-span-7" : "hidden xl:col-span-7"}
+                    preselectedRoomId={selectedVoiceRoomId}
+                    onSpeakerLevelsChange={handleSpeakerLevelsChange}
+                    wsClientRef={clientRef}
+                    wsConnected={connected}
+                />
 
                 <FeedSidebar
                     onlineUserList={onlineUserList}
