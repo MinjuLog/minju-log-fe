@@ -9,6 +9,8 @@ type Props = {
     isVoiceRoomLoading: boolean;
     voiceRoomLoadError: string | null;
     selectedVoiceRoomId: string | null;
+    isVoiceLeaving: boolean;
+    isVoiceSwitching: boolean;
     onSelectVoiceRoom: (roomId: string) => void;
     mySpeakerLevel: number;
     remoteLevelByName: Record<string, number>;
@@ -42,6 +44,8 @@ export default function FeedChannelDock({
     isVoiceRoomLoading,
     voiceRoomLoadError,
     selectedVoiceRoomId,
+    isVoiceLeaving,
+    isVoiceSwitching,
     onSelectVoiceRoom,
     mySpeakerLevel,
     remoteLevelByName,
@@ -88,14 +92,16 @@ export default function FeedChannelDock({
 
                                 {voiceRooms.map((room) => {
                                     const isRoomActive = selectedVoiceRoomId === room.id;
+                                    const isDisabled = Boolean((isVoiceLeaving || isVoiceSwitching) && selectedVoiceRoomId !== room.id);
                                     return (
                                         <div key={room.id} className="rounded-md border border-gray-200 bg-white">
                                             <button
                                                 type="button"
                                                 onClick={() => onSelectVoiceRoom(room.id)}
+                                                disabled={isDisabled}
                                                 className={`w-full rounded-t-md px-2 py-1.5 text-left text-xs transition ${
                                                     isRoomActive ? "bg-blue-100 text-blue-700" : "text-gray-700 hover:bg-gray-100"
-                                                }`}
+                                                } ${isDisabled ? "cursor-not-allowed opacity-50" : ""}`}
                                             >
                                                 <p className="truncate font-medium"># {room.name}</p>
                                                 <p className="mt-0.5 text-[10px] text-gray-500">참여자 {room.participants.length}명</p>

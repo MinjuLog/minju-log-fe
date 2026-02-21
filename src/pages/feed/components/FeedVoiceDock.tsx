@@ -31,11 +31,15 @@ function getInitial(name: string): string {
 type Props = {
     className?: string;
     preselectedRoomId?: string | null;
+    preselectedRoomRequestKey?: number;
     onSpeakerLevelsChange?: (payload: {
         myLevel: number;
         remoteLevelByName: Record<string, number>;
         remoteLevelByIdentity: Record<string, number>;
     }) => void;
+    onJoinedRoomIdChange?: (roomId: string | null) => void;
+    onVoiceLeavingChange?: (leaving: boolean) => void;
+    onVoiceSwitchingChange?: (switching: boolean) => void;
     wsClientRef: { current: Client | null };
     wsConnected: boolean;
 };
@@ -43,7 +47,11 @@ type Props = {
 export default function FeedVoiceDock({
     className = "",
     preselectedRoomId = null,
+    preselectedRoomRequestKey = 0,
     onSpeakerLevelsChange,
+    onJoinedRoomIdChange,
+    onVoiceLeavingChange,
+    onVoiceSwitchingChange,
     wsClientRef,
     wsConnected,
 }: Props) {
@@ -67,7 +75,6 @@ export default function FeedVoiceDock({
     const chatScrollRef = useRef<HTMLDivElement | null>(null);
     const queuedSwitchRoomIdRef = useRef<string | null>(null);
     const switchingRoomRef = useRef(false);
-    const lastRequestedRoomIdRef = useRef<string | null>(null);
     const joinRoomRef = useRef<(roomId: string) => Promise<void>>(async () => {});
     const leaveRoomRef = useRef<() => Promise<void>>(async () => {});
 
@@ -109,6 +116,7 @@ export default function FeedVoiceDock({
         if (switchingRoomRef.current) return;
         switchingRoomRef.current = true;
         setIsRoomSwitching(true);
+        onVoiceSwitchingChange?.(true);
         try {
             while (queuedSwitchRoomIdRef.current) {
                 const nextRoomId = queuedSwitchRoomIdRef.current;
@@ -120,23 +128,25 @@ export default function FeedVoiceDock({
                 }
 
                 if (joinedRoomIdRef.current) {
+                    onVoiceLeavingChange?.(true);
                     await leaveRoomRef.current();
+                    onVoiceLeavingChange?.(false);
                 }
                 await joinRoomRef.current(nextRoomId);
             }
         } finally {
+            onVoiceLeavingChange?.(false);
             switchingRoomRef.current = false;
             setIsRoomSwitching(false);
+            onVoiceSwitchingChange?.(false);
         }
     };
 
     useEffect(() => {
         if (!preselectedRoomId) return;
-        if (lastRequestedRoomIdRef.current === preselectedRoomId) return;
-        lastRequestedRoomIdRef.current = preselectedRoomId;
         queuedSwitchRoomIdRef.current = preselectedRoomId;
         void runQueuedRoomSwitch();
-    }, [preselectedRoomId]);
+    }, [preselectedRoomId, preselectedRoomRequestKey]);
 
     const roomChats = selectedRoom ? (chatByRoom[selectedRoom.id] ?? []) : [];
     const isJoinedSelectedRoom = selectedRoom ? joinedRoomId === selectedRoom.id : false;
@@ -226,6 +236,19 @@ export default function FeedVoiceDock({
     useEffect(() => {
         joinedRoomIdRef.current = joinedRoomId;
     }, [joinedRoomId]);
+
+    useEffect(() => {
+        onJoinedRoomIdChange?.(joinedRoomId);
+    }, [joinedRoomId, onJoinedRoomIdChange]);
+
+    const handleLeaveRoom = async () => {
+        onVoiceLeavingChange?.(true);
+        try {
+            await leaveRoom();
+        } finally {
+            onVoiceLeavingChange?.(false);
+        }
+    };
 
     useEffect(() => {
         const sendLeaveForAllRooms = () => {
@@ -440,7 +463,7 @@ export default function FeedVoiceDock({
                         <button
                             type="button"
                             onClick={() => {
-                                void leaveRoom();
+                                void handleLeaveRoom();
                             }}
                             disabled={!joinedRoomId || isRoomSwitching}
                             className="rounded-md bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-600 disabled:opacity-50"

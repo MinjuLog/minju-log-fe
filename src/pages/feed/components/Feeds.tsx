@@ -88,6 +88,9 @@ export default function Feeds() {
     const [isVoiceChannelExpanded, setIsVoiceChannelExpanded] = useState(false);
     const [voiceRooms, setVoiceRooms] = useState<VoiceRoom[]>([]);
     const [selectedVoiceRoomId, setSelectedVoiceRoomId] = useState<string | null>(null);
+    const [isVoiceLeaving, setIsVoiceLeaving] = useState(false);
+    const [isVoiceSwitching, setIsVoiceSwitching] = useState(false);
+    const [voiceRoomSelectRequestKey, setVoiceRoomSelectRequestKey] = useState(0);
     const [isVoiceRoomLoading, setIsVoiceRoomLoading] = useState(false);
     const [voiceRoomLoadError, setVoiceRoomLoadError] = useState<string | null>(null);
     const [mySpeakerLevel, setMySpeakerLevel] = useState(0);
@@ -425,11 +428,14 @@ export default function Feeds() {
                     isVoiceRoomLoading={isVoiceRoomLoading}
                     voiceRoomLoadError={voiceRoomLoadError}
                     selectedVoiceRoomId={selectedVoiceRoomId}
+                    isVoiceLeaving={isVoiceLeaving}
+                    isVoiceSwitching={isVoiceSwitching}
                     mySpeakerLevel={mySpeakerLevel}
                     remoteLevelByName={remoteLevelByName}
                     remoteLevelByIdentity={remoteLevelByIdentity}
                     onSelectVoiceRoom={(roomId) => {
                         setSelectedVoiceRoomId(roomId);
+                        setVoiceRoomSelectRequestKey((prev) => prev + 1);
                         setActiveChannel("voice");
                     }}
                 />
@@ -449,7 +455,10 @@ export default function Feeds() {
                 <FeedVoiceDock
                     className={activeChannel === "voice" ? "xl:col-span-7" : "hidden xl:col-span-7"}
                     preselectedRoomId={selectedVoiceRoomId}
+                    preselectedRoomRequestKey={voiceRoomSelectRequestKey}
                     onSpeakerLevelsChange={handleSpeakerLevelsChange}
+                    onVoiceLeavingChange={setIsVoiceLeaving}
+                    onVoiceSwitchingChange={setIsVoiceSwitching}
                     wsClientRef={clientRef}
                     wsConnected={connected}
                 />
