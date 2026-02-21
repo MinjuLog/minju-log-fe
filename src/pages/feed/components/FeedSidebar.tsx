@@ -18,7 +18,7 @@ export default function FeedSidebar({
     clientRef,
 }: Props) {
     return (
-        <div className="lg:col-span-4">
+        <div className="xl:col-span-3">
             <div className="sticky top-6 space-y-4">
                 <OnlineUsersPanel onlineUserList={onlineUserList} connected={connected} />
                 <WorkspaceLikePanel

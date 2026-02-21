@@ -13,7 +13,6 @@ import {createUser} from "./api/user/user.ts";
 import GuidePage from "./pages/guide/Page.tsx";
 import NoticePage from "./pages/notice/Page.tsx";
 import FeedPage from "./pages/feed/Page.tsx";
-import VoicePage from "./pages/voice/Page.tsx";
 
 function App() {
     const [ready, setReady] = useState(false);
@@ -85,7 +84,6 @@ function App() {
 
                         <Route path="/dashboard" element={<DashboardPage />} />
                         <Route path="/feed" element={<FeedPage />} />
-                        <Route path="/voice" element={<VoicePage />} />
 
                         <Route path="*" element={<Navigate to="/guide" replace />} />
                     </Routes>

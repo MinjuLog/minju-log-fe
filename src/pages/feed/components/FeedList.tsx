@@ -25,7 +25,7 @@ export default function FeedList({
     const canLoadMore = visibleCount < totalElements;
 
     return (
-        <div className="lg:col-span-8 space-y-4">
+        <div className="xl:col-span-7 space-y-4">
             <FeedInput connected={connected} onCreated={onFeedCreated} />
 
             {feeds.slice(0, visibleCount).map((message) => (

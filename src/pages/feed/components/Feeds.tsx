@@ -11,6 +11,10 @@ import FeedList from "./FeedList";
 import FeedPageHeader from "./FeedPageHeader";
 import FeedSidebar from "./FeedSidebar";
 import { normalizeFeed } from "../utils/feedNormalizer";
+import FeedVoiceDock from "./FeedVoiceDock.tsx";
+import FeedChannelDock from "./FeedChannelDock.tsx";
+import { fetchVoiceRooms, parseVoiceChannelId } from "../../voice/voiceApi.ts";
+import type { VoiceRoom, VoiceRoomPresencePayload, VoiceRoomUserResponse } from "../../voice/types.ts";
 
 const PAGE_SIZE = 30;
 const WS_URL = import.meta.env.VITE_FEED_WS_HOST;
@@ -20,6 +24,7 @@ const TOPIC_FEED = `/topic/workspace.${workspace_ID}`;
 const TOPIC_REACTION = `/topic/workspace.${workspace_ID}/reaction`;
 const TOPIC_PRESENCE = `/topic/workspace.${workspace_ID}/connect`;
 const TOPIC_DELETE = `/topic/workspace.${workspace_ID}/delete`;
+const TOPIC_ONLINE_USERS = `/topic/workspace.${workspace_ID}/online-users`;
 
 type ReactionEvent = {
     actorId: number;
@@ -55,6 +60,17 @@ function sortMeFirst(users: OnlineUser[]): OnlineUser[] {
     return me ? [me, ...others] : others;
 }
 
+function sameLevelMap(a: Record<string, number>, b: Record<string, number>): boolean {
+    const aKeys = Object.keys(a);
+    const bKeys = Object.keys(b);
+    if (aKeys.length !== bKeys.length) return false;
+    for (const key of aKeys) {
+        if (!(key in b)) return false;
+        if (Math.abs((a[key] ?? 0) - (b[key] ?? 0)) > 0.0001) return false;
+    }
+    return true;
+}
+
 export default function Feeds() {
     const clientRef = useRef<Client | null>(null);
     const subsRef = useRef<StompSubscription[]>([]);
@@ -65,18 +81,28 @@ export default function Feeds() {
     const [onlineUserList, setOnlineUserList] = useState<OnlineUser[]>([]);
     const [likeCount, setLikeCount] = useState(0);
     const [myName, setMyName] = useState<string>("unknown");
+    const myNameRef = useRef<string>("unknown");
     const [loading, setLoading] = useState(true);
     const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+    const [activeChannel, setActiveChannel] = useState<"feed" | "voice">("feed");
+    const [isVoiceChannelExpanded, setIsVoiceChannelExpanded] = useState(false);
+    const [voiceRooms, setVoiceRooms] = useState<VoiceRoom[]>([]);
+    const [selectedVoiceRoomId, setSelectedVoiceRoomId] = useState<string | null>(null);
+    const [isVoiceRoomLoading, setIsVoiceRoomLoading] = useState(false);
+    const [voiceRoomLoadError, setVoiceRoomLoadError] = useState<string | null>(null);
+    const [mySpeakerLevel, setMySpeakerLevel] = useState(0);
+    const [remoteLevelByName, setRemoteLevelByName] = useState<Record<string, number>>({});
     const userId = localStorage.getItem("userId") ?? "";
 
     const client = useMemo(() => {
+        const enableStompDebug = import.meta.env.VITE_STOMP_DEBUG === "true";
         return new Client({
             brokerURL: WS_URL,
             reconnectDelay: 2000,
             heartbeatIncoming: 10000,
             heartbeatOutgoing: 10000,
             connectHeaders: { userId },
-            debug: (s) => console.log("[stomp]", s),
+            debug: enableStompDebug ? (s) => console.log("[stomp]", s) : () => {},
         });
     }, [userId]);
 
@@ -110,28 +136,34 @@ export default function Feeds() {
         void bootstrap();
     }, [refreshFeeds]);
 
+    useEffect(() => {
+        myNameRef.current = myName;
+    }, [myName]);
+
     const refreshOnlineUsers = useCallback(async () => {
         const res = await getOnlineUserList();
-        if (!res.ok) {
-            alert(res.message);
-            return;
-        }
+        if (!res.ok) return;
 
         const mapped: OnlineUser[] = res.result.map((name) => ({
             id: name,
             name,
-            role: myName === name ? "me" : "user",
+            role: myNameRef.current === name ? "me" : "user",
             status: "online",
         }));
-
         setOnlineUserList(sortMeFirst(uniqByName(mapped)));
-    }, [myName]);
+    }, []);
 
     useEffect(() => {
         if (!connected) return;
-        if (myName === "unknown") return;
         void refreshOnlineUsers();
-    }, [connected, myName, refreshOnlineUsers]);
+    }, [connected, refreshOnlineUsers]);
+
+    const toParticipantLabel = useCallback(
+        (user: VoiceRoomUserResponse): string => {
+            return myNameRef.current !== "unknown" && user.username === myNameRef.current ? `${user.username}(나)` : user.username;
+        },
+        [],
+    );
 
     useEffect(() => {
         clientRef.current = client;
@@ -232,7 +264,7 @@ export default function Feeds() {
                                 {
                                     id: name,
                                     name,
-                                    role: myName === name ? "me" : "user",
+                                    role: myNameRef.current === name ? "me" : "user",
                                     status: "online",
                                 },
                             ]);
@@ -248,6 +280,40 @@ export default function Feeds() {
                     });
                 })
             );
+
+            subsRef.current.push(
+                client.subscribe(TOPIC_ONLINE_USERS, (msg: IMessage) => {
+                    const payload = JSON.parse(msg.body) as
+                        | string[]
+                        | { users?: string[]; result?: string[]; onlineUsers?: string[] };
+                    const names = Array.isArray(payload)
+                        ? payload
+                        : payload.users ?? payload.result ?? payload.onlineUsers ?? [];
+
+                    const mapped: OnlineUser[] = names.map((name) => ({
+                        id: name,
+                        name,
+                        role: myNameRef.current === name ? "me" : "user",
+                        status: "online",
+                    }));
+                    setOnlineUserList(sortMeFirst(uniqByName(mapped)));
+                }),
+            );
+
+            const voiceChannelId = parseVoiceChannelId();
+            if (voiceChannelId !== null) {
+                subsRef.current.push(
+                    client.subscribe(`/topic/voice.channel.${voiceChannelId}`, (msg: IMessage) => {
+                        const payload: VoiceRoomPresencePayload = JSON.parse(msg.body);
+                        const roomId = String(payload.roomId);
+                        const participants = (payload.onlineUsers ?? []).map(toParticipantLabel);
+
+                        setVoiceRooms((prev) =>
+                            prev.map((room) => (room.id === roomId ? { ...room, participants } : room)),
+                        );
+                    }),
+                );
+            }
 
             setConnected(true);
         };
@@ -271,11 +337,60 @@ export default function Feeds() {
             setDisconnected();
             void client.deactivate();
         };
-    }, [client, userId, myName]);
+    }, [client, toParticipantLabel, userId]);
 
     const handleLoadMore = () => {
         setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, totalElements));
     };
+
+    useEffect(() => {
+        if (activeChannel !== "feed") return;
+        void refreshFeeds();
+    }, [activeChannel, refreshFeeds]);
+
+    const refreshVoiceRooms = useCallback(
+        async (showLoading = false) => {
+            const channelId = parseVoiceChannelId();
+            if (channelId === null) {
+                setVoiceRoomLoadError("보이스 채널 ID 설정 필요");
+                return;
+            }
+
+            if (showLoading) {
+                setIsVoiceRoomLoading(true);
+            }
+            setVoiceRoomLoadError(null);
+            try {
+                const rooms = await fetchVoiceRooms(channelId, userId, toParticipantLabel);
+                setVoiceRooms(rooms);
+                setSelectedVoiceRoomId((prev) => prev ?? rooms[0]?.id ?? null);
+            } catch {
+                setVoiceRoomLoadError("음성 채팅방 목록을 불러오지 못했습니다.");
+            } finally {
+                if (showLoading) {
+                    setIsVoiceRoomLoading(false);
+                }
+            }
+        },
+        [toParticipantLabel, userId],
+    );
+
+    useEffect(() => {
+        void refreshVoiceRooms(true);
+    }, [refreshVoiceRooms]);
+
+    useEffect(() => {
+        if (myName === "unknown") return;
+        void refreshVoiceRooms();
+    }, [myName, refreshVoiceRooms]);
+
+    const handleSpeakerLevelsChange = useCallback(
+        ({ myLevel, remoteLevelByName: levels }: { myLevel: number; remoteLevelByName: Record<string, number> }) => {
+            setMySpeakerLevel((prev) => (Math.abs(prev - myLevel) > 0.0001 ? myLevel : prev));
+            setRemoteLevelByName((prev) => (sameLevelMap(prev, levels) ? prev : levels));
+        },
+        [],
+    );
 
     if (loading) return <FeedSkeleton count={6} />;
 
@@ -283,16 +398,43 @@ export default function Feeds() {
         <div className="flex-1">
             <FeedPageHeader totalElements={totalElements} connected={connected} />
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-                <FeedList
-                    feeds={feeds}
-                    setFeeds={setFeeds}
-                    connected={connected}
-                    onFeedCreated={refreshFeeds}
-                    visibleCount={visibleCount}
-                    totalElements={totalElements}
-                    onLoadMore={handleLoadMore}
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+                <FeedChannelDock
+                    activeChannel={activeChannel}
+                    onSelectFeedChannel={() => setActiveChannel("feed")}
+                    isVoiceChannelExpanded={isVoiceChannelExpanded}
+                    onToggleVoiceChannel={() => setIsVoiceChannelExpanded((prev) => !prev)}
+                    voiceRooms={voiceRooms}
+                    isVoiceRoomLoading={isVoiceRoomLoading}
+                    voiceRoomLoadError={voiceRoomLoadError}
+                    selectedVoiceRoomId={selectedVoiceRoomId}
+                    mySpeakerLevel={mySpeakerLevel}
+                    remoteLevelByName={remoteLevelByName}
+                    onSelectVoiceRoom={(roomId) => {
+                        setSelectedVoiceRoomId(roomId);
+                        setActiveChannel("voice");
+                    }}
                 />
+
+                {activeChannel === "feed" ? (
+                    <FeedList
+                        feeds={feeds}
+                        setFeeds={setFeeds}
+                        connected={connected}
+                        onFeedCreated={refreshFeeds}
+                        visibleCount={visibleCount}
+                        totalElements={totalElements}
+                        onLoadMore={handleLoadMore}
+                    />
+                ) : (
+                    <FeedVoiceDock
+                        className="xl:col-span-7"
+                        preselectedRoomId={selectedVoiceRoomId}
+                        onSpeakerLevelsChange={handleSpeakerLevelsChange}
+                        wsClientRef={clientRef}
+                        wsConnected={connected}
+                    />
+                )}
 
                 <FeedSidebar
                     onlineUserList={onlineUserList}

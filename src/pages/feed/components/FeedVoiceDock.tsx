@@ -1,0 +1,467 @@
+import axios from "axios";
+import type { Client, IMessage, StompSubscription } from "@stomp/stompjs";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ChatMessage, VoiceRoom, VoiceRoomPresencePayload, VoiceRoomUserResponse } from "../../voice/types.ts";
+import useLivekitVoiceConnection from "../../voice/hooks/useLivekitVoiceConnection.ts";
+import {
+    LIVEKIT_URL,
+    callVoiceRoomLeaveOnPageExit,
+    callVoiceRoomPresence,
+    fetchLivekitToken,
+    fetchRoomMessages,
+    fetchVoiceRooms,
+    parseVoiceChannelId,
+    sendRoomMessage,
+} from "../../voice/voiceApi.ts";
+
+const MY_NAME = "나";
+const INITIAL_CHAT: Record<string, ChatMessage[]> = {};
+
+function formatChatTime(createdAt: string): string {
+    const date = new Date(createdAt);
+    if (Number.isNaN(date.getTime())) return "";
+    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+function getInitial(name: string): string {
+    const normalized = name.replace("(나)", "").trim();
+    return normalized.charAt(0).toUpperCase() || "?";
+}
+
+type Props = {
+    className?: string;
+    preselectedRoomId?: string | null;
+    onSpeakerLevelsChange?: (payload: { myLevel: number; remoteLevelByName: Record<string, number> }) => void;
+    wsClientRef: { current: Client | null };
+    wsConnected: boolean;
+};
+
+export default function FeedVoiceDock({
+    className = "",
+    preselectedRoomId = null,
+    onSpeakerLevelsChange,
+    wsClientRef,
+    wsConnected,
+}: Props) {
+    const [rooms, setRooms] = useState<VoiceRoom[]>([]);
+    const [isRoomLoading, setIsRoomLoading] = useState(false);
+    const [roomLoadError, setRoomLoadError] = useState<string | null>(null);
+    const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+    const [isChatLoading, setIsChatLoading] = useState(false);
+    const [chatLoadError, setChatLoadError] = useState<string | null>(null);
+    const [chatByRoom, setChatByRoom] = useState<Record<string, ChatMessage[]>>(INITIAL_CHAT);
+    const [chatInput, setChatInput] = useState("");
+    const [isRoomSwitching, setIsRoomSwitching] = useState(false);
+
+    const channelPresenceSubRef = useRef<StompSubscription | null>(null);
+    const roomChatSubRef = useRef<StompSubscription | null>(null);
+    const currentUserIdRef = useRef<number>(Number(localStorage.getItem("userId") ?? NaN));
+    const roomsRef = useRef<VoiceRoom[]>([]);
+    const joinedRoomIdRef = useRef<string | null>(null);
+    const hasSentLeaveOnExitRef = useRef(false);
+    const chatScrollRef = useRef<HTMLDivElement | null>(null);
+    const queuedSwitchRoomIdRef = useRef<string | null>(null);
+    const switchingRoomRef = useRef(false);
+    const lastRequestedRoomIdRef = useRef<string | null>(null);
+    const joinRoomRef = useRef<(roomId: string) => Promise<void>>(async () => {});
+    const leaveRoomRef = useRef<() => Promise<void>>(async () => {});
+
+    const {
+        audioContainerRef,
+        joinedRoomId,
+        isConnecting,
+        connectionError,
+        isMicEnabled,
+        isSpeakerEnabled,
+        micStatusMessage,
+        mySpeakerLevel,
+        remoteSpeakerLevels,
+        joinRoom,
+        leaveRoom,
+        toggleMicrophone,
+        toggleSpeaker,
+    } = useLivekitVoiceConnection({
+        livekitUrl: LIVEKIT_URL,
+        participantName: MY_NAME,
+        getUserId: () => localStorage.getItem("userId") ?? "",
+        fetchLivekitToken,
+        callVoiceRoomPresence,
+    });
+
+    joinRoomRef.current = joinRoom;
+    leaveRoomRef.current = leaveRoom;
+
+    const selectedRoom = useMemo(() => {
+        if (!selectedRoomId) return rooms[0] ?? null;
+        return rooms.find((room) => room.id === selectedRoomId) ?? rooms[0] ?? null;
+    }, [rooms, selectedRoomId]);
+
+    const runQueuedRoomSwitch = async () => {
+        if (switchingRoomRef.current) return;
+        switchingRoomRef.current = true;
+        setIsRoomSwitching(true);
+        try {
+            while (queuedSwitchRoomIdRef.current) {
+                const nextRoomId = queuedSwitchRoomIdRef.current;
+                queuedSwitchRoomIdRef.current = null;
+                setSelectedRoomId(nextRoomId);
+
+                if (joinedRoomIdRef.current === nextRoomId) {
+                    continue;
+                }
+
+                if (joinedRoomIdRef.current) {
+                    await leaveRoomRef.current();
+                }
+                await joinRoomRef.current(nextRoomId);
+            }
+        } finally {
+            switchingRoomRef.current = false;
+            setIsRoomSwitching(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!preselectedRoomId) return;
+        if (lastRequestedRoomIdRef.current === preselectedRoomId) return;
+        lastRequestedRoomIdRef.current = preselectedRoomId;
+        queuedSwitchRoomIdRef.current = preselectedRoomId;
+        void runQueuedRoomSwitch();
+    }, [preselectedRoomId]);
+
+    const roomChats = selectedRoom ? (chatByRoom[selectedRoom.id] ?? []) : [];
+    const isJoinedSelectedRoom = selectedRoom ? joinedRoomId === selectedRoom.id : false;
+
+    useEffect(() => {
+        const chatContainer = chatScrollRef.current;
+        if (!chatContainer) return;
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }, [roomChats, selectedRoom?.id]);
+
+    useEffect(() => {
+        if (!onSpeakerLevelsChange) return;
+        const remoteLevelByName: Record<string, number> = {};
+        remoteSpeakerLevels.forEach((speaker) => {
+            remoteLevelByName[speaker.name] = speaker.level;
+        });
+        onSpeakerLevelsChange({
+            myLevel: mySpeakerLevel,
+            remoteLevelByName,
+        });
+    }, [mySpeakerLevel, onSpeakerLevelsChange, remoteSpeakerLevels]);
+
+    const toParticipantLabel = (user: VoiceRoomUserResponse): string => {
+        if (Number.isNaN(currentUserIdRef.current)) return user.username;
+        return user.userId === currentUserIdRef.current ? `${user.username}(나)` : user.username;
+    };
+
+    const applyRoomUsersFromBroadcast = (roomId: string, users: VoiceRoomUserResponse[]) => {
+        setRooms((prev) =>
+            prev.map((room) =>
+                room.id === roomId
+                    ? {
+                          ...room,
+                          participants: users.map(toParticipantLabel),
+                      }
+                    : room,
+            ),
+        );
+    };
+
+    const upsertRoomMessage = (roomId: string, message: ChatMessage) => {
+        setChatByRoom((prev) => {
+            const current = prev[roomId] ?? [];
+            if (current.some((item) => item.id === message.id)) return prev;
+            return {
+                ...prev,
+                [roomId]: [...current, message],
+            };
+        });
+    };
+
+    const subscribeVoiceChannelPresence = (channelId: number | null) => {
+        channelPresenceSubRef.current?.unsubscribe();
+        channelPresenceSubRef.current = null;
+
+        if (channelId === null || !wsClientRef.current?.connected) return;
+
+        channelPresenceSubRef.current = wsClientRef.current.subscribe(`/topic/voice.channel.${channelId}`, (msg: IMessage) => {
+            const payload: VoiceRoomPresencePayload = JSON.parse(msg.body);
+            applyRoomUsersFromBroadcast(String(payload.roomId), payload.onlineUsers ?? []);
+        });
+    };
+
+    const subscribeVoiceRoomChat = (roomId: string | null) => {
+        roomChatSubRef.current?.unsubscribe();
+        roomChatSubRef.current = null;
+
+        if (!roomId || !wsClientRef.current?.connected) return;
+
+        roomChatSubRef.current = wsClientRef.current.subscribe(`/topic/voice.room.${roomId}.chat`, (msg: IMessage) => {
+            const payload: ChatMessage = JSON.parse(msg.body);
+            upsertRoomMessage(roomId, payload);
+        });
+    };
+
+    useEffect(() => {
+        roomsRef.current = rooms;
+    }, [rooms]);
+
+    useEffect(() => {
+        joinedRoomIdRef.current = joinedRoomId;
+    }, [joinedRoomId]);
+
+    useEffect(() => {
+        const sendLeaveForAllRooms = () => {
+            if (hasSentLeaveOnExitRef.current) return;
+            hasSentLeaveOnExitRef.current = true;
+
+            const userId = localStorage.getItem("userId") ?? "";
+            const roomIds = new Set(roomsRef.current.map((room) => room.id));
+            if (joinedRoomIdRef.current) {
+                roomIds.add(joinedRoomIdRef.current);
+            }
+            roomIds.forEach((roomId) => {
+                void callVoiceRoomPresence(roomId, "leave", userId);
+                callVoiceRoomLeaveOnPageExit(roomId, userId);
+            });
+        };
+
+        const handlePageExit = () => {
+            sendLeaveForAllRooms();
+        };
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === "hidden") {
+                sendLeaveForAllRooms();
+            }
+        };
+
+        window.addEventListener("pagehide", handlePageExit);
+        window.addEventListener("beforeunload", handlePageExit);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener("pagehide", handlePageExit);
+            window.removeEventListener("beforeunload", handlePageExit);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            sendLeaveForAllRooms();
+        };
+    }, []);
+
+    useEffect(() => {
+        channelPresenceSubRef.current?.unsubscribe();
+        roomChatSubRef.current?.unsubscribe();
+        channelPresenceSubRef.current = null;
+        roomChatSubRef.current = null;
+
+        const parsedChannelId = parseVoiceChannelId();
+        if (!wsConnected || !wsClientRef.current?.connected || !joinedRoomId || parsedChannelId === null) return;
+
+        subscribeVoiceChannelPresence(parsedChannelId);
+        subscribeVoiceRoomChat(joinedRoomId);
+
+        return () => {
+            channelPresenceSubRef.current?.unsubscribe();
+            roomChatSubRef.current?.unsubscribe();
+            channelPresenceSubRef.current = null;
+            roomChatSubRef.current = null;
+        };
+    }, [joinedRoomId, wsConnected]);
+
+    useEffect(() => {
+        const loadVoiceRooms = async () => {
+            const parsedChannelId = parseVoiceChannelId();
+            if (parsedChannelId === null) {
+                setRoomLoadError("VITE_VOICE_CHANNEL_ID를 설정해주세요.");
+                return;
+            }
+
+            setIsRoomLoading(true);
+            setRoomLoadError(null);
+
+            try {
+                const userId = localStorage.getItem("userId") ?? "";
+                const mappedRooms = await fetchVoiceRooms(parsedChannelId, userId, toParticipantLabel);
+
+                setRooms(mappedRooms);
+                setSelectedRoomId((prevSelectedRoomId) => {
+                    if (prevSelectedRoomId && mappedRooms.some((room) => room.id === prevSelectedRoomId)) {
+                        return prevSelectedRoomId;
+                    }
+                    return mappedRooms[0]?.id ?? null;
+                });
+            } catch (error) {
+                const message = axios.isAxiosError(error)
+                    ? error.response?.data?.message ?? "음성 채팅방 목록 조회에 실패했습니다."
+                    : "음성 채팅방 목록 조회에 실패했습니다.";
+                setRoomLoadError(message);
+            } finally {
+                setIsRoomLoading(false);
+            }
+        };
+
+        void loadVoiceRooms();
+    }, []);
+
+    useEffect(() => {
+        if (!selectedRoomId) return;
+
+        const loadRoomMessages = async () => {
+            setIsChatLoading(true);
+            setChatLoadError(null);
+
+            try {
+                const messages = await fetchRoomMessages(selectedRoomId);
+                setChatByRoom((prev) => ({
+                    ...prev,
+                    [selectedRoomId]: messages,
+                }));
+            } catch (error) {
+                const message = axios.isAxiosError(error)
+                    ? error.response?.data?.message ?? "채팅 메시지 조회에 실패했습니다."
+                    : "채팅 메시지 조회에 실패했습니다.";
+                setChatLoadError(message);
+            } finally {
+                setIsChatLoading(false);
+            }
+        };
+
+        void loadRoomMessages();
+    }, [selectedRoomId]);
+
+    const handleSendChat = async () => {
+        if (!selectedRoom) return;
+
+        const text = chatInput.trim();
+        if (!text) return;
+        if (!isJoinedSelectedRoom) {
+            alert("채팅하려면 먼저 음성 채널에 입장해주세요.");
+            return;
+        }
+
+        try {
+            const userId = localStorage.getItem("userId") ?? "";
+            await sendRoomMessage(selectedRoom.id, text, userId);
+            setChatInput("");
+        } catch (error) {
+            const message = axios.isAxiosError(error)
+                ? error.response?.data?.message ?? "메시지 전송에 실패했습니다."
+                : "메시지 전송에 실패했습니다.";
+            setChatLoadError(message);
+        }
+    };
+
+    return (
+        <section className={className}>
+            <div ref={audioContainerRef} className="hidden" />
+            <div className="flex min-h-[calc(100vh-16rem)] flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3">
+                    <div>
+                        <h2 className="text-lg font-bold text-gray-900">{selectedRoom ? `🔊 ${selectedRoom.name}` : "보이스 채널"}</h2>
+                        <p className="mt-1 text-xs text-gray-500">
+                            {wsConnected ? "실시간 연결됨" : "연결 중"} · {joinedRoomId ? "음성 참여 중" : "미참여"}
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                void toggleMicrophone();
+                            }}
+                            disabled={!joinedRoomId || isConnecting || isRoomSwitching}
+                            className={`rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${
+                                isMicEnabled ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-600"
+                            }`}
+                        >
+                            {isMicEnabled ? "Mic ON" : "Mic OFF"}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={toggleSpeaker}
+                            disabled={!joinedRoomId || isConnecting || isRoomSwitching}
+                            className={`rounded-md px-3 py-1.5 text-xs font-semibold disabled:opacity-50 ${
+                                isSpeakerEnabled ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"
+                            }`}
+                        >
+                            {isSpeakerEnabled ? "Spk ON" : "Spk OFF"}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                void leaveRoom();
+                            }}
+                            disabled={!joinedRoomId || isRoomSwitching}
+                            className="rounded-md bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-600 disabled:opacity-50"
+                        >
+                            나가기
+                        </button>
+                    </div>
+                </div>
+
+                {connectionError && <p className="mb-2 text-xs text-red-500">{connectionError}</p>}
+                {roomLoadError && <p className="mb-2 text-xs text-red-500">{roomLoadError}</p>}
+                {chatLoadError && <p className="mb-2 text-xs text-red-500">{chatLoadError}</p>}
+                {micStatusMessage && <p className="mb-2 text-xs text-amber-700">{micStatusMessage}</p>}
+                {isRoomLoading && <p className="mb-2 text-xs text-gray-500">방 목록 로딩 중...</p>}
+                {isRoomSwitching && <p className="mb-2 text-xs text-blue-600">이전 채팅방에서 나가는 중...</p>}
+
+                <p className="mb-3 text-[11px] text-gray-500">
+                    내 입력: {Math.round(mySpeakerLevel * 100)}% / 상대 {remoteSpeakerLevels.length}명
+                </p>
+
+                <div className="flex h-[560px] flex-col rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">채팅</p>
+                    <div ref={chatScrollRef} className="mb-3 h-[470px] overflow-y-auto rounded-lg border border-gray-200 bg-white p-3">
+                        {!selectedRoom ? (
+                            <p className="text-sm text-gray-500">좌측에서 음성 채팅방을 선택하세요.</p>
+                        ) : isChatLoading ? (
+                            <p className="text-sm text-gray-500">메시지 로딩 중...</p>
+                        ) : roomChats.length === 0 ? (
+                            <p className="text-sm text-gray-500">아직 채팅이 없습니다.</p>
+                        ) : (
+                            <div className="space-y-2">
+                                {roomChats.map((message) => (
+                                    <div key={message.id} className="rounded-md border border-gray-100 bg-gray-50 p-2.5">
+                                        <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-[10px] font-semibold text-blue-700">
+                                                {getInitial(message.senderName)}
+                                            </span>
+                                            <span className="font-semibold text-gray-700">{message.senderName}</span>
+                                            <span>{formatChatTime(message.createdAt)}</span>
+                                        </div>
+                                        <p className="mt-1 text-sm text-gray-800">{message.content}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex gap-2">
+                        <input
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    void handleSendChat();
+                                }
+                            }}
+                            disabled={!selectedRoom}
+                            placeholder="메시지 입력"
+                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-blue-500 disabled:opacity-50"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => {
+                                void handleSendChat();
+                            }}
+                            disabled={!selectedRoom}
+                            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                        >
+                            전송
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+}

@@ -11,7 +11,6 @@ const tabs: {
     { href: "/around", text: "다른 지역은?", isHighlighted: true },
     { href: "/dashboard", text: "진행로그", isHighlighted: true },
     { href: "/feed", text: "실시간 피드", isHighlighted: true },
-    { href: "/voice", text: "음성 채팅방", isHighlighted: true },
 ]
 
 export function Header() {
