@@ -22,6 +22,8 @@ type UseLivekitVoiceConnectionResult = {
     micDeviceLabel: string;
     micDevices: { id: string; label: string }[];
     selectedMicDeviceId: string | null;
+    speakerDevices: { id: string; label: string }[];
+    selectedSpeakerDeviceId: string | null;
     speakerDeviceLabel: string;
     mySpeakerLevel: number;
     remoteSpeakerLevels: RemoteSpeakerLevel[];
@@ -29,6 +31,7 @@ type UseLivekitVoiceConnectionResult = {
     leaveRoom: () => Promise<void>;
     toggleMicrophone: () => Promise<void>;
     selectMicrophoneDevice: (deviceId: string) => Promise<void>;
+    selectSpeakerDevice: (deviceId: string) => Promise<void>;
     toggleSpeaker: () => void;
 };
 
@@ -62,12 +65,15 @@ export default function useLivekitVoiceConnection({
     const [micDeviceLabel, setMicDeviceLabel] = useState("기본 마이크");
     const [micDevices, setMicDevices] = useState<{ id: string; label: string }[]>([]);
     const [selectedMicDeviceId, setSelectedMicDeviceId] = useState<string | null>(null);
+    const [speakerDevices, setSpeakerDevices] = useState<{ id: string; label: string }[]>([]);
+    const [selectedSpeakerDeviceId, setSelectedSpeakerDeviceId] = useState<string | null>(null);
     const [speakerDeviceLabel, setSpeakerDeviceLabel] = useState("기본 스피커");
     const [mySpeakerLevel, setMySpeakerLevel] = useState(0);
     const [remoteSpeakerLevels, setRemoteSpeakerLevels] = useState<RemoteSpeakerLevel[]>([]);
 
     const livekitRoomRef = useRef<Room | null>(null);
     const speakerEnabledRef = useRef(isSpeakerEnabled);
+    const selectedSpeakerDeviceIdRef = useRef<string | null>(selectedSpeakerDeviceId);
     const suppressDisconnectLeaveRef = useRef(false);
     const activeSpeakerLevelMapRef = useRef<Map<string, number>>(new Map());
     const audioContainerRef = useRef<HTMLDivElement | null>(null);
@@ -75,9 +81,38 @@ export default function useLivekitVoiceConnection({
     const joinedRoomIdRef = useRef<string | null>(joinedRoomId);
     const myLevelIntervalRef = useRef<number | null>(null);
 
+    const resolveSinkId = (deviceId: string | null): string => {
+        if (!deviceId || deviceId === "default") return "";
+        return deviceId;
+    };
+
+    const applySinkIdToElement = async (element: HTMLMediaElement, deviceId: string | null) => {
+        const sinkId = resolveSinkId(deviceId);
+        const sinkAwareElement = element as HTMLMediaElement & { setSinkId?: (id: string) => Promise<void> };
+        if (!sinkAwareElement.setSinkId) return;
+        await sinkAwareElement.setSinkId(sinkId);
+    };
+
+    const applySinkIdToRemoteTracks = async (deviceId: string | null) => {
+        const elements = Array.from(remoteAudioElementsRef.current.values()).flat();
+        await Promise.all(
+            elements.map(async (element) => {
+                try {
+                    await applySinkIdToElement(element, deviceId);
+                } catch {
+                    // Unsupported browser or blocked by permission policy.
+                }
+            }),
+        );
+    };
+
     useEffect(() => {
         speakerEnabledRef.current = isSpeakerEnabled;
     }, [isSpeakerEnabled]);
+
+    useEffect(() => {
+        selectedSpeakerDeviceIdRef.current = selectedSpeakerDeviceId;
+    }, [selectedSpeakerDeviceId]);
 
     useEffect(() => {
         joinedRoomIdRef.current = joinedRoomId;
@@ -137,7 +172,12 @@ export default function useLivekitVoiceConnection({
                 id: device.deviceId,
                 label: device.label || `마이크 ${index + 1}`,
             }));
+            const mappedOutputs = audioOutputs.map((device, index) => ({
+                id: device.deviceId,
+                label: device.label || `스피커 ${index + 1}`,
+            }));
             setMicDevices(mappedInputs);
+            setSpeakerDevices(mappedOutputs);
 
             let micName = "기본 마이크";
             let micDeviceId: string | undefined;
@@ -165,22 +205,27 @@ export default function useLivekitVoiceConnection({
 
             const resolvedMicId = micDeviceId ?? audioInputs[0]?.deviceId ?? null;
 
-            let speakerName = "기본 스피커";
-            const preferredOutput = audioOutputs.find((device) => device.deviceId === "default" && Boolean(device.label));
-            if (preferredOutput?.label) {
-                speakerName = preferredOutput.label;
-            } else {
-                const labeledOutput = audioOutputs.find((device) => Boolean(device.label));
-                speakerName = labeledOutput?.label ?? audioOutputs[0]?.label ?? "기본 스피커";
-            }
+            const hasSelectedSpeaker = selectedSpeakerDeviceId
+                ? audioOutputs.some((device) => device.deviceId === selectedSpeakerDeviceId)
+                : false;
+            const preferredOutput = hasSelectedSpeaker
+                ? audioOutputs.find((device) => device.deviceId === selectedSpeakerDeviceId)
+                : audioOutputs.find((device) => device.deviceId === "default" && Boolean(device.label)) ??
+                  audioOutputs.find((device) => Boolean(device.label)) ??
+                  audioOutputs[0];
+            const resolvedSpeakerId = preferredOutput?.deviceId ?? null;
+            const speakerName = preferredOutput?.label || "기본 스피커";
 
             setMicDeviceLabel(micName);
             setSelectedMicDeviceId(resolvedMicId);
+            setSelectedSpeakerDeviceId(resolvedSpeakerId);
             setSpeakerDeviceLabel(speakerName);
         } catch {
             setMicDeviceLabel("기본 마이크");
             setMicDevices([]);
             setSelectedMicDeviceId(null);
+            setSpeakerDevices([]);
+            setSelectedSpeakerDeviceId(null);
             setSpeakerDeviceLabel("기본 스피커");
         }
     };
@@ -198,6 +243,10 @@ export default function useLivekitVoiceConnection({
 
         const existingElements = remoteAudioElementsRef.current.get(trackKey) ?? [];
         remoteAudioElementsRef.current.set(trackKey, [...existingElements, element]);
+
+        void applySinkIdToElement(element, selectedSpeakerDeviceIdRef.current).catch(() => {
+            // Unsupported browser or blocked by permission policy.
+        });
 
         if (speakerEnabledRef.current) {
             void element.play().catch(() => {
@@ -423,6 +472,30 @@ export default function useLivekitVoiceConnection({
         }
     };
 
+    const selectSpeakerDevice = async (deviceId: string) => {
+        const room = livekitRoomRef.current;
+        if (!room || !joinedRoomIdRef.current) return;
+
+        try {
+            await room.switchActiveDevice("audiooutput", deviceId);
+            setSelectedSpeakerDeviceId(deviceId);
+            await applySinkIdToRemoteTracks(deviceId);
+            await syncDeviceLabels(room);
+        } catch {
+            try {
+                setSelectedSpeakerDeviceId(deviceId);
+                await applySinkIdToRemoteTracks(deviceId);
+                await syncDeviceLabels(room);
+            } catch (error) {
+                const message =
+                    error instanceof Error
+                        ? `스피커 장치 변경 실패: ${error.message}`
+                        : "스피커 장치 변경에 실패했습니다.";
+                setConnectionError(message);
+            }
+        }
+    };
+
     const toggleSpeaker = () => {
         const nextSpeakerEnabled = !speakerEnabledRef.current;
         setIsSpeakerEnabled(nextSpeakerEnabled);
@@ -474,6 +547,8 @@ export default function useLivekitVoiceConnection({
         micDeviceLabel,
         micDevices,
         selectedMicDeviceId,
+        speakerDevices,
+        selectedSpeakerDeviceId,
         speakerDeviceLabel,
         mySpeakerLevel,
         remoteSpeakerLevels,
@@ -481,6 +556,7 @@ export default function useLivekitVoiceConnection({
         leaveRoom,
         toggleMicrophone,
         selectMicrophoneDevice,
+        selectSpeakerDevice,
         toggleSpeaker,
     };
 }
