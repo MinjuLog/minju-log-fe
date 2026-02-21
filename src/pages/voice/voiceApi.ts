@@ -17,6 +17,23 @@ function buildRoomEndpoint(template: string, roomId: string): string {
     return template.includes("{roomId}") ? template.replace("{roomId}", roomId) : template;
 }
 
+function resolveEndpointUrl(endpoint: string): string {
+    if (endpoint.startsWith("http")) return endpoint;
+
+    const baseURL = api.defaults.baseURL;
+    if (typeof window === "undefined") return endpoint;
+    if (!baseURL) return new URL(endpoint, window.location.origin).toString();
+
+    const isAbsoluteBase = /^https?:\/\//i.test(baseURL);
+    if (isAbsoluteBase) {
+        return new URL(endpoint, baseURL).toString();
+    }
+
+    const normalizedBase = baseURL.startsWith("/") ? baseURL : `/${baseURL}`;
+    const joinedPath = `${normalizedBase.replace(/\/$/, "")}/${endpoint.replace(/^\//, "")}`;
+    return new URL(joinedPath, window.location.origin).toString();
+}
+
 export function parseVoiceChannelId(): number | null {
     const parsedChannelId = Number(VOICE_CHANNEL_ID);
     if (!VOICE_CHANNEL_ID || Number.isNaN(parsedChannelId) || !Number.isInteger(parsedChannelId)) {
@@ -104,6 +121,23 @@ export async function callVoiceRoomPresence(
         headers: {
             "X-User-Id": userId,
         },
+    });
+}
+
+export function callVoiceRoomLeaveOnPageExit(roomId: string, userId: string): void {
+    const endpoint = buildRoomEndpoint(VOICE_ROOM_LEAVE_ENDPOINT, roomId);
+    const url = resolveEndpointUrl(endpoint);
+
+    // Keepalive request is designed for page unload/refresh timing.
+    void fetch(url, {
+        method: "POST",
+        headers: {
+            "X-User-Id": userId,
+        },
+        keepalive: true,
+        credentials: "include",
+    }).catch(() => {
+        // Ignore exit-time failures; browser may still cancel late-stage requests.
     });
 }
 

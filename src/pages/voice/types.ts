@@ -42,3 +42,9 @@ export type VoiceRoomPresencePayload = {
     username: string;
     onlineUsers: VoiceRoomUserResponse[];
 };
+
+export type RemoteSpeakerLevel = {
+    participantId: string;
+    name: string;
+    level: number;
+};
