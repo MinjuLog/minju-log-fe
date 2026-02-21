@@ -19,6 +19,11 @@ import {
 
 const MY_NAME = "나";
 const INITIAL_CHAT: Record<string, ChatMessage[]> = {};
+type RemoteSpeakerLevel = {
+    participantId: string;
+    name: string;
+    level: number;
+};
 
 export default function VoicePage() {
     const [rooms, setRooms] = useState<VoiceRoom[]>([]);
@@ -36,12 +41,16 @@ export default function VoicePage() {
     const [micStatusMessage, setMicStatusMessage] = useState<string | null>(null);
     const [chatByRoom, setChatByRoom] = useState<Record<string, ChatMessage[]>>(INITIAL_CHAT);
     const [chatInput, setChatInput] = useState("");
+    const [remoteSpeakerLevels, setRemoteSpeakerLevels] = useState<RemoteSpeakerLevel[]>([]);
 
     const speakerEnabledRef = useRef(isSpeakerEnabled);
     const suppressDisconnectLeaveRef = useRef(false);
     const wsClientRef = useRef<Client | null>(null);
     const channelPresenceSubRef = useRef<StompSubscription | null>(null);
     const roomChatSubRef = useRef<StompSubscription | null>(null);
+    const audioContainerRef = useRef<HTMLDivElement | null>(null);
+    const remoteAudioElementsRef = useRef<Map<string, HTMLMediaElement[]>>(new Map());
+    const activeSpeakerLevelMapRef = useRef<Map<string, number>>(new Map());
     const currentUserIdRef = useRef<number>(Number(localStorage.getItem("userId") ?? NaN));
     const selectedRoomIdRef = useRef<string | null>(null);
 
@@ -114,6 +123,76 @@ export default function VoicePage() {
                 }
             });
         });
+    };
+
+    const attachRemoteAudioTrack = (trackKey: string, track: Track) => {
+        if (track.kind !== Track.Kind.Audio) return;
+        if (!audioContainerRef.current) return;
+
+        const mediaTrack = track as Track & {
+            attach: () => HTMLMediaElement;
+        };
+
+        const element = mediaTrack.attach();
+        element.autoplay = true;
+        element.muted = false;
+        element.setAttribute("playsinline", "true");
+        audioContainerRef.current.appendChild(element);
+
+        const existing = remoteAudioElementsRef.current.get(trackKey) ?? [];
+        remoteAudioElementsRef.current.set(trackKey, [...existing, element]);
+
+        if (speakerEnabledRef.current) {
+            void element.play().catch(() => {
+                // Ignore autoplay rejection; playback will resume after user interaction.
+            });
+        }
+    };
+
+    const detachRemoteAudioTrack = (trackKey: string, track?: Track) => {
+        const elements = remoteAudioElementsRef.current.get(trackKey) ?? [];
+        if (elements.length === 0) return;
+
+        if (track) {
+            const mediaTrack = track as Track & {
+                detach: () => HTMLMediaElement[];
+            };
+            mediaTrack.detach();
+        }
+
+        elements.forEach((element) => {
+            element.pause();
+            element.remove();
+        });
+        remoteAudioElementsRef.current.delete(trackKey);
+    };
+
+    const clearAllRemoteAudioTracks = () => {
+        remoteAudioElementsRef.current.forEach((elements) => {
+            elements.forEach((element) => {
+                element.pause();
+                element.remove();
+            });
+        });
+        remoteAudioElementsRef.current.clear();
+    };
+
+    const syncRemoteSpeakerLevels = (targetRoom: Room) => {
+        const list = Array.from(targetRoom.remoteParticipants.values()).map((participant) => {
+            const name = participant.name?.trim() ? participant.name : participant.identity;
+            const level = activeSpeakerLevelMapRef.current.get(participant.identity) ?? 0;
+            return {
+                participantId: participant.identity,
+                name,
+                level: Math.max(0, Math.min(1, level)),
+            };
+        });
+        setRemoteSpeakerLevels(list);
+    };
+
+    const clearRemoteSpeakerLevels = () => {
+        activeSpeakerLevelMapRef.current.clear();
+        setRemoteSpeakerLevels([]);
     };
 
     useEffect(() => {
@@ -267,10 +346,11 @@ export default function VoicePage() {
 
             nextLivekitRoom = new Room();
             await nextLivekitRoom.connect(LIVEKIT_URL, token);
-            applySpeakerState(nextLivekitRoom, speakerEnabledRef.current);
+            const connectedRoom = nextLivekitRoom;
+            applySpeakerState(connectedRoom, speakerEnabledRef.current);
 
             try {
-                await nextLivekitRoom.localParticipant.setMicrophoneEnabled(isMicEnabled);
+                await connectedRoom.localParticipant.setMicrophoneEnabled(isMicEnabled);
                 setMicStatusMessage(isMicEnabled ? "마이크 전송 중" : "마이크 꺼짐");
             } catch (micError) {
                 const message =
@@ -281,7 +361,7 @@ export default function VoicePage() {
                 setIsMicEnabled(false);
             }
 
-            nextLivekitRoom.on(RoomEvent.Disconnected, () => {
+            connectedRoom.on(RoomEvent.Disconnected, () => {
                 const shouldCallLeaveApi = !suppressDisconnectLeaveRef.current;
                 suppressDisconnectLeaveRef.current = false;
 
@@ -292,14 +372,45 @@ export default function VoicePage() {
                 }
 
                 setJoinedRoomId((currentJoinedRoomId) => (currentJoinedRoomId === nextRoomId ? null : currentJoinedRoomId));
-                setLivekitRoom((currentRoom) => (currentRoom === nextLivekitRoom ? null : currentRoom));
+                setLivekitRoom((currentRoom) => (currentRoom === connectedRoom ? null : currentRoom));
                 setMicStatusMessage(null);
+                clearAllRemoteAudioTracks();
+                clearRemoteSpeakerLevels();
             });
 
-            nextLivekitRoom.on(RoomEvent.TrackPublished, (publication) => {
+            connectedRoom.on(RoomEvent.TrackPublished, (publication) => {
                 if (!speakerEnabledRef.current && publication.kind === Track.Kind.Audio) {
                     publication.setSubscribed(false);
                 }
+            });
+
+            connectedRoom.on(RoomEvent.TrackSubscribed, (track, publication) => {
+                const trackKey = publication.trackSid ?? track.sid;
+                attachRemoteAudioTrack(trackKey, track);
+            });
+
+            connectedRoom.on(RoomEvent.TrackUnsubscribed, (track, publication) => {
+                const trackKey = publication.trackSid ?? track.sid;
+                detachRemoteAudioTrack(trackKey, track);
+            });
+
+            connectedRoom.on(RoomEvent.ActiveSpeakersChanged, (speakers) => {
+                const nextMap = new Map<string, number>();
+                speakers.forEach((participant) => {
+                    if (participant.identity === connectedRoom.localParticipant.identity) return;
+                    nextMap.set(participant.identity, participant.audioLevel ?? 0);
+                });
+                activeSpeakerLevelMapRef.current = nextMap;
+                syncRemoteSpeakerLevels(connectedRoom);
+            });
+
+            connectedRoom.on(RoomEvent.ParticipantConnected, () => {
+                syncRemoteSpeakerLevels(connectedRoom);
+            });
+
+            connectedRoom.on(RoomEvent.ParticipantDisconnected, (participant) => {
+                activeSpeakerLevelMapRef.current.delete(participant.identity);
+                syncRemoteSpeakerLevels(connectedRoom);
             });
 
             if (previousJoinedRoomId && previousJoinedRoomId !== nextRoomId) {
@@ -310,7 +421,8 @@ export default function VoicePage() {
 
             await callVoiceRoomPresence(nextRoomId, "join", userId);
             setJoinedRoomId(nextRoomId);
-            setLivekitRoom(nextLivekitRoom);
+            setLivekitRoom(connectedRoom);
+            syncRemoteSpeakerLevels(connectedRoom);
         } catch (error) {
             nextLivekitRoom?.disconnect();
 
@@ -343,6 +455,8 @@ export default function VoicePage() {
 
         suppressDisconnectLeaveRef.current = true;
         livekitRoom?.disconnect();
+        clearAllRemoteAudioTracks();
+        clearRemoteSpeakerLevels();
         setJoinedRoomId(null);
         setLivekitRoom(null);
         setMicStatusMessage(null);
@@ -400,6 +514,7 @@ export default function VoicePage() {
 
     return (
         <section className="w-full min-h-[calc(100vh-9rem)] space-y-6">
+            <div ref={audioContainerRef} className="hidden" />
             <VoiceHeader />
 
             <div className="grid gap-6 lg:grid-cols-12 min-h-[calc(100vh-18rem)]">
@@ -427,6 +542,7 @@ export default function VoicePage() {
                     isMicEnabled={isMicEnabled}
                     isSpeakerEnabled={isSpeakerEnabled}
                     micStatusMessage={micStatusMessage}
+                    remoteSpeakerLevels={remoteSpeakerLevels}
                     roomChats={roomChats}
                     chatInput={chatInput}
                     onLeaveRoom={() => {

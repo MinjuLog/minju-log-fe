@@ -11,6 +11,7 @@ type VoiceChatPanelProps = {
     isMicEnabled: boolean;
     isSpeakerEnabled: boolean;
     micStatusMessage: string | null;
+    remoteSpeakerLevels: { participantId: string; name: string; level: number }[];
     roomChats: ChatMessage[];
     chatInput: string;
     onLeaveRoom: () => void;
@@ -37,6 +38,7 @@ export default function VoiceChatPanel({
     isMicEnabled,
     isSpeakerEnabled,
     micStatusMessage,
+    remoteSpeakerLevels,
     roomChats,
     chatInput,
     onLeaveRoom,
@@ -107,6 +109,42 @@ export default function VoiceChatPanel({
             </div>
 
             {micStatusMessage && <p className="mt-2 text-xs text-amber-700">{micStatusMessage}</p>}
+
+            <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="mb-2 flex items-center justify-between">
+                    <h3 className="text-xs font-semibold text-gray-700">다른 사람 입력 레벨</h3>
+                    <span className="text-[11px] text-gray-500">실시간</span>
+                </div>
+                {remoteSpeakerLevels.length === 0 ? (
+                    <p className="text-xs text-gray-500">표시할 다른 참가자가 없습니다.</p>
+                ) : (
+                    <div className="space-y-2">
+                        {remoteSpeakerLevels.map((speaker) => {
+                            const percent = Math.round(speaker.level * 100);
+                            return (
+                                <div key={speaker.participantId} className="space-y-1">
+                                    <div className="flex items-center justify-between text-[11px] text-gray-600">
+                                        <span className="truncate pr-2">{speaker.name}</span>
+                                        <span>{percent}%</span>
+                                    </div>
+                                    <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+                                        <div
+                                            className={`h-full rounded-full transition-all ${
+                                                percent >= 70
+                                                    ? "bg-red-500"
+                                                    : percent >= 40
+                                                      ? "bg-amber-500"
+                                                      : "bg-emerald-500"
+                                            }`}
+                                            style={{ width: `${percent}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
 
             <div className="mt-4 flex-1 min-h-[24rem] max-h-[calc(100vh-22rem)] overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-3">
                 {!selectedRoomId ? (
