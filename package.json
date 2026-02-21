@@ -13,6 +13,7 @@
     "@stomp/stompjs": "^7.2.1",
     "axios": "^1.13.2",
     "emoji-picker-react": "^4.16.1",
+    "livekit-client": "^2.17.2",
     "lucide-react": "^0.546.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
