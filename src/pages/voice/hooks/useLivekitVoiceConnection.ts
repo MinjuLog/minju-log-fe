@@ -233,6 +233,8 @@ export default function useLivekitVoiceConnection({
     const attachRemoteAudioTrack = (trackKey: string, track: Track) => {
         if (track.kind !== Track.Kind.Audio) return;
         if (!audioContainerRef.current) return;
+        const existingElements = remoteAudioElementsRef.current.get(trackKey) ?? [];
+        if (existingElements.length > 0) return;
 
         const audioTrack = track as Track & { attach: () => HTMLMediaElement };
         const element = audioTrack.attach();
@@ -241,7 +243,6 @@ export default function useLivekitVoiceConnection({
         element.setAttribute("playsinline", "true");
         audioContainerRef.current.appendChild(element);
 
-        const existingElements = remoteAudioElementsRef.current.get(trackKey) ?? [];
         remoteAudioElementsRef.current.set(trackKey, [...existingElements, element]);
 
         void applySinkIdToElement(element, selectedSpeakerDeviceIdRef.current).catch(() => {
@@ -278,6 +279,17 @@ export default function useLivekitVoiceConnection({
         stopMyLevelSync();
         clearAllRemoteAudioTracks();
         clearRemoteSpeakerLevels();
+    };
+
+    const attachExistingRemoteAudioTracks = (room: Room) => {
+        room.remoteParticipants.forEach((participant) => {
+            participant.trackPublications.forEach((publication) => {
+                if (publication.kind !== Track.Kind.Audio) return;
+                if (!publication.track) return;
+                const trackKey = publication.trackSid ?? publication.track.sid;
+                attachRemoteAudioTrack(trackKey, publication.track);
+            });
+        });
     };
 
     const bindLivekitEvents = (room: Room, roomId: string, userId: string) => {
@@ -366,8 +378,10 @@ export default function useLivekitVoiceConnection({
             }
 
             connectedRoom = new Room();
+            bindLivekitEvents(connectedRoom, nextRoomId, userId);
             await connectedRoom.connect(livekitUrl, token);
             applySpeakerState(connectedRoom, speakerEnabledRef.current);
+            attachExistingRemoteAudioTracks(connectedRoom);
             startMyLevelSync(connectedRoom);
             await syncDeviceLabels(connectedRoom);
 
@@ -383,7 +397,6 @@ export default function useLivekitVoiceConnection({
                 setIsMicEnabled(false);
             }
 
-            bindLivekitEvents(connectedRoom, nextRoomId, userId);
             await callVoiceRoomPresence(nextRoomId, "join", userId);
 
             livekitRoomRef.current = connectedRoom;
