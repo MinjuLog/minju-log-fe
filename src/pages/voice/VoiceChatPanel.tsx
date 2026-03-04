@@ -55,6 +55,8 @@ export default function VoiceChatPanel({
     onChatInputChange,
     onSendChat,
 }: VoiceChatPanelProps) {
+    const currentUserId = Number(localStorage.getItem("userId") ?? NaN);
+
     return (
         <main className="lg:col-span-8 flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3 border-b border-gray-200 pb-3">
@@ -168,15 +170,29 @@ export default function VoiceChatPanel({
                     <p className="text-sm text-gray-500">아직 채팅이 없습니다.</p>
                 ) : (
                     <div className="space-y-3">
-                        {roomChats.map((message) => (
-                            <div key={message.id} className="rounded-md bg-white p-2.5">
-                                <div className="flex items-center gap-2 text-xs text-gray-500">
-                                    <span className="font-semibold text-gray-700">{message.senderName}</span>
-                                    <span>{formatChatTime(message.createdAt)}</span>
+                        {roomChats.map((message) => {
+                            const isMine = !Number.isNaN(currentUserId) && message.senderId === currentUserId;
+
+                            return (
+                                <div key={message.id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
+                                    <div
+                                        className={`max-w-[80%] rounded-xl border px-3 py-2.5 ${
+                                            isMine ? "border-blue-200 bg-blue-50" : "border-gray-200 bg-white"
+                                        }`}
+                                    >
+                                        <div className={`flex items-center gap-2 text-xs ${isMine ? "justify-end text-blue-700" : "text-gray-500"}`}>
+                                            <span className={`font-semibold ${isMine ? "text-blue-700" : "text-gray-700"}`}>
+                                                {isMine ? "나" : message.senderName}
+                                            </span>
+                                            <span>{formatChatTime(message.createdAt)}</span>
+                                        </div>
+                                        <p className={`mt-1 break-words whitespace-pre-wrap text-sm ${isMine ? "text-blue-900" : "text-gray-800"}`}>
+                                            {message.content}
+                                        </p>
+                                    </div>
                                 </div>
-                                <p className="mt-1 text-sm text-gray-800">{message.content}</p>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
