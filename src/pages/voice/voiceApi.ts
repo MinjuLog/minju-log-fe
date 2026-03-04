@@ -1,6 +1,6 @@
 ﻿import axios from "axios";
 import { api } from "../feed/api/api.ts";
-import type { ChatMessage, LivekitTokenResponse, VoiceRoom, VoiceRoomApiResponse, VoiceRoomUserResponse } from "./types.ts";
+import type { ChatMessage, HybridTransport, LivekitTokenResponse, VoiceRoom, VoiceRoomApiResponse, VoiceRoomUserResponse } from "./types.ts";
 
 const LIVEKIT_TOKEN_ENDPOINT =
     (import.meta.env.VITE_LIVEKIT_TOKEN_ENDPOINT as string | undefined) ?? "/api/voice/livekit/token";
@@ -77,6 +77,13 @@ export async function fetchVoiceRooms(
           : [];
 
     return mapVoiceRooms(roomList, toParticipantLabel);
+}
+
+export async function fetchVoiceRoomTransport(roomId: string): Promise<HybridTransport | null> {
+    const res = await api.get(`/api/voice/rooms/${roomId}/transport`);
+    const payload = res.data?.result ?? res.data;
+    if (!payload || typeof payload !== "object") return null;
+    return payload as HybridTransport;
 }
 
 export async function fetchRoomMessages(roomId: string): Promise<ChatMessage[]> {

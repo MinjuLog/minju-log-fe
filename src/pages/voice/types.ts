@@ -20,6 +20,14 @@ export type ChatMessage = {
     createdAt: string;
 };
 
+export type HybridTransport = {
+    effectiveMode: "mesh" | "sfu";
+    configuredMode?: string;
+    participantCount?: number;
+    switchToSfuAt?: number;
+    switchToMeshAt?: number;
+};
+
 export type LivekitTokenResponse = {
     token: string;
     roomName: string;
@@ -38,6 +46,7 @@ export type VoiceRoomApiResponse = {
     active: boolean;
     createdAt: string;
     onlineUsers: VoiceRoomUserResponse[];
+    hybridTransport?: HybridTransport;
 };
 
 export type VoiceRoomPresencePayload = {
@@ -47,6 +56,7 @@ export type VoiceRoomPresencePayload = {
     userId: number;
     username: string;
     onlineUsers: VoiceRoomUserResponse[];
+    hybridTransport?: HybridTransport;
 };
 
 export type RemoteSpeakerLevel = {

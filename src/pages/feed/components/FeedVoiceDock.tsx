@@ -2,13 +2,14 @@ import axios from "axios";
 import type { Client, IMessage, StompSubscription } from "@stomp/stompjs";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChatMessage, VoiceRoom, VoiceRoomPresencePayload, VoiceRoomUserResponse } from "../../voice/types.ts";
-import useLivekitVoiceConnection from "../../voice/hooks/useLivekitVoiceConnection.ts";
+import useHybridVoiceConnection from "../../voice/hooks/useHybridVoiceConnection.ts";
 import {
     LIVEKIT_URL,
     callVoiceRoomLeaveOnPageExit,
     callVoiceRoomPresence,
     fetchLivekitToken,
     fetchRoomMessages,
+    fetchVoiceRoomTransport,
     fetchVoiceRooms,
     parseVoiceChannelId,
     sendRoomMessage,
@@ -66,6 +67,7 @@ export default function FeedVoiceDock({
     const [isRoomSwitching, setIsRoomSwitching] = useState(false);
     const [isMicDeviceMenuOpen, setIsMicDeviceMenuOpen] = useState(false);
     const [isSpeakerDeviceMenuOpen, setIsSpeakerDeviceMenuOpen] = useState(false);
+    const roomTransportModeRef = useRef<Record<string, "mesh" | "sfu">>({});
 
     const channelPresenceSubRef = useRef<StompSubscription | null>(null);
     const roomChatSubRef = useRef<StompSubscription | null>(null);
@@ -76,11 +78,16 @@ export default function FeedVoiceDock({
     const chatScrollRef = useRef<HTMLDivElement | null>(null);
     const queuedSwitchRoomIdRef = useRef<string | null>(null);
     const switchingRoomRef = useRef(false);
+    const selectedRoomIdRef = useRef<string | null>(null);
+    const connectionModeRef = useRef<"mesh" | "sfu">("sfu");
+    const switchModeRef = useRef<(mode: "mesh" | "sfu", roomIdHint?: string | null) => Promise<void>>(async () => {});
     const joinRoomRef = useRef<(roomId: string) => Promise<void>>(async () => {});
     const leaveRoomRef = useRef<() => Promise<void>>(async () => {});
 
     const {
         audioContainerRef,
+        mode: connectionMode,
+        switchMode,
         joinedRoomId,
         isConnecting,
         connectionError,
@@ -101,16 +108,20 @@ export default function FeedVoiceDock({
         selectMicrophoneDevice,
         selectSpeakerDevice,
         toggleSpeaker,
-    } = useLivekitVoiceConnection({
+    } = useHybridVoiceConnection({
         livekitUrl: LIVEKIT_URL,
         participantName: MY_NAME,
         getUserId: () => localStorage.getItem("userId") ?? "",
         fetchLivekitToken,
         callVoiceRoomPresence,
+        wsClientRef,
+        wsConnected,
+        initialMode: "sfu",
     });
 
     joinRoomRef.current = joinRoom;
     leaveRoomRef.current = leaveRoom;
+    switchModeRef.current = switchMode;
 
     const selectedRoom = useMemo(() => {
         if (!selectedRoomId) return rooms[0] ?? null;
@@ -127,6 +138,24 @@ export default function FeedVoiceDock({
                 const nextRoomId = queuedSwitchRoomIdRef.current;
                 queuedSwitchRoomIdRef.current = null;
                 setSelectedRoomId(nextRoomId);
+
+                let targetMode = roomTransportModeRef.current[nextRoomId];
+                if (!targetMode) {
+                    try {
+                        const transport = await fetchVoiceRoomTransport(nextRoomId);
+                        const fetchedMode = transport?.effectiveMode;
+                        if (fetchedMode === "mesh" || fetchedMode === "sfu") {
+                            targetMode = fetchedMode;
+                            roomTransportModeRef.current[nextRoomId] = fetchedMode;
+                        }
+                    } catch {
+                        // Ignore mode fetch errors and fallback to current mode join flow.
+                    }
+                }
+                if (targetMode && targetMode !== connectionModeRef.current) {
+                    await switchModeRef.current(targetMode, nextRoomId);
+                    continue;
+                }
 
                 if (joinedRoomIdRef.current === nextRoomId) {
                     continue;
@@ -220,7 +249,23 @@ export default function FeedVoiceDock({
 
         channelPresenceSubRef.current = wsClientRef.current.subscribe(`/topic/voice.channel.${channelId}`, (msg: IMessage) => {
             const payload: VoiceRoomPresencePayload = JSON.parse(msg.body);
-            applyRoomUsersFromBroadcast(String(payload.roomId), payload.onlineUsers ?? []);
+            const roomId = String(payload.roomId);
+            applyRoomUsersFromBroadcast(roomId, payload.onlineUsers ?? []);
+
+            const nextMode = payload.hybridTransport?.effectiveMode;
+            if (!nextMode) return;
+
+            const previousMode = roomTransportModeRef.current[roomId];
+            roomTransportModeRef.current[roomId] = nextMode;
+
+            if (previousMode === nextMode) return;
+            if (switchingRoomRef.current) return;
+            if (selectedRoomIdRef.current !== roomId && joinedRoomIdRef.current !== roomId) return;
+
+            const roomIdHint = selectedRoomIdRef.current === roomId || joinedRoomIdRef.current === roomId ? roomId : null;
+            void switchModeRef.current(nextMode, roomIdHint).catch(() => {
+                setChatLoadError("연결 모드 전환에 실패했습니다.");
+            });
         });
     };
 
@@ -243,6 +288,14 @@ export default function FeedVoiceDock({
     useEffect(() => {
         joinedRoomIdRef.current = joinedRoomId;
     }, [joinedRoomId]);
+
+    useEffect(() => {
+        selectedRoomIdRef.current = selectedRoomId;
+    }, [selectedRoomId]);
+
+    useEffect(() => {
+        connectionModeRef.current = connectionMode;
+    }, [connectionMode]);
 
     useEffect(() => {
         onJoinedRoomIdChange?.(joinedRoomId);
@@ -405,7 +458,8 @@ export default function FeedVoiceDock({
                     <div>
                         <h2 className="text-lg font-bold text-gray-900">{selectedRoom ? `🔊 ${selectedRoom.name}` : "보이스 채널"}</h2>
                         <p className="mt-1 text-xs text-gray-500">
-                            {wsConnected ? "실시간 연결됨" : "연결 중"} · {joinedRoomId ? "음성 참여 중" : "미참여"}
+                            {wsConnected ? "실시간 연결됨" : "연결 중"} · {joinedRoomId ? "음성 참여 중" : "미참여"} · 모드:{" "}
+                            {connectionMode === "mesh" ? "MESH" : "SFU"}
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
