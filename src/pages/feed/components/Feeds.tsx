@@ -88,6 +88,7 @@ export default function Feeds() {
     const [isVoiceChannelExpanded, setIsVoiceChannelExpanded] = useState(false);
     const [voiceRooms, setVoiceRooms] = useState<VoiceRoom[]>([]);
     const [selectedVoiceRoomId, setSelectedVoiceRoomId] = useState<string | null>(null);
+    const [joinedVoiceRoomId, setJoinedVoiceRoomId] = useState<string | null>(null);
     const [isVoiceLeaving, setIsVoiceLeaving] = useState(false);
     const [isVoiceSwitching, setIsVoiceSwitching] = useState(false);
     const [voiceRoomSelectRequestKey, setVoiceRoomSelectRequestKey] = useState(0);
@@ -99,14 +100,13 @@ export default function Feeds() {
     const userId = localStorage.getItem("userId") ?? "";
 
     const client = useMemo(() => {
-        const enableStompDebug = import.meta.env.VITE_STOMP_DEBUG === "true";
         return new Client({
             brokerURL: WS_URL,
             reconnectDelay: 2000,
             heartbeatIncoming: 10000,
             heartbeatOutgoing: 10000,
             connectHeaders: { userId },
-            debug: enableStompDebug ? (s) => console.log("[stomp]", s) : () => {},
+            debug: () => {},
         });
     }, [userId]);
 
@@ -412,6 +412,33 @@ export default function Feeds() {
         [],
     );
 
+    useEffect(() => {
+        const myUserId = Number(userId);
+        if (Number.isNaN(myUserId)) return;
+        const myDisplayName = myName === "unknown" ? "나" : myName;
+
+        setVoiceRooms((prev) =>
+            prev.map((room) => {
+                const others = room.participants.filter((participant) => participant.userId !== myUserId);
+                if (joinedVoiceRoomId !== room.id) {
+                    return { ...room, participants: others };
+                }
+
+                return {
+                    ...room,
+                    participants: [
+                        ...others,
+                        {
+                            userId: myUserId,
+                            name: myDisplayName,
+                            label: `${myDisplayName}(나)`,
+                        },
+                    ],
+                };
+            }),
+        );
+    }, [joinedVoiceRoomId, myName, userId]);
+
     if (loading) return <FeedSkeleton count={6} />;
 
     return (
@@ -457,6 +484,7 @@ export default function Feeds() {
                     preselectedRoomId={selectedVoiceRoomId}
                     preselectedRoomRequestKey={voiceRoomSelectRequestKey}
                     onSpeakerLevelsChange={handleSpeakerLevelsChange}
+                    onJoinedRoomIdChange={setJoinedVoiceRoomId}
                     onVoiceLeavingChange={setIsVoiceLeaving}
                     onVoiceSwitchingChange={setIsVoiceSwitching}
                     wsClientRef={clientRef}

@@ -32,7 +32,6 @@ export default function CopyButton() {
         } catch (err) {
             setToast("링크 복사에 실패했습니다.");
             setTimeout(() => setToast(""), 2000);
-            console.log(err);
         }
     };
 
