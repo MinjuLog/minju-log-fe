@@ -38,9 +38,9 @@ type MeshSignalType = "HELLO" | "OFFER" | "ANSWER" | "ICE" | "LEAVE";
 
 type MeshSignalMessage = {
     roomId: string;
-    fromUserId: string;
+    fromUserId: string | number;
     fromName?: string;
-    toUserId?: string | null;
+    toUserId?: string | number | null;
     type: MeshSignalType;
     sdp?: RTCSessionDescriptionInit;
     candidate?: RTCIceCandidateInit;
@@ -49,6 +49,7 @@ type MeshSignalMessage = {
 const SIGNAL_TOPIC_TEMPLATE = (import.meta.env.VITE_VOICE_SIGNAL_TOPIC_TEMPLATE as string | undefined) ?? "/topic/voice.room.{roomId}.signal";
 const SIGNAL_SEND_ENDPOINT = (import.meta.env.VITE_VOICE_SIGNAL_SEND_ENDPOINT as string | undefined) ?? "/app/voice/rooms/{roomId}/signal";
 const STUN_SERVERS = (import.meta.env.VITE_MESH_ICE_SERVERS as string | undefined) ?? "stun:stun.l.google.com:19302,stun:stun1.l.google.com:19302";
+const MESH_DEBUG = (import.meta.env.VITE_VOICE_MESH_DEBUG as string | undefined) !== "false";
 
 function normalizeAudioLevel(level: number): number {
     return Math.max(0, Math.min(1, level));
@@ -63,6 +64,20 @@ function makeIceServers(): RTCIceServer[] {
         .map((url) => url.trim())
         .filter(Boolean)
         .map((urls) => ({ urls }));
+}
+
+function normalizeUserId(value: string | number | null | undefined): string {
+    if (value === null || value === undefined) return "";
+    return String(value);
+}
+
+function shouldInitiateOffer(myUserId: string, remoteUserId: string): boolean {
+    const myNumber = Number(myUserId);
+    const remoteNumber = Number(remoteUserId);
+    if (!Number.isNaN(myNumber) && !Number.isNaN(remoteNumber)) {
+        return myNumber > remoteNumber;
+    }
+    return myUserId > remoteUserId;
 }
 
 export default function useMeshVoiceConnection({
@@ -93,6 +108,8 @@ export default function useMeshVoiceConnection({
     const audioContextRef = useRef<AudioContext | null>(null);
     const analyserRef = useRef<AnalyserNode | null>(null);
     const levelTimerRef = useRef<number | null>(null);
+    const remoteLevelTimerRef = useRef<number | null>(null);
+    const remoteAudioContextRef = useRef<AudioContext | null>(null);
     const signalSubRef = useRef<StompSubscription | null>(null);
     const selectedSpeakerDeviceIdRef = useRef<string | null>(null);
     const isSpeakerEnabledRef = useRef(isSpeakerEnabled);
@@ -100,6 +117,14 @@ export default function useMeshVoiceConnection({
     const peerConnByUserIdRef = useRef<Map<string, RTCPeerConnection>>(new Map());
     const peerNameByUserIdRef = useRef<Map<string, string>>(new Map());
     const remoteAudioByUserIdRef = useRef<Map<string, HTMLAudioElement>>(new Map());
+    const remoteAnalyserByUserIdRef = useRef<Map<string, { analyser: AnalyserNode; source: MediaStreamAudioSourceNode; data: Uint8Array }>>(new Map());
+    const helloAckSentRef = useRef<Set<string>>(new Set());
+    const remoteLevelLastLogRef = useRef<number>(0);
+
+    const debugLog = (...args: unknown[]) => {
+        if (!MESH_DEBUG) return;
+        console.log("[mesh]", ...args);
+    };
 
     const stopMyLevelSync = () => {
         if (levelTimerRef.current !== null) {
@@ -118,8 +143,58 @@ export default function useMeshVoiceConnection({
         setRemoteSpeakerLevels(rows);
     };
 
+    const stopRemoteLevelSync = () => {
+        if (remoteLevelTimerRef.current !== null) {
+            window.clearInterval(remoteLevelTimerRef.current);
+            remoteLevelTimerRef.current = null;
+        }
+    };
+
+    const startRemoteLevelSync = () => {
+        stopRemoteLevelSync();
+        debugLog("startRemoteLevelSync", { analyserCount: remoteAnalyserByUserIdRef.current.size });
+        remoteLevelTimerRef.current = window.setInterval(() => {
+            const nextLevelByUserId: Record<string, number> = {};
+            remoteAnalyserByUserIdRef.current.forEach((entry, remoteUserId) => {
+                entry.analyser.getByteTimeDomainData(entry.data as unknown as Uint8Array<ArrayBuffer>);
+                let sumSquares = 0;
+                for (let i = 0; i < entry.data.length; i += 1) {
+                    const sample = (entry.data[i] - 128) / 128;
+                    sumSquares += sample * sample;
+                }
+                const rms = Math.sqrt(sumSquares / entry.data.length);
+                nextLevelByUserId[remoteUserId] = normalizeAudioLevel(rms * 3.5);
+            });
+
+            const participantIds = new Set<string>([
+                ...peerNameByUserIdRef.current.keys(),
+                ...remoteAnalyserByUserIdRef.current.keys(),
+            ]);
+            const nextRows: RemoteSpeakerLevel[] = Array.from(participantIds).map((participantId) => ({
+                participantId,
+                name: peerNameByUserIdRef.current.get(participantId) ?? participantId,
+                level: nextLevelByUserId[participantId] ?? 0,
+            }));
+            setRemoteSpeakerLevels(nextRows);
+
+            const now = Date.now();
+            if (now - remoteLevelLastLogRef.current > 1000) {
+                remoteLevelLastLogRef.current = now;
+                debugLog(
+                    "remote levels",
+                    nextRows.map((row) => ({
+                        id: row.participantId,
+                        name: row.name,
+                        level: Number(row.level.toFixed(3)),
+                    })),
+                );
+            }
+        }, 120);
+    };
+
     const closeMicPipeline = async () => {
         stopMyLevelSync();
+        stopRemoteLevelSync();
         localStreamRef.current?.getTracks().forEach((track) => track.stop());
         localStreamRef.current = null;
 
@@ -128,6 +203,15 @@ export default function useMeshVoiceConnection({
             audioContextRef.current = null;
         }
         analyserRef.current = null;
+
+        remoteAnalyserByUserIdRef.current.forEach((entry) => {
+            entry.source.disconnect();
+        });
+        remoteAnalyserByUserIdRef.current.clear();
+        if (remoteAudioContextRef.current) {
+            await remoteAudioContextRef.current.close().catch(() => {});
+            remoteAudioContextRef.current = null;
+        }
     };
 
     const applySinkIdToElement = async (element: HTMLAudioElement, deviceId: string | null) => {
@@ -154,10 +238,24 @@ export default function useMeshVoiceConnection({
     };
 
     const attachRemoteStream = async (remoteUserId: string, stream: MediaStream) => {
+        if (!peerNameByUserIdRef.current.has(remoteUserId)) {
+            peerNameByUserIdRef.current.set(remoteUserId, remoteUserId);
+        }
         if (!audioContainerRef.current) return;
         const existing = remoteAudioByUserIdRef.current.get(remoteUserId);
         if (existing) {
             existing.srcObject = stream;
+            if (!remoteAnalyserByUserIdRef.current.has(remoteUserId)) {
+                if (!remoteAudioContextRef.current) {
+                    remoteAudioContextRef.current = new AudioContext();
+                }
+                const source = remoteAudioContextRef.current.createMediaStreamSource(stream);
+                const analyser = remoteAudioContextRef.current.createAnalyser();
+                analyser.fftSize = 1024;
+                source.connect(analyser);
+                remoteAnalyserByUserIdRef.current.set(remoteUserId, { analyser, source, data: new Uint8Array(analyser.fftSize) });
+                startRemoteLevelSync();
+            }
             return;
         }
 
@@ -173,6 +271,16 @@ export default function useMeshVoiceConnection({
         if (isSpeakerEnabledRef.current) {
             void element.play().catch(() => {});
         }
+
+        if (!remoteAudioContextRef.current) {
+            remoteAudioContextRef.current = new AudioContext();
+        }
+        const source = remoteAudioContextRef.current.createMediaStreamSource(stream);
+        const analyser = remoteAudioContextRef.current.createAnalyser();
+        analyser.fftSize = 1024;
+        source.connect(analyser);
+        remoteAnalyserByUserIdRef.current.set(remoteUserId, { analyser, source, data: new Uint8Array(analyser.fftSize) });
+        startRemoteLevelSync();
     };
 
     const detachRemoteStream = (remoteUserId: string) => {
@@ -181,6 +289,15 @@ export default function useMeshVoiceConnection({
         existing.pause();
         existing.remove();
         remoteAudioByUserIdRef.current.delete(remoteUserId);
+
+        const analyserEntry = remoteAnalyserByUserIdRef.current.get(remoteUserId);
+        if (analyserEntry) {
+            analyserEntry.source.disconnect();
+            remoteAnalyserByUserIdRef.current.delete(remoteUserId);
+        }
+        if (remoteAnalyserByUserIdRef.current.size === 0) {
+            stopRemoteLevelSync();
+        }
     };
 
     const disconnectPeer = (remoteUserId: string) => {
@@ -193,6 +310,7 @@ export default function useMeshVoiceConnection({
             peerConnByUserIdRef.current.delete(remoteUserId);
         }
         peerNameByUserIdRef.current.delete(remoteUserId);
+        helloAckSentRef.current.delete(remoteUserId);
         detachRemoteStream(remoteUserId);
         syncRemoteSpeakerRows();
     };
@@ -204,11 +322,44 @@ export default function useMeshVoiceConnection({
     const publishSignal = (payload: MeshSignalMessage) => {
         const roomId = joinedRoomIdRef.current ?? payload.roomId;
         const endpoint = resolveTemplate(SIGNAL_SEND_ENDPOINT, roomId);
+        debugLog("publishSignal", { endpoint, type: payload.type, roomId, toUserId: payload.toUserId ?? "broadcast" });
         wsClientRef.current?.publish({
             destination: endpoint,
             body: JSON.stringify(payload),
             headers: { "content-type": "application/json" },
         });
+    };
+
+    const attachLocalAudioTrackToPeer = (pc: RTCPeerConnection, remoteUserId: string): boolean => {
+        const localStream = localStreamRef.current;
+        const localTrack = localStream?.getAudioTracks()[0];
+        if (!localStream || !localTrack) return false;
+
+        const audioSender = pc.getSenders().find((sender) => sender.track?.kind === "audio");
+        if (audioSender?.track) return true;
+
+        pc.addTrack(localTrack, localStream);
+        debugLog("attachLocalAudioTrackToPeer", { remoteUserId });
+        return true;
+    };
+
+    const renegotiateWithOffer = async (pc: RTCPeerConnection, remoteUserId: string) => {
+        const roomId = joinedRoomIdRef.current;
+        if (!roomId) return;
+        if (pc.signalingState !== "stable") return;
+        if (pc.connectionState === "closed") return;
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        publishSignal({
+            roomId,
+            fromUserId: getUserId(),
+            fromName: participantName,
+            toUserId: remoteUserId,
+            type: "OFFER",
+            sdp: offer,
+        });
+        debugLog("renegotiateWithOffer", { remoteUserId });
     };
 
     const createPeerConnection = (remoteUserId: string, remoteName?: string): RTCPeerConnection => {
@@ -224,6 +375,7 @@ export default function useMeshVoiceConnection({
         const pc = new RTCPeerConnection({
             iceServers: makeIceServers(),
         });
+        debugLog("createPeerConnection", { remoteUserId, remoteName: remoteName ?? null });
         peerConnByUserIdRef.current.set(remoteUserId, pc);
         if (remoteName) {
             peerNameByUserIdRef.current.set(remoteUserId, remoteName);
@@ -232,9 +384,7 @@ export default function useMeshVoiceConnection({
         }
         syncRemoteSpeakerRows();
 
-        localStreamRef.current?.getTracks().forEach((track) => {
-            pc.addTrack(track, localStreamRef.current as MediaStream);
-        });
+        void attachLocalAudioTrackToPeer(pc, remoteUserId);
 
         pc.onicecandidate = (event) => {
             if (!event.candidate) return;
@@ -251,10 +401,16 @@ export default function useMeshVoiceConnection({
         pc.ontrack = (event) => {
             const stream = event.streams[0];
             if (!stream) return;
+            debugLog("ontrack", {
+                remoteUserId,
+                trackCount: stream.getTracks().length,
+                audioTrackCount: stream.getAudioTracks().length,
+            });
             void attachRemoteStream(remoteUserId, stream);
         };
 
         pc.onconnectionstatechange = () => {
+            debugLog("pc.connectionState", { remoteUserId, state: pc.connectionState });
             if (pc.connectionState === "failed" || pc.connectionState === "closed" || pc.connectionState === "disconnected") {
                 disconnectPeer(remoteUserId);
             }
@@ -281,24 +437,44 @@ export default function useMeshVoiceConnection({
     };
 
     const handleSignal = async (message: MeshSignalMessage) => {
-        const myUserId = getUserId();
+        const myUserId = normalizeUserId(getUserId());
         const roomId = joinedRoomIdRef.current;
         if (!roomId) return;
         if (message.roomId !== roomId) return;
-        if (message.fromUserId === myUserId) return;
-        if (message.toUserId && message.toUserId !== myUserId) return;
+        const fromUserId = normalizeUserId(message.fromUserId);
+        const toUserId = normalizeUserId(message.toUserId);
+        if (fromUserId === myUserId) return;
+        if (toUserId && toUserId !== myUserId) return;
 
-        const remoteUserId = message.fromUserId;
+        const remoteUserId = fromUserId;
         const remoteName = message.fromName;
+        debugLog("handleSignal", {
+            type: message.type,
+            from: remoteUserId,
+            to: toUserId || "broadcast",
+            hasSdp: Boolean(message.sdp),
+            hasCandidate: Boolean(message.candidate),
+        });
 
         try {
             if (message.type === "HELLO") {
                 peerNameByUserIdRef.current.set(remoteUserId, remoteName || remoteUserId);
                 syncRemoteSpeakerRows();
+                createPeerConnection(remoteUserId, remoteName);
 
                 // One-side initiator rule to avoid glare.
-                if (myUserId > remoteUserId) {
+                if (shouldInitiateOffer(myUserId, remoteUserId)) {
                     await createAndSendOffer(remoteUserId, remoteName);
+                } else if (!helloAckSentRef.current.has(remoteUserId)) {
+                    helloAckSentRef.current.add(remoteUserId);
+                    publishSignal({
+                        roomId,
+                        fromUserId: myUserId,
+                        fromName: participantName,
+                        toUserId: remoteUserId,
+                        type: "HELLO",
+                    });
+                    debugLog("hello-ack-sent", { toUserId: remoteUserId });
                 }
                 return;
             }
@@ -311,6 +487,7 @@ export default function useMeshVoiceConnection({
             const pc = createPeerConnection(remoteUserId, remoteName);
 
             if (message.type === "OFFER" && message.sdp) {
+                void attachLocalAudioTrackToPeer(pc, remoteUserId);
                 await pc.setRemoteDescription(new RTCSessionDescription(message.sdp));
                 const answer = await pc.createAnswer();
                 await pc.setLocalDescription(answer);
@@ -347,6 +524,7 @@ export default function useMeshVoiceConnection({
         if (!client?.connected) return false;
 
         const topic = resolveTemplate(SIGNAL_TOPIC_TEMPLATE, roomId);
+        debugLog("subscribeSignal", { topic, roomId });
         signalSubRef.current = client.subscribe(topic, (msg: IMessage) => {
             const payload = JSON.parse(msg.body) as MeshSignalMessage;
             void handleSignal(payload);
@@ -432,17 +610,20 @@ export default function useMeshVoiceConnection({
         if (!localStream) return;
         const track = localStream.getAudioTracks()[0] ?? null;
         const tasks: Promise<void>[] = [];
-        peerConnByUserIdRef.current.forEach((pc) => {
+        const renegotiationTasks: Promise<void>[] = [];
+        peerConnByUserIdRef.current.forEach((pc, remoteUserId) => {
             const sender = pc.getSenders().find((item) => item.track?.kind === "audio");
             if (!sender) {
                 if (track) {
                     pc.addTrack(track, localStream);
+                    renegotiationTasks.push(renegotiateWithOffer(pc, remoteUserId));
                 }
                 return;
             }
             tasks.push(sender.replaceTrack(track));
         });
         await Promise.all(tasks);
+        await Promise.all(renegotiationTasks);
     };
 
     const joinRoom = async (roomId: string) => {
@@ -457,12 +638,15 @@ export default function useMeshVoiceConnection({
         setMicStatusMessage(null);
 
         const userId = getUserId();
+        debugLog("joinRoom:start", { roomId, userId, wsConnected, stompConnected: Boolean(wsClientRef.current?.connected) });
 
         try {
             await callVoiceRoomPresence(roomId, "join", userId);
+            debugLog("joinRoom:presence-join-ok", { roomId });
 
             try {
                 await openMicrophone(selectedMicDeviceId ?? undefined);
+                debugLog("joinRoom:microphone-open-ok", { roomId });
             } catch (micError) {
                 setIsMicEnabled(false);
                 const message =
@@ -470,6 +654,7 @@ export default function useMeshVoiceConnection({
                         ? `마이크를 열 수 없습니다: ${micError.message}`
                         : "마이크를 열 수 없습니다. 권한/장치를 확인해주세요.";
                 setMicStatusMessage(message);
+                debugLog("joinRoom:microphone-open-fail", { roomId, message });
             }
 
             setJoinedRoomId(roomId);
@@ -488,15 +673,19 @@ export default function useMeshVoiceConnection({
                         fromName: participantName,
                         type: "HELLO",
                     });
+                    debugLog("joinRoom:hello-sent", { roomId });
                 } else {
                     setConnectionError("시그널 토픽 구독에 실패했습니다.");
+                    debugLog("joinRoom:subscribe-signal-fail", { roomId });
                 }
             } else {
                 setConnectionError("시그널링 연결이 준비되지 않았습니다. (입장 처리만 완료)");
+                debugLog("joinRoom:ws-not-ready", { roomId });
             }
         } catch (error) {
             const message = error instanceof Error ? error.message : "Mesh 연결 준비에 실패했습니다.";
             setConnectionError(message);
+            debugLog("joinRoom:fail", { roomId, message });
             signalSubRef.current?.unsubscribe();
             signalSubRef.current = null;
             await closeMicPipeline();
@@ -504,6 +693,7 @@ export default function useMeshVoiceConnection({
             setJoinedRoomId(null);
         } finally {
             setIsConnecting(false);
+            debugLog("joinRoom:end", { roomId, joinedRoomId: joinedRoomIdRef.current });
         }
     };
 
