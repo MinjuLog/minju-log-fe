@@ -90,7 +90,7 @@ export default function useMeshVoiceConnection({
     const [joinedRoomId, setJoinedRoomId] = useState<string | null>(null);
     const [isConnecting, setIsConnecting] = useState(false);
     const [connectionError, setConnectionError] = useState<string | null>(null);
-    const [isMicEnabled, setIsMicEnabled] = useState(false);
+    const [isMicEnabled, setIsMicEnabled] = useState(true);
     const [isSpeakerEnabled, setIsSpeakerEnabled] = useState(true);
     const [micStatusMessage, setMicStatusMessage] = useState<string | null>(null);
     const [micDeviceLabel, setMicDeviceLabel] = useState("기본 마이크");
