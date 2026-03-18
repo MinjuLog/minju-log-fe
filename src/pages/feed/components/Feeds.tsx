@@ -15,16 +15,17 @@ import FeedVoiceDock from "./FeedVoiceDock.tsx";
 import FeedChannelDock from "./FeedChannelDock.tsx";
 import { fetchVoiceRooms, parseVoiceChannelId } from "../../voice/voiceApi.ts";
 import type { VoiceRoom, VoiceRoomPresencePayload, VoiceRoomUserResponse } from "../../voice/types.ts";
+import { getWorkspaceTopic, WORKSPACE_ID } from "../constants/workspaceTopics.ts";
 
 const PAGE_SIZE = 30;
 const WS_URL = import.meta.env.VITE_FEED_WS_HOST;
-const workspace_ID = "1";
+const workspace_ID = WORKSPACE_ID;
 
-const TOPIC_FEED = `/topic/workspace.${workspace_ID}`;
-const TOPIC_REACTION = `/topic/workspace.${workspace_ID}/reaction`;
-const TOPIC_PRESENCE = `/topic/workspace.${workspace_ID}/connect`;
-const TOPIC_DELETE = `/topic/workspace.${workspace_ID}/delete`;
-const TOPIC_ONLINE_USERS = `/topic/workspace.${workspace_ID}/online-users`;
+const TOPIC_FEED = getWorkspaceTopic(workspace_ID);
+const TOPIC_REACTION = getWorkspaceTopic(workspace_ID, "reaction");
+const TOPIC_PRESENCE = getWorkspaceTopic(workspace_ID, "connect");
+const TOPIC_DELETE = getWorkspaceTopic(workspace_ID, "delete");
+const TOPIC_ONLINE_USERS = getWorkspaceTopic(workspace_ID, "online-users");
 
 type ReactionEvent = {
     actorId: number;

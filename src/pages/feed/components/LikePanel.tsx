@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { incrementLike } from "../api/workspace.ts";
+import { getWorkspaceTopic } from "../constants/workspaceTopics.ts";
 
 type Props = {
     connected: boolean;
@@ -30,7 +31,7 @@ export default function WorkspaceLikePanel({
         if (!connected) return;
         if (!clientRef.current) return;
 
-        const sub = clientRef.current.subscribe(`/topic/workspace.1/like`, (msg: any) => {
+        const sub = clientRef.current.subscribe(getWorkspaceTopic(workspaceId, "like"), (msg: any) => {
             const payload = JSON.parse(msg.body);
             const nextCount = payload.likeCount ?? payload.count ?? payload;
 
