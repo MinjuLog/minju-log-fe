@@ -18,6 +18,7 @@ import {
 
 const MY_NAME = "나";
 const INITIAL_CHAT: Record<string, ChatMessage[]> = {};
+const MODE_SWITCH_GRACE_MS = 1500;
 
 function formatChatTime(createdAt: string): string {
     const date = new Date(createdAt);
@@ -84,6 +85,11 @@ export default function FeedVoiceDock({
     const switchModeRef = useRef<(mode: "mesh" | "sfu", roomIdHint?: string | null) => Promise<void>>(async () => {});
     const joinRoomRef = useRef<(roomId: string) => Promise<void>>(async () => {});
     const leaveRoomRef = useRef<() => Promise<void>>(async () => {});
+    const autoModeSwitchStateRef = useRef<{
+        roomId: string;
+        desiredMode: "mesh" | "sfu";
+        timerId: number | null;
+    } | null>(null);
 
     const {
         audioContainerRef,
@@ -213,6 +219,68 @@ export default function FeedVoiceDock({
         return user.userId === currentUserIdRef.current ? `${safeName}(나)` : safeName;
     };
 
+    const clearAutoModeSwitchState = () => {
+        const currentState = autoModeSwitchStateRef.current;
+        if (currentState && currentState.timerId !== null) {
+            window.clearTimeout(currentState.timerId);
+        }
+        autoModeSwitchStateRef.current = null;
+    };
+
+    const scheduleAutoModeSwitchReconcile = (roomId: string) => {
+        const currentState = autoModeSwitchStateRef.current;
+        if (!currentState || currentState.roomId !== roomId) return;
+        if (currentState.timerId !== null) {
+            window.clearTimeout(currentState.timerId);
+        }
+
+        currentState.timerId = window.setTimeout(() => {
+            const latestState = autoModeSwitchStateRef.current;
+            if (!latestState || latestState.roomId !== roomId) return;
+            latestState.timerId = null;
+
+            if (joinedRoomIdRef.current !== roomId) {
+                clearAutoModeSwitchState();
+                return;
+            }
+
+            const latestDesiredMode = roomTransportModeRef.current[roomId] ?? latestState.desiredMode;
+            latestState.desiredMode = latestDesiredMode;
+
+            if (connectionModeRef.current === latestDesiredMode) {
+                clearAutoModeSwitchState();
+                return;
+            }
+
+            void runAutoModeSwitch(roomId, latestDesiredMode);
+        }, MODE_SWITCH_GRACE_MS);
+    };
+
+    const runAutoModeSwitch = async (roomId: string, nextMode: "mesh" | "sfu") => {
+        const currentState = autoModeSwitchStateRef.current;
+        if (currentState?.roomId === roomId) {
+            currentState.desiredMode = nextMode;
+            return;
+        }
+
+        clearAutoModeSwitchState();
+        autoModeSwitchStateRef.current = {
+            roomId,
+            desiredMode: nextMode,
+            timerId: null,
+        };
+
+        try {
+            await switchModeRef.current(nextMode, roomId);
+        } catch {
+            clearAutoModeSwitchState();
+            setChatLoadError("연결 모드 전환에 실패했습니다.");
+            return;
+        }
+
+        scheduleAutoModeSwitchReconcile(roomId);
+    };
+
     const applyRoomUsersFromBroadcast = (roomId: string, users: VoiceRoomUserResponse[]) => {
         setRooms((prev) =>
             prev.map((room) =>
@@ -257,17 +325,18 @@ export default function FeedVoiceDock({
             const nextMode = payload.hybridTransport?.effectiveMode;
             if (!nextMode) return;
 
-            const previousMode = roomTransportModeRef.current[roomId];
             roomTransportModeRef.current[roomId] = nextMode;
-
-            if (previousMode === nextMode) return;
             if (switchingRoomRef.current) return;
-            if (selectedRoomIdRef.current !== roomId && joinedRoomIdRef.current !== roomId) return;
+            if (joinedRoomIdRef.current !== roomId) return;
 
-            const roomIdHint = selectedRoomIdRef.current === roomId || joinedRoomIdRef.current === roomId ? roomId : null;
-            void switchModeRef.current(nextMode, roomIdHint).catch(() => {
-                setChatLoadError("연결 모드 전환에 실패했습니다.");
-            });
+            const currentAutoSwitchState = autoModeSwitchStateRef.current;
+            if (currentAutoSwitchState?.roomId === roomId) {
+                currentAutoSwitchState.desiredMode = nextMode;
+                return;
+            }
+
+            if (connectionModeRef.current === nextMode) return;
+            void runAutoModeSwitch(roomId, nextMode);
         });
     };
 
@@ -298,6 +367,12 @@ export default function FeedVoiceDock({
     useEffect(() => {
         connectionModeRef.current = connectionMode;
     }, [connectionMode]);
+
+    useEffect(() => {
+        return () => {
+            clearAutoModeSwitchState();
+        };
+    }, []);
 
     useEffect(() => {
         onJoinedRoomIdChange?.(joinedRoomId);
