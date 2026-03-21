@@ -9,6 +9,7 @@ type Props = {
     isVoiceRoomLoading: boolean;
     voiceRoomLoadError: string | null;
     selectedVoiceRoomId: string | null;
+    joinedVoiceRoomId: string | null;
     isVoiceLeaving: boolean;
     isVoiceSwitching: boolean;
     onSelectVoiceRoom: (roomId: string) => void;
@@ -44,6 +45,7 @@ export default function FeedChannelDock({
     isVoiceRoomLoading,
     voiceRoomLoadError,
     selectedVoiceRoomId,
+    joinedVoiceRoomId,
     isVoiceLeaving,
     isVoiceSwitching,
     onSelectVoiceRoom,
@@ -92,6 +94,7 @@ export default function FeedChannelDock({
 
                                 {voiceRooms.map((room) => {
                                     const isRoomActive = selectedVoiceRoomId === room.id;
+                                    const isJoinedRoom = joinedVoiceRoomId === room.id;
                                     const isDisabled = Boolean((isVoiceLeaving || isVoiceSwitching) && selectedVoiceRoomId !== room.id);
                                     return (
                                         <div key={room.id} className="rounded-md border border-gray-200 bg-white">
@@ -124,27 +127,28 @@ export default function FeedChannelDock({
                                                                 </span>
                                                                 <span className="truncate text-[10px] text-gray-600">{participant.label}</span>
                                                             </span>
-                                                            {(() => {
-                                                                const level =
-                                                                    participant.label.includes("(나)")
-                                                                        ? mySpeakerLevel
+                                                            {isJoinedRoom &&
+                                                                (() => {
+                                                                    const level =
+                                                                        participant.label.includes("(나)")
+                                                                            ? mySpeakerLevel
                                                                         : (remoteLevelByIdentity[String(participant.userId)] ??
                                                                             remoteLevelByName[participant.label] ??
                                                                             remoteLevelByName[participant.name] ??
                                                                             0);
                                                                 const percent = Math.max(0, Math.min(100, Math.round(level * 100)));
-                                                                return (
-                                                                    <span className="inline-flex flex-none items-center justify-end gap-1">
-                                                                        <span className="h-1 w-12 overflow-hidden rounded bg-gray-200">
-                                                                            <span
-                                                                                className="block h-full rounded bg-emerald-500"
-                                                                                style={{ width: `${percent}%` }}
-                                                                            />
+                                                                    return (
+                                                                        <span className="inline-flex flex-none items-center justify-end gap-1">
+                                                                            <span className="h-1 w-12 overflow-hidden rounded bg-gray-200">
+                                                                                <span
+                                                                                    className="block h-full rounded bg-emerald-500"
+                                                                                    style={{ width: `${percent}%` }}
+                                                                                />
+                                                                            </span>
+                                                                            <span className="text-right text-[9px] text-gray-400">{percent}%</span>
                                                                         </span>
-                                                                        <span className="text-right text-[9px] text-gray-400">{percent}%</span>
-                                                                    </span>
-                                                                );
-                                                            })()}
+                                                                    );
+                                                                })()}
                                                         </div>
                                                     ))
                                                 )}

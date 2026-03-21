@@ -20,6 +20,13 @@ const MY_NAME = "나";
 const INITIAL_CHAT: Record<string, ChatMessage[]> = {};
 const MODE_SWITCH_GRACE_MS = 1500;
 
+function normalizeTransportMode(mode: unknown): "mesh" | "sfu" | null {
+    if (typeof mode !== "string") return null;
+    const normalized = mode.trim().toLowerCase();
+    if (normalized === "mesh" || normalized === "sfu") return normalized;
+    return null;
+}
+
 function formatChatTime(createdAt: string): string {
     const date = new Date(createdAt);
     if (Number.isNaN(date.getTime())) return "";
@@ -150,8 +157,8 @@ export default function FeedVoiceDock({
                 if (!targetMode) {
                     try {
                         const transport = await fetchVoiceRoomTransport(nextRoomId);
-                        const fetchedMode = transport?.effectiveMode;
-                        if (fetchedMode === "mesh" || fetchedMode === "sfu") {
+                        const fetchedMode = normalizeTransportMode(transport?.effectiveMode);
+                        if (fetchedMode) {
                             targetMode = fetchedMode;
                             roomTransportModeRef.current[nextRoomId] = fetchedMode;
                         }
@@ -281,6 +288,34 @@ export default function FeedVoiceDock({
         scheduleAutoModeSwitchReconcile(roomId);
     };
 
+    const reconcileTransportMode = async (roomId: string, requestedMode?: unknown) => {
+        let nextMode = normalizeTransportMode(requestedMode);
+
+        if (!nextMode) {
+            try {
+                const transport = await fetchVoiceRoomTransport(roomId);
+                nextMode = normalizeTransportMode(transport?.effectiveMode);
+            } catch {
+                return;
+            }
+        }
+
+        if (!nextMode) return;
+
+        roomTransportModeRef.current[roomId] = nextMode;
+        if (switchingRoomRef.current) return;
+        if (joinedRoomIdRef.current !== roomId) return;
+
+        const currentAutoSwitchState = autoModeSwitchStateRef.current;
+        if (currentAutoSwitchState?.roomId === roomId) {
+            currentAutoSwitchState.desiredMode = nextMode;
+            return;
+        }
+
+        if (connectionModeRef.current === nextMode) return;
+        void runAutoModeSwitch(roomId, nextMode);
+    };
+
     const applyRoomUsersFromBroadcast = (roomId: string, users: VoiceRoomUserResponse[]) => {
         setRooms((prev) =>
             prev.map((room) =>
@@ -321,22 +356,7 @@ export default function FeedVoiceDock({
             const payload: VoiceRoomPresencePayload = JSON.parse(msg.body);
             const roomId = String(payload.roomId);
             applyRoomUsersFromBroadcast(roomId, payload.onlineUsers ?? []);
-
-            const nextMode = payload.hybridTransport?.effectiveMode;
-            if (!nextMode) return;
-
-            roomTransportModeRef.current[roomId] = nextMode;
-            if (switchingRoomRef.current) return;
-            if (joinedRoomIdRef.current !== roomId) return;
-
-            const currentAutoSwitchState = autoModeSwitchStateRef.current;
-            if (currentAutoSwitchState?.roomId === roomId) {
-                currentAutoSwitchState.desiredMode = nextMode;
-                return;
-            }
-
-            if (connectionModeRef.current === nextMode) return;
-            void runAutoModeSwitch(roomId, nextMode);
+            void reconcileTransportMode(roomId, payload.hybridTransport?.effectiveMode);
         });
     };
 

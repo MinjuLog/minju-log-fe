@@ -457,6 +457,7 @@ export default function Feeds() {
                     isVoiceRoomLoading={isVoiceRoomLoading}
                     voiceRoomLoadError={voiceRoomLoadError}
                     selectedVoiceRoomId={selectedVoiceRoomId}
+                    joinedVoiceRoomId={joinedVoiceRoomId}
                     isVoiceLeaving={isVoiceLeaving}
                     isVoiceSwitching={isVoiceSwitching}
                     mySpeakerLevel={mySpeakerLevel}
