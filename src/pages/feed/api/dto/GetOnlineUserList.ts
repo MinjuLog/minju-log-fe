@@ -1,4 +1,4 @@
 export default interface GetOnlineUserList {
     ok: true;
-    result: string[];
+    result: Array<string | null>;
 }

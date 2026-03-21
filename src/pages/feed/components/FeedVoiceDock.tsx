@@ -12,6 +12,7 @@ import {
     fetchVoiceRoomTransport,
     fetchVoiceRooms,
     parseVoiceChannelId,
+    resolveDisplayName,
     sendRoomMessage,
 } from "../../voice/voiceApi.ts";
 
@@ -207,8 +208,9 @@ export default function FeedVoiceDock({
     }, [mySpeakerLevel, onSpeakerLevelsChange, remoteSpeakerLevels]);
 
     const toParticipantLabel = (user: VoiceRoomUserResponse): string => {
-        if (Number.isNaN(currentUserIdRef.current)) return user.username;
-        return user.userId === currentUserIdRef.current ? `${user.username}(나)` : user.username;
+        const safeName = resolveDisplayName(user.username);
+        if (Number.isNaN(currentUserIdRef.current)) return safeName;
+        return user.userId === currentUserIdRef.current ? `${safeName}(나)` : safeName;
     };
 
     const applyRoomUsersFromBroadcast = (roomId: string, users: VoiceRoomUserResponse[]) => {
@@ -219,7 +221,7 @@ export default function FeedVoiceDock({
                           ...room,
                           participants: users.map((user) => ({
                               userId: user.userId,
-                              name: user.username,
+                              name: resolveDisplayName(user.username),
                               label: toParticipantLabel(user),
                           })),
                       }

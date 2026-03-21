@@ -37,7 +37,7 @@ export type LivekitTokenResponse = {
 
 export type VoiceRoomUserResponse = {
     userId: number;
-    username: string;
+    username: string | null;
 };
 
 export type VoiceRoomApiResponse = {
@@ -54,7 +54,7 @@ export type VoiceRoomPresencePayload = {
     channelId: number;
     roomId: number;
     userId: number;
-    username: string;
+    username: string | null;
     onlineUsers: VoiceRoomUserResponse[];
     hybridTransport?: HybridTransport;
 };

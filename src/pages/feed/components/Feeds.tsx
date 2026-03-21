@@ -13,7 +13,7 @@ import FeedSidebar from "./FeedSidebar";
 import { normalizeFeed } from "../utils/feedNormalizer";
 import FeedVoiceDock from "./FeedVoiceDock.tsx";
 import FeedChannelDock from "./FeedChannelDock.tsx";
-import { fetchVoiceRooms, parseVoiceChannelId } from "../../voice/voiceApi.ts";
+import { fetchVoiceRooms, parseVoiceChannelId, resolveDisplayName } from "../../voice/voiceApi.ts";
 import type { VoiceRoom, VoiceRoomPresencePayload, VoiceRoomUserResponse } from "../../voice/types.ts";
 import { getWorkspaceTopic, WORKSPACE_ID } from "../constants/workspaceTopics.ts";
 
@@ -53,6 +53,16 @@ function uniqByName(users: OnlineUser[]): OnlineUser[] {
         out.push(u);
     }
     return out;
+}
+
+function mapOnlineUser(name: string | null | undefined, role: OnlineUser["role"] = "user"): OnlineUser {
+    const safeName = resolveDisplayName(name);
+    return {
+        id: safeName,
+        name: safeName,
+        role,
+        status: "online",
+    };
 }
 
 function sortMeFirst(users: OnlineUser[]): OnlineUser[] {
@@ -149,12 +159,9 @@ export default function Feeds() {
         const res = await getOnlineUserList();
         if (!res.ok) return;
 
-        const mapped: OnlineUser[] = res.result.map((name) => ({
-            id: name,
-            name,
-            role: myNameRef.current === name ? "me" : "user",
-            status: "online",
-        }));
+        const mapped: OnlineUser[] = res.result.map((name) =>
+            mapOnlineUser(name, myNameRef.current === resolveDisplayName(name) ? "me" : "user"),
+        );
         setOnlineUserList(sortMeFirst(uniqByName(mapped)));
     }, []);
 
@@ -165,7 +172,8 @@ export default function Feeds() {
 
     const toParticipantLabel = useCallback(
         (user: VoiceRoomUserResponse): string => {
-            return myNameRef.current !== "unknown" && user.username === myNameRef.current ? `${user.username}(나)` : user.username;
+            const safeName = resolveDisplayName(user.username);
+            return myNameRef.current !== "unknown" && safeName === myNameRef.current ? `${safeName}(나)` : safeName;
         },
         [],
     );
@@ -260,24 +268,20 @@ export default function Feeds() {
 
             subsRef.current.push(
                 client.subscribe(TOPIC_PRESENCE, (msg: IMessage) => {
-                    const { type, userId: name } = JSON.parse(msg.body) as { type: "JOIN" | "LEAVE"; userId: string };
+                    const { type, userId: name } = JSON.parse(msg.body) as { type: "JOIN" | "LEAVE"; userId: string | null };
+                    const safeName = resolveDisplayName(name);
 
                     setOnlineUserList((prev) => {
                         if (type === "JOIN") {
                             const next: OnlineUser[] = uniqByName([
                                 ...prev,
-                                {
-                                    id: name,
-                                    name,
-                                    role: myNameRef.current === name ? "me" : "user",
-                                    status: "online",
-                                },
+                                mapOnlineUser(name, myNameRef.current === safeName ? "me" : "user"),
                             ]);
                             return sortMeFirst(next);
                         }
 
                         if (type === "LEAVE") {
-                            const next = prev.filter((u) => u.name !== name);
+                            const next = prev.filter((u) => u.name !== safeName);
                             return sortMeFirst(next);
                         }
 
@@ -289,18 +293,15 @@ export default function Feeds() {
             subsRef.current.push(
                 client.subscribe(TOPIC_ONLINE_USERS, (msg: IMessage) => {
                     const payload = JSON.parse(msg.body) as
-                        | string[]
-                        | { users?: string[]; result?: string[]; onlineUsers?: string[] };
+                        | Array<string | null>
+                        | { users?: Array<string | null>; result?: Array<string | null>; onlineUsers?: Array<string | null> };
                     const names = Array.isArray(payload)
                         ? payload
                         : payload.users ?? payload.result ?? payload.onlineUsers ?? [];
 
-                    const mapped: OnlineUser[] = names.map((name) => ({
-                        id: name,
-                        name,
-                        role: myNameRef.current === name ? "me" : "user",
-                        status: "online",
-                    }));
+                    const mapped: OnlineUser[] = names.map((name) =>
+                        mapOnlineUser(name, myNameRef.current === resolveDisplayName(name) ? "me" : "user"),
+                    );
                     setOnlineUserList(sortMeFirst(uniqByName(mapped)));
                 }),
             );
@@ -313,7 +314,7 @@ export default function Feeds() {
                         const roomId = String(payload.roomId);
                         const participants = (payload.onlineUsers ?? []).map((user) => ({
                             userId: user.userId,
-                            name: user.username,
+                            name: resolveDisplayName(user.username),
                             label: toParticipantLabel(user),
                         }));
 

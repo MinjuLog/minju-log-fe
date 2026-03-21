@@ -12,6 +12,12 @@ const VOICE_ROOM_LEAVE_ENDPOINT =
 export const LIVEKIT_URL = import.meta.env.VITE_LIVEKIT_URL as string | undefined;
 export const FEED_WS_URL = import.meta.env.VITE_FEED_WS_HOST as string | undefined;
 export const VOICE_CHANNEL_ID = import.meta.env.VITE_VOICE_CHANNEL_ID as string | 1;
+export const UNKNOWN_USER_NAME = "알 수 없음";
+
+export function resolveDisplayName(name?: string | null): string {
+    const normalized = name?.trim();
+    return normalized ? normalized : UNKNOWN_USER_NAME;
+}
 
 function buildRoomEndpoint(template: string, roomId: string): string {
     return template.includes("{roomId}") ? template.replace("{roomId}", roomId) : template;
@@ -52,7 +58,7 @@ export function mapVoiceRooms(
         topic: "자유대화방",
         participants: (room.onlineUsers ?? []).map((user) => ({
             userId: user.userId,
-            name: user.username,
+            name: resolveDisplayName(user.username),
             label: toParticipantLabel(user),
         })),
     }));
